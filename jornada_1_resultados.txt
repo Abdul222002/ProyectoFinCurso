@@ -1,0 +1,168 @@
+========================================================================================================================
+📊 JORNADA 1 - RESULTADOS COMPLETOS
+========================================================================================================================
+
+Total jugadores procesados: 151
+
+🏆 CLASIFICACIÓN COMPLETA:
+
+#    | JUGADOR                        | EQUIPO               | POS        | MIN | GOL | AST | NOTA  | PTS
+------------------------------------------------------------------------------------------------------------------------
+1    | Panutche Camara                | Dundee United        | Delantero  | 90  | 0   | 1   | 8.0   | 17
+2    | Liam Scales                    | St. Mirren           | Delantero  | 90  | 0   | 0   | 7.7   | 14
+3    | Joe Rothwell                   | Rangers              | Delantero  | 73  | 0   | 1   | 7.5   | 13
+4    | Kieron Bowie                   | Hibernian            | Delantero  | 90  | 2   | 0   | 8.2   | 13
+5    | Alistair Johnston              | St. Mirren           | Delantero  | 90  | 0   | 0   | 8.1   | 13
+6    | Emmanuel Longelo               | Rangers              | Delantero  | 90  | 1   | 0   | 7.7   | 12
+7    | James Tavernier                | Rangers              | Delantero  | 90  | 1   | 0   | 7.5   | 11
+8    | Elijah Just                    | Rangers              | Delantero  | 90  | 0   | 1   | 7.9   | 11
+9    | Brad Spencer                   | Dundee United        | Delantero  | 90  | 0   | 1   | 7.5   | 11
+10   | Liam Polworth                  | Livingston           | Delantero  | 90  | 0   | 1   | 7.8   | 10
+11   | John Souttar                   | Rangers              | Delantero  | 90  | 0   | 0   | 7.0   | 10
+12   | Max Watters                    | Dundee United        | Delantero  | 65  | 1   | 0   | 7.3   | 10
+13   | Jack Iredale                   | Hibernian            | Delantero  | 90  | 0   | 0   | 7.1   | 10
+14   | Ryan McGowan                   | Livingston           | Delantero  | 90  | 0   | 0   | 7.4   | 9
+15   | Nasser Djiga                   | Rangers              | Delantero  | 90  | 0   | 0   | 7.0   | 9
+16   | Callum Slattery                | Rangers              | Delantero  | 90  | 0   | 0   | 7.1   | 9
+17   | Elliot Watt                    | Rangers              | Delantero  | 90  | 0   | 0   | 7.9   | 9
+18   | Craig Sibbald                  | Dundee United        | Delantero  | 90  | 0   | 1   | 7.0   | 9
+19   | Ethan Ross                     | Dundee United        | Delantero  | 90  | 1   | 0   | 7.5   | 9
+20   | Cameron Carter-Vickers         | St. Mirren           | Delantero  | 90  | 0   | 0   | 6.8   | 9
+21   | Daizen Maeda                   | St. Mirren           | Delantero  | 90  | 0   | 1   | 7.5   | 9
+22   | Djenairo Daniels               | Livingston           | Delantero  | 61  | 1   | 0   | 7.1   | 8
+23   | Scott Pittman                  | Livingston           | Delantero  | 90  | 1   | 0   | 7.0   | 8
+24   | Lewis Smith                    | Livingston           | Delantero  | 18  | 0   | 1   | 7.3   | 8
+25   | Bert Esselink                  | Dundee United        | Delantero  | 90  | 0   | 0   | 6.8   | 8
+26   | Keelan Adams                   | Dundee United        | Delantero  | 90  | 0   | 1   | 7.1   | 8
+27   | Dylan Tait                     | Dundee United        | Delantero  | 79  | 1   | 0   | 7.1   | 8
+28   | Warren O'Hora                  | Hibernian            | Delantero  | 90  | 0   | 0   | 6.9   | 8
+29   | Dylan Levitt                   | Hibernian            | Delantero  | 80  | 0   | 0   | 7.2   | 8
+30   | Rocky Bushiri                  | Hibernian            | Delantero  | 90  | 0   | 0   | 6.9   | 8
+31   | Luke McCowan                   | St. Mirren           | Delantero  | 12  | 1   | 0   | 7.2   | 8
+32   | Kieran Tierney                 | St. Mirren           | Delantero  | 65  | 0   | 0   | 7.4   | 8
+33   | David Watson                   | Livingston           | Delantero  | 90  | 1   | 0   | 7.1   | 7
+34   | Robbie Muirhead                | Livingston           | Delantero  | 82  | 1   | 0   | 7.3   | 7
+35   | Danny Wilson                   | Livingston           | Delantero  | 90  | 0   | 0   | 6.8   | 7
+36   | Calum Ward                     | Rangers              | Delantero  | 90  | 0   | 0   | 7.1   | 7
+37   | Liam Henderson                 | Dundee United        | Delantero  | 90  | 0   | 0   | 6.4   | 7
+38   | Ryan Astley                    | Hibernian            | Delantero  | 90  | 0   | 0   | 7.2   | 7
+39   | Finlay Robertson               | Hibernian            | Delantero  | 90  | 1   | 0   | 6.9   | 7
+40   | Ashley Hay                     | Hibernian            | Delantero  | 90  | 0   | 1   | 7.0   | 7
+41   | Kasper Schmeichel              | St. Mirren           | Delantero  | 90  | 0   | 0   | 7.1   | 7
+42   | Callum McGregor                | St. Mirren           | Delantero  | 90  | 0   | 0   | 7.2   | 7
+43   | Marcus Dackers                 | Livingston           | Delantero  | 68  | 0   | 0   | 6.9   | 6
+44   | Max Aarons                     | Rangers              | Delantero  | 90  | 0   | 0   | 7.3   | 6
+45   | Paul McGinn                    | Rangers              | Delantero  | 90  | 0   | 0   | 7.2   | 6
+46   | Ivan Dolcek                    | Dundee United        | Delantero  | 90  | 1   | 0   | 6.9   | 6
+47   | Scott Bain                     | Dundee United        | Delantero  | 90  | 0   | 0   | 6.7   | 6
+48   | Chris Cadden                   | Hibernian            | Delantero  | 90  | 0   | 0   | 7.0   | 6
+49   | Jordan Smith                   | Hibernian            | Delantero  | 90  | 0   | 0   | 6.4   | 6
+50   | Jamie McGrath                  | Hibernian            | Delantero  | 33  | 0   | 0   | 7.3   | 6
+51   | Luke Graham                    | Hibernian            | Delantero  | 90  | 0   | 0   | 6.7   | 6
+52   | Benjamin Nygren                | St. Mirren           | Delantero  | 78  | 0   | 0   | 7.3   | 6
+53   | Richard King                   | St. Mirren           | Delantero  | 90  | 0   | 0   | 6.5   | 6
+54   | Mikael Mandron                 | St. Mirren           | Delantero  | 79  | 0   | 0   | 7.0   | 6
+55   | Alex Gogic                     | St. Mirren           | Delantero  | 90  | 0   | 0   | 6.7   | 6
+56   | Marcus Fraser                  | St. Mirren           | Delantero  | 90  | 0   | 0   | 6.7   | 6
+57   | Maksymilian Stryjek            | Livingston           | Delantero  | 90  | 0   | 0   | 7.1   | 5
+58   | Lewis Mayo                     | Livingston           | Delantero  | 90  | 0   | 0   | 6.4   | 5
+59   | Brad Joseph Lyons              | Livingston           | Delantero  | 90  | 0   | 0   | 6.5   | 5
+60   | Mohamad Sylla                  | Livingston           | Delantero  | 77  | 0   | 0   | 6.5   | 5
+61   | Jack Butland                   | Rangers              | Delantero  | 90  | 0   | 0   | 7.1   | 5
+62   | Djeidi Gassama                 | Rangers              | Delantero  | 83  | 0   | 0   | 7.3   | 5
+63   | Nicolas Raskin                 | Rangers              | Delantero  | 73  | 0   | 0   | 7.0   | 5
+64   | Danilo                         | Rangers              | Delantero  | 63  | 0   | 0   | 6.9   | 5
+65   | Liam Gordon                    | Rangers              | Delantero  | 71  | 0   | 0   | 6.4   | 5
+66   | Lukas Fadinger                 | Rangers              | Delantero  | 90  | 0   | 0   | 6.5   | 5
+67   | John Koutroumbis               | Rangers              | Delantero  | 90  | 0   | 0   | 6.6   | 5
+68   | Lewis Neilson                  | Dundee United        | Delantero  | 90  | 0   | 0   | 6.8   | 5
+69   | Jordan Obita                   | Hibernian            | Delantero  | 90  | 0   | 0   | 6.5   | 5
+70   | Josh Campbell                  | Hibernian            | Delantero  | 33  | 0   | 0   | 6.9   | 5
+71   | Clark Robertson                | Hibernian            | Delantero  | 90  | 0   | 0   | 6.3   | 5
+72   | Reo Hatate                     | St. Mirren           | Delantero  | 78  | 0   | 0   | 7.1   | 5
+73   | Shamal George                  | St. Mirren           | Delantero  | 90  | 0   | 0   | 7.3   | 5
+74   | Jayden Richardson              | St. Mirren           | Delantero  | 79  | 0   | 0   | 6.7   | 5
+75   | Declan John                    | St. Mirren           | Delantero  | 90  | 0   | 0   | 6.5   | 5
+76   | George Stanger                 | Livingston           | Delantero  | 65  | 0   | 0   | 5.8   | 4
+77   | Tom Lowery                     | Livingston           | Delantero  | 85  | 0   | 0   | 6.7   | 4
+78   | Ben Brannan                    | Livingston           | Delantero  | 90  | 0   | 0   | 6.8   | 4
+79   | Danny Finlayson                | Livingston           | Delantero  | 90  | 0   | 0   | 6.8   | 4
+80   | Macaulay Tait                  | Livingston           | Delantero  | 90  | 0   | 0   | 6.7   | 4
+81   | Jérôme Prior                   | Livingston           | Delantero  | 90  | 0   | 0   | 5.8   | 4
+82   | Kieran Dowell                  | Rangers              | Delantero  | 90  | 0   | 0   | 7.2   | 4
+83   | Ibrahim Said                   | Rangers              | Delantero  | 11  | 0   | 0   | 6.8   | 4
+84   | Iurie Iovu                     | Dundee United        | Delantero  | 90  | 0   | 0   | 6.2   | 4
+85   | Vicko Sevelj                   | Dundee United        | Delantero  | 90  | 0   | 0   | 6.5   | 4
+86   | Krisztián Keresztes            | Dundee United        | Delantero  | 90  | 0   | 0   | 6.6   | 4
+87   | Leon McCann                    | Dundee United        | Delantero  | 90  | 0   | 0   | 6.3   | 4
+88   | Brian Graham                   | Dundee United        | Delantero  | 58  | 0   | 0   | 6.6   | 4
+89   | Aidan Nesbitt                  | Dundee United        | Delantero  | 32  | 0   | 0   | 6.9   | 4
+90   | Jon McCracken                  | Hibernian            | Delantero  | 90  | 0   | 0   | 6.6   | 4
+91   | Paul Digby                     | Hibernian            | Delantero  | 90  | 0   | 0   | 6.7   | 4
+92   | Emile Acquah                   | Hibernian            | Delantero  | 80  | 0   | 0   | 6.8   | 4
+93   | Imari Samuels                  | Hibernian            | Delantero  | 85  | 0   | 0   | 6.8   | 4
+94   | Callum Jones                   | Hibernian            | Delantero  | 80  | 0   | 0   | 6.8   | 4
+95   | Mark O'Hara                    | St. Mirren           | Delantero  | 90  | 0   | 0   | 6.8   | 4
+96   | Killian Phillips               | St. Mirren           | Delantero  | 90  | 0   | 0   | 6.6   | 4
+97   | Jamie Brandon                  | Livingston           | Delantero  | 90  | 0   | 0   | 6.6   | 3
+98   | Dominic Thompson               | Livingston           | Delantero  | 5   | 0   | 0   | 6.2   | 3
+99   | Adam Montgomery                | Livingston           | Delantero  | 90  | 0   | 0   | 6.4   | 3
+100  | Zak Rudden                     | Livingston           | Delantero  | 44  | 0   | 0   | 6.5   | 3
+101  | Andy Winter                    | Livingston           | Delantero  | 72  | 0   | 0   | 6.7   | 3
+102  | Stevie May                     | Livingston           | Delantero  | 13  | 0   | 0   | 6.5   | 3
+103  | Jeremy Bokila                  | Livingston           | Delantero  | 8   | 0   | 0   | 6.8   | 3
+104  | Óscar Cortés                   | Rangers              | Delantero  | 7   | 0   | 0   | 6.6   | 3
+105  | Connor Barron                  | Rangers              | Delantero  | 17  | 0   | 0   | 6.7   | 3
+106  | Cyriel Dessers                 | Rangers              | Delantero  | 27  | 0   | 0   | 6.3   | 3
+107  | Mohamed Diomandé               | Rangers              | Delantero  | 63  | 0   | 0   | 6.3   | 3
+108  | Nedim Bajrami                  | Rangers              | Delantero  | 17  | 0   | 0   | 6.3   | 3
+109  | Stephen O'Donnell              | Rangers              | Delantero  | 19  | 0   | 0   | 6.5   | 3
+110  | Tom Sparrow                    | Rangers              | Delantero  | 1   | 0   | 0   | 6.3   | 3
+111  | Apostolos Stamatelopoulos      | Rangers              | Delantero  | 79  | 0   | 0   | 6.1   | 3
+112  | Yevgeniy Kucherenko            | Dundee United        | Delantero  | 90  | 0   | 0   | 6.7   | 3
+113  | Zachary Sapsford               | Dundee United        | Delantero  | 90  | 0   | 0   | 6.9   | 3
+114  | Kai Fotheringham               | Dundee United        | Delantero  | 1   | 0   | 0   | 6.5   | 3
+115  | Miller Thomson                 | Dundee United        | Delantero  | 7   | 0   | 0   | 6.5   | 3
+116  | Owen Stirton                   | Dundee United        | Delantero  | 25  | 0   | 0   | 6.3   | 3
+117  | Isaac Pappoe                   | Dundee United        | Delantero  | 83  | 0   | 0   | 6.6   | 3
+118  | Ross MacIver                   | Dundee United        | Delantero  | 32  | 0   | 0   | 6.1   | 3
+119  | Alfie Agyeman                  | Dundee United        | Delantero  | 15  | 0   | 0   | 6.3   | 3
+120  | Henry Cartwright               | Dundee United        | Delantero  | 11  | 0   | 0   | 6.4   | 3
+121  | Scott Arfield                  | Dundee United        | Delantero  | 58  | 0   | 0   | 6.4   | 3
+122  | Élie Youan                     | Hibernian            | Delantero  | 10  | 0   | 0   | 6.5   | 3
+123  | Josh Mulligan                  | Hibernian            | Delantero  | 57  | 0   | 0   | 6.2   | 3
+124  | Aaron Donnelly                 | Hibernian            | Delantero  | 10  | 0   | 0   | 6.4   | 3
+125  | Drey Wright                    | Hibernian            | Delantero  | 10  | 0   | 0   | 6.6   | 3
+126  | César Garza                    | Hibernian            | Delantero  | 5   | 0   | 0   | 6.5   | 3
+127  | Tony Yogane                    | Hibernian            | Delantero  | 10  | 0   | 0   | 6.4   | 3
+128  | Auston Trusty                  | St. Mirren           | Delantero  | 25  | 0   | 0   | 6.8   | 3
+129  | Hyun-jun Yang                  | St. Mirren           | Delantero  | 59  | 0   | 0   | 6.5   | 3
+130  | Johnny Kenny                   | St. Mirren           | Delantero  | 12  | 0   | 0   | 6.5   | 3
+131  | Arne Engels                    | St. Mirren           | Delantero  | 12  | 0   | 0   | 6.4   | 3
+132  | James Forrest                  | St. Mirren           | Delantero  | 31  | 0   | 0   | 6.8   | 3
+133  | Roland Idowu                   | St. Mirren           | Delantero  | 79  | 0   | 0   | 6.6   | 3
+134  | Oisin Smyth                    | St. Mirren           | Delantero  | 11  | 0   | 0   | 6.4   | 3
+135  | Jonah Ayunga                   | St. Mirren           | Delantero  | 44  | 0   | 0   | 6.7   | 3
+136  | Tunmise Sobowale               | St. Mirren           | Delantero  | 11  | 0   | 0   | 6.5   | 3
+137  | Fraser Taylor                  | St. Mirren           | Delantero  | 46  | 0   | 0   | 6.3   | 3
+138  | Evan Mooney                    | St. Mirren           | Delantero  | 11  | 0   | 0   | 6.4   | 3
+139  | Rory McKenzie                  | Livingston           | Delantero  | 22  | 0   | 0   | 6.0   | 2
+140  | Lyall Cameron                  | Rangers              | Delantero  | 27  | 0   | 0   | 6.5   | 2
+141  | Calvin Miller                  | Dundee United        | Delantero  | 75  | 0   | 0   | 6.4   | 2
+142  | Alasana Manneh                 | Hibernian            | Delantero  | 10  | 0   | 0   | 6.4   | 2
+143  | Martin Boyle                   | Hibernian            | Delantero  | 80  | 0   | 0   | 6.0   | 2
+144  | Junior Hoilett                 | Hibernian            | Delantero  | 57  | 0   | 0   | 6.4   | 2
+145  | Ethan Ingram                   | Hibernian            | Delantero  | 80  | 0   | 0   | 6.2   | 2
+146  | Adam Idah                      | St. Mirren           | Delantero  | 78  | 0   | 0   | 6.0   | 2
+147  | Bruce Anderson                 | Livingston           | Delantero  | 29  | 0   | 0   | 6.4   | 1
+148  | Graham Carey                   | Livingston           | Delantero  | 46  | 0   | 0   | 6.6   | 1
+149  | Kofi Balmer                    | Rangers              | Delantero  | 1   | 0   | 0   | 0.0   | 1
+150  | Tawanda Maswanhise             | Rangers              | Delantero  | 90  | 0   | 0   | 6.1   | 1
+151  | M. Dijksteel                   | St. Mirren           | Delantero  | 1   | 0   | 0   | 0.0   | 1
+
+========================================================================================================================
+📈 ESTADÍSTICAS:
+   - Puntos totales: 795
+   - Promedio: 5.26
+   - Máximo: 17 (Panutche Camara)
+   - Mínimo: 1 (M. Dijksteel)

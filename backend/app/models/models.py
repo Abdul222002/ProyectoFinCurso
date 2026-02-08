@@ -259,6 +259,9 @@ class Team(Base):
     arena_draws = Column(Integer, default=0)
     arena_rating = Column(Integer, default=1000)  # ELO-style
     
+    # Táctica/Formación
+    active_formation = Column(String(10), default="4-4-2")  # Ej: "4-3-3", "4-4-2", "3-5-2"
+    
     # Relaciones
     players = relationship("UserCard", back_populates="team")
     
@@ -348,7 +351,8 @@ class Match(Base):
 class PlayerMatchStats(Base):
     """
     Estadísticas de un jugador en un partido específico
-    Se usa para calcular los puntos Fantasy
+    Sistema OFICIAL de puntuación Fantasy Football
+    Solo incluye campos disponibles en Sportmonks API (Free Plan)
     """
     __tablename__ = "player_match_stats"
     
@@ -361,37 +365,77 @@ class PlayerMatchStats(Base):
     player = relationship("Player")
     match = relationship("Match", back_populates="player_stats")
     
-    # Datos básicos
+    # ======================================
+    # BÁSICOS (API: MINUTES_PLAYED, RATING)
+    # ======================================
     minutes_played = Column(Integer, default=0)
-    rating = Column(Float, nullable=True)  # Nota Sportmonks (0-10)
+    rating = Column(Float, nullable=True)  # Nota 0-10
     
-    # Ataque
-    goals = Column(Integer, default=0)
-    assists = Column(Integer, default=0)
-    shots_on_target = Column(Integer, default=0)
+    # ======================================
+    # GOLES Y ASISTENCIAS
+    # ======================================
+    goals = Column(Integer, default=0)  # API: GOALS
+    assists = Column(Integer, default=0)  # API: ASSISTS (asistencias de gol)
+    chances_created = Column(Integer, default=0)  # API: BIG_CHANCES_CREATED (asistencias sin gol)
     
-    # Defensa
-    clean_sheet = Column(Boolean, default=False)
-    goals_conceded = Column(Integer, default=0)
-    saves = Column(Integer, default=0)  # Solo GK
-    penalties_saved = Column(Integer, default=0)
+    # ======================================
+    # DEFENSA
+    # ======================================
+    clean_sheet = Column(Boolean, default=False)  # CALCULADO (goles_recibidos == 0 && min >= 60)
+    goals_conceded = Column(Integer, default=0)  # API: GOALKEEPER_GOALS_CONCEDED (solo GK)
+    goals_conceded_team = Column(Integer, default=0)  # API: GOALS_CONCEDED (todos)
+    saves = Column(Integer, default=0)  # API: SAVES (solo GK)
+    clearances = Column(Integer, default=0)  # API: CLEARANCES (despejes)
     
-    # Otros
+    # ======================================
+    # PENALTIS
+    # ======================================
+    penalty_miss = Column(Integer, default=0)  # API: PENALTY_MISS
+    penalty_save = Column(Integer, default=0)  # API: PENALTY_SAVE (solo GK)
+    penalty_won = Column(Integer, default=0)  # API: PENALTY_WON
+    penalty_committed = Column(Integer, default=0)  # API: PENALTY_COMMITTED
+    
+    # ======================================
+    # TARJETAS (API: YELLOWCARDS, REDCARDS)
+    # ======================================
     yellow_cards = Column(Integer, default=0)
     red_cards = Column(Integer, default=0)
-    own_goals = Column(Integer, default=0)
-    penalties_missed = Column(Integer, default=0)
-    penalties_won = Column(Integer, default=0)
     
-    # Stats avanzadas
-    successful_dribbles = Column(Integer, default=0)
-    ball_recoveries = Column(Integer, default=0)
-    effective_clearances = Column(Integer, default=0)
-    accurate_crosses = Column(Integer, default=0)
-    dispossessed = Column(Integer, default=0)
+    # ======================================
+    # ATAQUE - Acumuladores
+    # ======================================
+    shots_on_target = Column(Integer, default=0)  # API: SHOTS_ON_TARGET (tiros a puerta)
+    dribbles = Column(Integer, default=0)  # API: SUCCESSFUL_DRIBBLES (regates logrados)
+    crosses = Column(Integer, default=0)  # API: ACCURATE_CROSSES (balones al área)
     
-    # Puntos Fantasy calculados
-    fantasy_points = Column(Float, default=0.0)
+    # ======================================
+    # DEFENSA - Acumuladores
+    # ======================================
+    ball_recoveries = Column(Integer, default=0)  # API: BALL_RECOVERY
+    
+    # ======================================
+    # PÉRDIDAS (Penalización)
+    # ======================================
+    dispossessed = Column(Integer, default=0)  # API: DISPOSSESSED
+    possession_lost = Column(Integer, default=0)  # API: POSSESSION_LOST
+    turnovers = Column(Integer, default=0)  # API: TURN_OVER
+    total_losses = Column(Integer, default=0)  # CALCULADO (suma de las 3 anteriores)
+    
+    # ======================================
+    # STATS EXTRA (Disponibles pero no usadas en puntos)
+    # ======================================
+    shots_total = Column(Integer, default=0)  # API: SHOTS_TOTAL
+    accurate_passes = Column(Integer, default=0)  # API: ACCURATE_PASSES
+    total_passes = Column(Integer, default=0)  # API: PASSES
+    tackles = Column(Integer, default=0)  # API: TACKLES
+    interceptions = Column(Integer, default=0)  # API: INTERCEPTIONS
+    duels_won = Column(Integer, default=0)  # API: DUELS_WON
+    fouls = Column(Integer, default=0)  # API: FOULS
+    
+    # ======================================
+    # RESULTADO FINAL
+    # ======================================
+    fantasy_points = Column(Float, default=0.0)  # CALCULADO con sistema oficial
     
     created_at = Column(DateTime, default=datetime.utcnow)
     

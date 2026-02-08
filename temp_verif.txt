@@ -1,0 +1,106 @@
+﻿================================================================================
+VERIFICACION FINAL - PRECIOS Y RAREZAS
+================================================================================
+
+2026-02-08 13:50:00,925 INFO sqlalchemy.engine.Engine SELECT DATABASE()
+2026-02-08 13:50:00,926 INFO sqlalchemy.engine.Engine [raw sql] {}
+2026-02-08 13:50:00,926 INFO sqlalchemy.engine.Engine SELECT @@sql_mode
+2026-02-08 13:50:00,926 INFO sqlalchemy.engine.Engine [raw sql] {}
+2026-02-08 13:50:00,926 INFO sqlalchemy.engine.Engine SELECT @@lower_case_table_names
+2026-02-08 13:50:00,926 INFO sqlalchemy.engine.Engine [raw sql] {}
+2026-02-08 13:50:00,927 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-02-08 13:50:00,927 INFO sqlalchemy.engine.Engine 
+    SELECT base_rarity, COUNT(*) as count,
+           MIN(overall_rating) as min_ovr,
+           MAX(overall_rating) as max_ovr
+    FROM players
+    GROUP BY base_rarity
+    ORDER BY 
+        CASE base_rarity
+            WHEN 'GOLD' THEN 1
+            WHEN 'SILVER' THEN 2
+            WHEN 'BRONZE' THEN 3
+        END
+
+2026-02-08 13:50:00,927 INFO sqlalchemy.engine.Engine [generated in 0.00008s] {}
+RAREZAS:
+2026-02-08 13:50:00,928 INFO sqlalchemy.engine.Engine 
+    SELECT base_rarity, COUNT(*) as count,
+           MIN(overall_rating) as min_ovr,
+           MAX(overall_rating) as max_ovr
+    FROM players
+    GROUP BY base_rarity
+    ORDER BY 
+        CASE base_rarity
+            WHEN 'GOLD' THEN 1
+            WHEN 'SILVER' THEN 2
+            WHEN 'BRONZE' THEN 3
+        END
+
+2026-02-08 13:50:00,928 INFO sqlalchemy.engine.Engine [cached since 0.0008885s ago] {}
+  GOLD: 163 (49.5%) - OVR 78-89
+  SILVER: 48 (14.6%) - OVR 71-74
+  BRONZE: 118 (35.9%) - OVR 58-69
+2026-02-08 13:50:00,929 INFO sqlalchemy.engine.Engine 
+    SELECT AVG(current_price), MIN(current_price), MAX(current_price)
+    FROM players
+
+2026-02-08 13:50:00,929 INFO sqlalchemy.engine.Engine [generated in 0.00009s] {}
+
+PRECIOS:
+  Promedio: EUR 15,190,253
+  Minimo: EUR 400,000
+  Maximo: EUR 83,375,000
+
+================================================================================
+TOP 10 JUGADORES:
+================================================================================
+
+2026-02-08 13:50:00,929 INFO sqlalchemy.engine.Engine 
+    SELECT name, position, overall_rating, current_team, base_rarity, current_price
+    FROM players
+    ORDER BY overall_rating DESC, current_price DESC
+    LIMIT 10
+
+2026-02-08 13:50:00,929 INFO sqlalchemy.engine.Engine [generated in 0.00009s] {}
+1. Daizen Maeda (FWD) - OVR 89 [GOLD]
+   Equipo: Celtic
+   Precio: EUR 83.4M
+
+2. Jota (FWD) - OVR 89 [GOLD]
+   Equipo: Celtic
+   Precio: EUR 83.4M
+
+3. Nicolas Raskin (MID) - OVR 89 [GOLD]
+   Equipo: Rangers
+   Precio: EUR 72.5M
+
+4. Callum McGregor (MID) - OVR 89 [GOLD]
+   Equipo: Celtic
+   Precio: EUR 72.5M
+
+5. Cameron Carter-Vickers (DEF) - OVR 89 [GOLD]
+   Equipo: Celtic
+   Precio: EUR 65.2M
+
+6. Alistair Johnston (DEF) - OVR 89 [GOLD]
+   Equipo: Celtic
+   Precio: EUR 65.2M
+
+7. James Tavernier (DEF) - OVR 89 [GOLD]
+   Equipo: Rangers
+   Precio: EUR 65.2M
+
+8. Kieran Tierney (DEF) - OVR 89 [GOLD]
+   Equipo: Celtic
+   Precio: EUR 65.2M
+
+9. Kasper Schmeichel (GK) - OVR 89 [GOLD]
+   Equipo: Celtic
+   Precio: EUR 61.6M
+
+10. Reo Hatate (MID) - OVR 88 [GOLD]
+   Equipo: Celtic
+   Precio: EUR 60.0M
+
+2026-02-08 13:50:00,929 INFO sqlalchemy.engine.Engine ROLLBACK

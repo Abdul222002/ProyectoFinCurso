@@ -1,0 +1,41 @@
+{
+  "data": {
+    "id": 21787,
+    "sport_id": 1,
+    "league_id": 501,
+    "tie_breaker_rule_id": 171,
+    "name": "2023/2024",
+    "finished": true,
+    "pending": false,
+    "is_current": false,
+    "starting_at": "2023-08-05",
+    "ending_at": "2024-05-19",
+    "standings_recalculated_at": "2024-05-19 16:00:59",
+    "games_in_current_week": false
+  },
+  "subscription": [
+    {
+      "meta": [],
+      "plans": [
+        {
+          "plan": "Football Free Plan",
+          "sport": "Football",
+          "category": "Standard"
+        },
+        {
+          "plan": "Cricket Free Plan",
+          "sport": "Cricket",
+          "category": "Standard"
+        }
+      ],
+      "add_ons": [],
+      "widgets": []
+    }
+  ],
+  "rate_limit": {
+    "resets_in_seconds": 3600,
+    "remaining": 2999,
+    "requested_entity": "Season"
+  },
+  "timezone": "UTC"
+}

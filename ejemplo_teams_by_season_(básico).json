@@ -1,0 +1,14 @@
+{
+  "id": 309,
+  "sport_id": 1,
+  "country_id": 1161,
+  "venue_id": 8922,
+  "gender": "male",
+  "name": "Motherwell",
+  "short_code": "MOT",
+  "image_path": "https://cdn.sportmonks.com/images/soccer/teams/21/309.png",
+  "founded": 1886,
+  "type": "domestic",
+  "placeholder": false,
+  "last_played_at": "2026-01-24 15:00:00"
+}

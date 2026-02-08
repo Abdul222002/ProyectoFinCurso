@@ -16,13 +16,12 @@
 ## 📋 Tabla de Contenidos
 
 - [Introducción y Concepto](#-introducción-y-concepto)
-- [Mecánica de Juego Híbrida](#-mecánica-de-juego-híbrida-la-innovación)
-- [Arquitectura Técnica y Datos](#-arquitectura-técnica-y-datos)
-- [Sistema de Economía y Mercado](#-sistema-de-economía-y-mercado)
-- [Personalización y Gestión](#-personalización-y-gestión)
-- [Objetivos del TFG](#-objetivos-del-tfg)
+- [Sistema de Iconos/Leyendas](#-sistema-de-iconosleyendas)
+- [Sistema de Mercado y Equipos](#-sistema-de-mercado-y-equipos)
+- [Mecánica de Juego Híbrida](#-mecánica-de-juego-híbrida)
+- [Arquitectura Técnica](#-arquitectura-técnica-y-datos)
 - [Stack Tecnológico](#-stack-tecnológico)
-- [Referencias Principales](#-referencias-principales)
+- [Instalación](#-instalación-y-setup)
 
 ---
 
@@ -31,240 +30,185 @@
 **Ultimate Fantasy Legends** es una plataforma web de gestión deportiva que revoluciona el concepto tradicional de Fantasy Football al fusionar:
 
 - **Fantasy Clásico**: Puntuación basada en rendimiento real de jugadores
-- **Colección de Cartas**: Sistema de sobres estilo FIFA Ultimate Team
-- **Simulación de Combate**: Batallas PvP inspiradas en Pokémon
-- **Gamificación**: Apertura de sobres "Gacha" y cartas de Leyenda
-
-### 💡 La Innovación
-
-Este proyecto nace de la necesidad de **modernizar el Fantasy tradicional** (Biwenger, Marca) añadiendo:
-
-✨ **Capa de Gamificación**: Sistema de apertura de sobres con probabilidades ponderadas  
-🎮 **Modo de Juego Diario**: Disfruta de la plataforma todos los días, no solo durante la jornada de liga  
-⚔️ **Combates Simulados**: Usa tus cartas de Leyenda en batallas estratégicas  
-📊 **Mercado Vivo**: Fluctuación dinámica de valores según rendimiento real  
+- **Colección de Iconos**: Leyendas del fútbol (Pelé, Maradona, Ronaldo)
+- **Mercado Diario**: Sistema de pujas ciegas estratégico
+- **Gamificación**: Sobres exclusivos para leyendas
 
 ---
 
-## 🎮 Mecánica de Juego Híbrida (LA INNOVACIÓN)
+## ⭐ Sistema de Iconos/Leyendas
 
-Para resolver la monotonía de las ligas menores (como la Escocesa) y dar utilidad a las cartas de Leyenda, el juego se divide en **dos vertientes conectadas**:
+### Concepto
 
-### A. La Liga Fantasy (Modo PVE - Fin de Semana)
+100 leyendas del fútbol mundial disponibles **solo mediante sobres**:
 
-**Funcionamiento:** Basado en la realidad. Los usuarios alinean a sus jugadores de la Scottish Premiership.
+- **Pelé** (OVR 99)
+- **Maradona** (OVR 99)
+- **Ronaldo Nazário** (OVR 96)
+- **Zidane** (OVR 95)
+- Y 96 iconos más (OVR 85-99)
 
-- **Fuente de Datos**: API de Sportmonks (Plan Free)
-- **Sistema de Puntuación**: Datos en tiempo real de partidos
-  - ⚽ Goles
-  - 🎯 Asistencias
-  - ⏱️ Minutos jugados
-  - 🏃 Regates completados
-  - ⭐ Nota del partido
-- **Objetivo**: Premia el conocimiento futbolístico real del usuario
+### Características Únicas
 
-### B. La Arena de Batalla (Modo PVP - Entre Semana)
-
-**Concepto "Estilo Pokémon":** Aquí es donde las medias (OVR) cobran sentido. Los usuarios enfrentan sus plantillas en una simulación 1vs1.
-
-#### 🎲 Algoritmo de Simulación
-
-Sistema donde la probabilidad de victoria depende de la media global del equipo:
+✅ **NO vendibles** → Exclusivos de colección  
+✅ **NO únicos** → Varios usuarios pueden tener el mismo icono  
+✅ **Rangos de rendimiento variables** → Cada icono tiene min/max fantasy points únicos
 
 **Ejemplo:**
 ```
-Equipo A (Media 90) vs Equipo B (Media 80)
-→ Equipo A tiene 70% de probabilidad de victoria
-→ Factor suerte (dado virtual) siempre deja margen a la sorpresa
+Casillas: 5-9 puntos (consistente)
+Ronaldo Nazário: 2-16 puntos (genio o lesión)
+Maradona: 6-19 puntos (impredecible)
 ```
 
-#### 🏆 Justificación de las Leyendas
+### Probabilidades por OVR
 
-Este modo permite usar **cartas de jugadores históricos** (ej: Ronaldo, Zidane) que no juegan en la vida real pero tienen stats muy altas para los combates simulados.
+| OVR | Tipo | Probabilidad | Ejemplos |
+|-----|------|--------------|----------|
+| 99 | Gods | 0.01% | Pelé, Maradona |
+| 95-98 | Legends | 0.1% | Ronaldo, Zidane, Ronaldinho |
+| 90-94 | Icons | 0.5% | Gerrard, Del Piero, Roberto Carlos |
+| 85-89 | Heroes | 2% | Schweinsteiger, Puyol, Totti |
+
+---
+
+## 💰 Sistema de Mercado y Equipos
+
+### 1️⃣ Equipo Inicial
+
+Al crear una liga, cada usuario recibe:
+
+- **14 jugadores aleatorios** (OVR 60-70)
+- **€100M** de presupuesto inicial
+- Distribución balanceada:
+  - 2 GK
+  - 4-5 DEF
+  - 4-5 MID
+  - 3-4 FWD
+
+### 2️⃣ Mercado Diario
+
+**Renovación cada 24 horas:**
+
+- **10-12 jugadores** aparecen diariamente
+- Pool incluye **todos los OVR** (60-90)
+
+**Probabilidades:**
+- 50% → OVR 60-70 (comunes)
+- 35% → OVR 71-78 (buenos)
+- 12% → OVR 79-85 (top)
+- 3% → OVR 86-90 (estrellas)
+
+### 3️⃣ Sistema de Pujas Ciegas
+
+**Mecánica:**
+
+1. **Pujas ocultas** → Nadie ve las ofertas de otros
+2. **Duración:** 24 horas
+3. **Ganador:** Mayor puja al finalizar
+4. **Empate:** Orden de llegada (timestamp)
+5. **Dinero bloqueado** durante la puja
+
+**Ejemplo:**
+```
+Mercado: [Callum McGregor - OVR 90]
+
+Usuario A: €25M (oculto)
+Usuario B: €22M (oculto)
+Usuario C: €30M (oculto) ← GANADOR tras 24h
+
+→ Usuario C recibe a McGregor
+→ A y B recuperan su dinero
+```
+
+### 4️⃣ Sobres
+
+- **Solo iconos** (Pelé, Ronaldo, etc.)
+- Probabilidad basada en OVR del icono
+- Única forma de conseguir leyendas
+
+---
+
+## 🎮 Mecánica de Juego Híbrida
+
+### A. La Liga Fantasy (Fin de Semana)
+
+Basado en rendimiento real de la **Scottish Premiership**:
+
+- **Fuente:** API Sportmonks
+- **Puntuación:** Goles, asistencias, minutos, notas
+- **Objetivo:** Premia conocimiento futbolístico real
+
+### B. Sobres y Colección (Diario)
+
+- Apertura de sobres para conseguir leyendas
+- Gestión de inventario
+- Construcción de plantilla ideal
+
+### C. Mercado y Pujas (Diario)
+
+- Estrategia de compra/venta
+- Análisis de rendimiento de jugadores
+- Pujas ciegas contra otros usuarios
 
 ---
 
 ## 🏗️ Arquitectura Técnica y Datos
 
-### Stack Tecnológico Seleccionado
+### Stack Tecnológico
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        FRONTEND                             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │    React     │  │     Vite     │  │  Drag & Drop │     │
-│  │   (SPA)      │  │   (Build)    │  │  (Alineación)│     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
-│                                                             │
-│  ┌──────────────────────────────────────────────────┐     │
-│  │   Animaciones de Apertura de Sobres             │     │
-│  └──────────────────────────────────────────────────┘     │
+│  React 18.2+ │ Vite 5.0+ │ Drag & Drop │ Animaciones      │
 └─────────────────────────────────────────────────────────────┘
                             ▼ HTTP/JSON
 ┌─────────────────────────────────────────────────────────────┐
 │                        BACKEND                              │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │   FastAPI    │  │   Pydantic   │  │  Swagger UI  │     │
-│  │  (Asíncrono) │  │ (Validación) │  │    (Docs)    │     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
-│                                                             │
-│  ┌──────────────────────────────────────────────────┐     │
-│  │    Algoritmos Propios (Simulación + Mercado)     │     │
-│  └──────────────────────────────────────────────────┘     │
+│  FastAPI │ Pydantic │ Swagger UI │ Algoritmos Propios      │
 └─────────────────────────────────────────────────────────────┘
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                     DATA LAYER                              │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │    MySQL     │  │  SQLAlchemy  │  │ Sportmonks   │     │
-│  │  (Relacional)│  │     (ORM)    │  │     API      │     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
+│  MySQL 8.0+ │ SQLAlchemy 2.0+ │ Sportmonks API             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 🛠️ Justificación Tecnológica
+### Modelos de Base de Datos
 
-#### Backend: Python con FastAPI
-
-**¿Por qué FastAPI en lugar de Flask o Django?**
-
-✅ **Velocidad**: Asíncrono por defecto  
-✅ **Validación Automática**: Pydantic integrado  
-✅ **Documentación Nativa**: Swagger UI/ReDoc  
-✅ **Ideal para**: Algoritmos de simulación y conexión con API externa  
-
-#### Frontend: React (con Vite)
-
-**¿Por qué React?**
-
-✅ **SPA Dinámica**: Interfaz reactiva y fluida  
-✅ **Drag & Drop**: Gestión de alineaciones intuitiva  
-✅ **Animaciones**: Apertura de sobres espectacular  
-✅ **Vite**: Build ultra-rápido  
-
-#### Base de Datos: MySQL
-
-**¿Por qué MySQL?**
-
-✅ **Naturaleza Relacional**: Usuarios ↔ Equipos ↔ Cartas ↔ Mercado  
-✅ **Integridad Transaccional**: Evita duplicidad de ítems  
-✅ **Confiabilidad**: Garantiza consistencia en economía  
-
-#### ORM: SQLAlchemy
-
-**¿Por qué SQLAlchemy?**
-
-✅ **Integración Python**: Gestión OOP de objetos del juego  
-✅ **Migraciones**: Evolución del schema  
-✅ **Queries Complejas**: Ideal para estadísticas y rankings  
-
----
-
-## 📊 Origen de los Datos (Solución Técnica)
-
-### ❌ Descartado: Web Scraping
-Inestable, ilegal, y propenso a errores.
-
-### ✅ Solución: API Oficial de Sportmonks
-
-**Liga:** Scottish Premiership
-
-**Datos Disponibles (JSON):**
-
-- ✅ Alineaciones y minutos jugados
-- ✅ Eventos (Goles, Tarjetas)
-- ✅ Estadísticas avanzadas (Regates/Dribbles)
-- ✅ Notas de los jugadores
-
-**Ventajas:**
-- Legal y oficial
-- Formato JSON estructurado
-- Actualizaciones en tiempo real
-- Documentación completa
-
----
-
-## 📈 Algoritmo de Fluctuación de Medias (Dynamic Rating)
-
-Para simular el mercado del FIFA, las medias de los jugadores **no serán estáticas**.
-
-### 🔄 Recalculo Semanal (Backend)
-
+#### Player (Jugadores e Iconos)
 ```python
-# Pseudocódigo del algoritmo
-if partido.nota >= 8.0 or jugador.goles > 0:
-    jugador.media += randint(1, 2)  # ⬆️ Sube media
-elif partido.nota < 5.0 or not jugador.jugo:
-    jugador.media -= randint(1, 2)  # ⬇️ Baja media
+- is_legend: Boolean (True para iconos)
+- is_tradeable: Boolean (False para iconos)
+- min_fantasy_points: Integer (rango mínimo)
+- max_fantasy_points: Integer (rango máximo)
+- overall_rating: Integer (60-99)
+- current_price: Float (NULL para iconos)
 ```
 
-**Resultado:** Mercado vivo y especulativo 📊
+#### League (Ligas Privadas)
+```python
+- code: String (código para unirse)
+- initial_budget: Float (€100M default)
+- daily_market_size: Integer (12 default)
+```
 
----
+#### MarketListing (Mercado Diario)
+```python
+- league_id: ForeignKey
+- player_id: ForeignKey
+- expires_at: DateTime (+24h)
+- is_active: Boolean
+- winner_user_id: ForeignKey (nullable)
+```
 
-## 💰 Sistema de Economía y Mercado
-
-### 📈 Mercado de Valores (Oferta y Demanda)
-
-El precio de los jugadores **no será fijo**. Algoritmo de bolsa:
-
-- 🔴 **Alta Demanda**: Si muchos usuarios compran a Kevin Nisbet → Precio ⬆️
-- 🔵 **Baja Demanda**: Si muchos usuarios venden → Precio ⬇️
-
-### 🎁 Sistema "Gacha" (Sobres)
-
-**Tienda de Sobres con Probabilidades Ponderadas:**
-
-| Tipo de Carta | Probabilidad | Descripción |
-|--------------|--------------|-------------|
-| 🌟 Leyenda   | 1%           | Ronaldo, Zidane, Messi |
-| 🥇 Oro       | 10%          | Jugadores top de la liga |
-| 🥈 Plata     | 89%          | Jugadores comunes |
-
-**Emoción de la aleatoriedad + Colección adictiva**
-
----
-
-## 🎨 Personalización y Gestión
-
-A diferencia de un Fantasy plano, aquí el usuario ejerce de **"Manager Total"**:
-
-### 🏟️ Creación de Club
-
-- 📝 Nombre del club
-- 🛡️ Escudo personalizado
-- 👕 Equipación
-
-### 📋 Gestión de Plantilla
-
-- ⭐ Alineación titular
-- 💺 Banquillo
-- 🔄 Cambios automáticos (si un titular no juega)
-
----
-
-## 🎯 Objetivos del TFG
-
-### 1️⃣ Integración de APIs Externas
-✅ Consumo y normalización de datos JSON de Sportmonks  
-✅ Manejo de errores y rate limiting  
-
-### 2️⃣ Desarrollo de Algoritmos Propios
-✅ Lógica de simulación de partidos (PvP)  
-✅ Cálculo de fluctuación de mercado  
-✅ Sistema de probabilidades para sobres  
-
-### 3️⃣ Base de Datos Compleja
-✅ Gestión de usuarios  
-✅ Inventarios de cartas  
-✅ Historial de partidos  
-✅ Mercado en tiempo real  
-
-### 4️⃣ Experiencia de Usuario (UX)
-✅ Interfaz adictiva  
-✅ Datos estadísticos + Elementos visuales de videojuego  
-✅ Cartas brillantes  
-✅ Animaciones de sobres  
+#### Bid (Pujas)
+```python
+- listing_id: ForeignKey
+- user_id: ForeignKey
+- amount: Float (dinero bloqueado)
+- is_winning: Boolean
+```
 
 ---
 
@@ -272,94 +216,23 @@ A diferencia de un Fantasy plano, aquí el usuario ejerce de **"Manager Total"**
 
 ### Backend
 | Tecnología | Versión | Propósito |
-|-----------|---------|-----------|
-| ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python) | 3.10+ | Lenguaje principal |
-| ![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-009688?logo=fastapi) | 0.104+ | Framework web asíncrono |
-| ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0+-red) | 2.0+ | ORM |
-| ![MySQL](https://img.shields.io/badge/MySQL-8.0+-4479A1?logo=mysql) | 8.0+ | Base de datos |
-| ![Pydantic](https://img.shields.io/badge/Pydantic-2.0+-E92063) | 2.0+ | Validación de datos |
+|-----------|---------| ----------|
+| Python | 3.10+ | Lenguaje principal |
+| FastAPI | 0.104+ | Framework web asíncrono |
+| SQLAlchemy | 2.0+ | ORM |
+| MySQL | 8.0+ | Base de datos relacional |
+| Pydantic | 2.0+ | Validación de datos |
 
 ### Frontend
 | Tecnología | Versión | Propósito |
-|-----------|---------|-----------|
-| ![React](https://img.shields.io/badge/React-18.2+-61DAFB?logo=react) | 18.2+ | UI Library |
-| ![Vite](https://img.shields.io/badge/Vite-5.0+-646CFF?logo=vite) | 5.0+ | Build tool |
-| ![TailwindCSS](https://img.shields.io/badge/Tailwind-3.0+-06B6D4?logo=tailwindcss) | 3.0+ (opcional) | Estilos |
+|-----------|---------| ----------|
+| React | 18.2+ | UI Library |
+| Vite | 5.0+ | Build tool |
 
 ### APIs Externas
 | Servicio | Propósito |
-|----------|-----------|
-| ![Sportmonks](https://img.shields.io/badge/Sportmonks-API-orange) | Datos en tiempo real de Scottish Premiership |
-
----
-
-## 🎮 Referencias Principales
-
-### Fantasy Clásico
-- **Biwenger**: Mercado de fichajes y puntuación basada en partidos reales
-- **Marca Fantasy**: Sistema de puntos por rendimiento
-
-### Simulación y Gestión
-- **Online Soccer Manager (OSM)**: Personalización profunda de club, estadio y tácticas
-
-### Colección y Cartas
-- **FIFA Ultimate Team**: Sistema de cartas, medias (OVR) y apertura de sobres
-- **Kings League**: Gamificación deportiva moderna
-
-### Combate y Estrategia
-- **Pokémon**: Mecánicas de combate por turnos y probabilidades
-
----
-
-## 📁 Estructura del Proyecto
-
-```
-ProyectoFinCurso/
-├── backend/                    # API FastAPI
-│   ├── app/
-│   │   ├── api/               # Endpoints
-│   │   │   ├── auth.py
-│   │   │   ├── players.py
-│   │   │   ├── market.py
-│   │   │   └── simulation.py
-│   │   ├── core/              # Configuración
-│   │   │   ├── config.py
-│   │   │   └── security.py
-│   │   ├── models/            # SQLAlchemy models
-│   │   │   ├── user.py
-│   │   │   ├── player.py
-│   │   │   └── team.py
-│   │   ├── schemas/           # Pydantic schemas
-│   │   ├── services/          # Lógica de negocio
-│   │   │   ├── simulation_engine.py
-│   │   │   ├── market_algorithm.py
-│   │   │   └── sportmonks_client.py
-│   │   └── main.py
-│   ├── alembic/               # Migraciones DB
-│   └── requirements.txt
-│
-├── frontend/                   # React + Vite
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── cards/         # Cartas de jugadores
-│   │   │   ├── packs/         # Apertura de sobres
-│   │   │   └── lineup/        # Alineación drag & drop
-│   │   ├── pages/
-│   │   │   ├── Home.jsx
-│   │   │   ├── Market.jsx
-│   │   │   ├── Arena.jsx
-│   │   │   └── MyTeam.jsx
-│   │   ├── services/          # API calls
-│   │   └── App.jsx
-│   └── package.json
-│
-├── docs/                       # Documentación TFG
-│   ├── memoria.pdf
-│   ├── presentacion.pptx
-│   └── diagramas/
-│
-└── README.md
-```
+|----------| ----------|
+| Sportmonks | Datos Scottish Premiership |
 
 ---
 
@@ -389,10 +262,13 @@ pip install -r requirements.txt
 
 # Configurar .env
 cp .env.example .env
-# Editar .env con tus credenciales de MySQL y Sportmonks API
+# Editar .env con credenciales
 
-# Ejecutar migraciones
-alembic upgrade head
+# Seed jugadores reales
+python scripts/seed_fifa_only.py
+
+# Seed iconos
+python scripts/seed_icons.py
 
 # Iniciar servidor
 uvicorn app.main:app --reload
@@ -410,63 +286,87 @@ npm run dev
 
 - **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:8000
-- **API Docs (Swagger)**: http://localhost:8000/docs
+- **API Docs**: http://localhost:8000/docs
 
 ---
 
-## 📊 Roadmap de Desarrollo
+## 📊 Scripts Disponibles
 
-### Fase 1: Fundamentos (Semanas 1-4)
-- [ ] Setup del proyecto
-- [ ]  Configuración de BD MySQL
-- [ ] Sistema de autenticación JWT
-- [ ] Integración con Sportmonks API
-- [ ] CRUD básico de usuarios y equipos
-
-### Fase 2: Mecánica Fantasy (Semanas 5-8)
-- [ ] Sistema de puntuación en tiempo real
-- [ ] Gestión de alineaciones
-- [ ] Cálculo de puntos por jornada
-- [ ] Ranking de usuarios
-
-### Fase 3: Sistema de Cartas (Semanas 9-12)
-- [ ] Algoritmo de generación de sobres
-- [ ] Animación de apertura de sobres
-- [ ] Inventario de cartas
-- [ ] Sistema de medias (OVR)
-
-### Fase 4: Arena de Batalla (Semanas 13-16)
-- [ ] Algoritmo de simulación PvP
-- [ ] Sistema de combate probabilístico
-- [ ] Historial de batallas
-- [ ] Rankings de arena
-
-### Fase 5: Mercado (Semanas 17-20)
-- [ ] Algoritmo de fluctuación de precios
-- [ ] Sistema de oferta/demanda
-- [ ] Transacciones entre usuarios
-- [ ] Historial de mercado
-
-### Fase 6: Pulido y Deploy (Semanas 21-24)
-- [ ] Optimización de rendimiento
-- [ ] Testing E2E
-- [ ] Documentación final
-- [ ] Deployment en producción
-
----
-
-## 🧪 Testing
+### Backend
 
 ```bash
-# Backend
-cd backend
-pytest tests/ -v --cov=app
+# Verificar estado de la BD
+python backend/scripts/verificar_bd.py
 
-# Frontend
-cd frontend
-npm run test
-npm run test:e2e
+# Distribuir equipos iniciales
+python backend/scripts/distribute_initial_squads.py --league_id=1
+
+# Refrescar mercado diario
+python backend/scripts/refresh_daily_market.py --league_id=1
+
+# Seed iconos
+python backend/scripts/seed_icons.py
 ```
+
+---
+
+## 🎮 Flujo de Usuario
+
+### 1. Crear Liga
+```
+Usuario → Crear Liga → Código: ABC123
+       → Invitar amigos
+```
+
+### 2. Equipo Inicial
+```
+Sistema → Asigna 14 jugadores (OVR 60-70)
+        → Presupuesto: €100M
+```
+
+### 3. Mercado Diario
+```
+Usuario → Ver 12 jugadores disponibles
+        → Hacer puja ciega
+        → Esperar 24h
+        → Recibir jugador si ganó
+```
+
+### 4. Sobres
+```
+Usuario → Abrir sobre
+        → Probabilidad de icono según OVR
+        → Añadir a colección
+```
+
+---
+
+## 📈 Roadmap Actualizado
+
+### ✅ Fase 1: Base de Datos
+- [x] 334 jugadores Scottish Premiership
+- [x] Posiciones corregidas con FIFA
+- [x] Rarezas ajustadas (33% GOLD)
+- [x] Precios escala premium
+
+### 🚧 Fase 2: Sistema de Iconos
+- [ ] CSV con 100 iconos
+- [ ] Seed script de iconos
+- [ ] Rangos de fantasy points
+
+### 📝 Fase 3: Sistema de Mercado
+- [ ] Modelo League
+- [ ] Modelo MarketListing
+- [ ] Modelo Bid
+- [ ] Script de equipos iniciales
+- [ ] Script de mercado diario
+- [ ] Servicio de pujas
+
+### 🎨 Fase 4: Frontend
+- [ ] UI de mercado diario
+- [ ] UI de pujas ciegas
+- [ ] UI de sobres
+- [ ] UI de colección de iconos
 
 ---
 
@@ -481,7 +381,6 @@ Este proyecto está bajo la Licencia MIT.
 **Abdul Hakim Byaz Iglesias**
 - 📧 Email: hakimbyaz@gmail.com
 - 🎓 Curso: 2º DAW
-- 🏫 Centro: [Tu Centro Educativo]
 - 📅 Año Académico: 2025-2026
 
 ---
@@ -491,7 +390,6 @@ Este proyecto está bajo la Licencia MIT.
 - **Sportmonks** por proporcionar la API de datos deportivos
 - **FastAPI** por el excelente framework
 - **React** por facilitar el desarrollo del frontend
-- A todos los que apoyan este proyecto
 
 ---
 

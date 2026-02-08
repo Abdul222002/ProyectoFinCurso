@@ -1,213 +1,373 @@
 """
-Script de Seed - Llena la base de datos con datos iniciales
-Este script se ejecutará para poblar la BD con jugadores de la Scottish Premiership
+Script DEFINITIVO para poblar la BD con datos de Sportmonks + FIFA
+Usa el endpoint correcto que SÍ funciona: include=players
 """
 
 import sys
-from pathlib import Path
+import os
+import requests
+import pandas as pd
+from fuzzywuzzy import fuzz
+from sqlalchemy import text
+from datetime import datetime
+import random
+import logging
 
-# Añadir el directorio raíz al path para poder importar app
-sys.path.append(str(Path(__file__).parent.parent.parent))
+# Desactivar logging verboso
+logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
 
-from app.core.database import init_db, test_connection, SessionLocal
-from app.models.player import Player
-from app.models.team import Team
+# Ajuste de rutas
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+from app.core.database import SessionLocal
+from app.models.models import Player, Position, CardRarity
+
+# ==========================================
+# CONFIGURACIÓN
+# ==========================================
+API_TOKEN = "JElZH6J4bB7OSJyRDNsBtJUO1P2IzY2GVRBmak6falJgqa3dr6OGC6MasQwR"
+SEASON_ID = 21787  # Scottish Premiership
+CSV_PATH = os.path.join(os.path.dirname(__file__), '../data/EAFC26-Men.csv')
+
+# Mapeo de posiciones
+POSITION_MAP = {
+    'GK': Position.GK, 'Goalkeeper': Position.GK,
+    'CB': Position.DEF, 'LB': Position.DEF, 'RB': Position.DEF,
+    'LWB': Position.DEF, 'RWB': Position.DEF, 'Defender': Position.DEF,
+    'CDM': Position.MID, 'CM': Position.MID, 'CAM': Position.MID,
+    'LM': Position.MID, 'RM': Position.MID, 'Midfielder': Position.MID,
+    'LW': Position.FWD, 'RW': Position.FWD, 'CF': Position.FWD,
+    'ST': Position.FWD, 'Attacker': Position.FWD, 'Forward': Position.FWD,
+}
+
+# ==========================================
+# FUNCIONES
+# ==========================================
+
+def calcular_precio(overall: int) -> float:
+    """Calcula el precio basado en el overall"""
+    if overall < 60:
+        return random.uniform(800000, 1200000)
+    elif overall < 65:
+        return random.uniform(1500000, 2500000)
+    elif overall < 68:
+        return random.uniform(3000000, 4000000)
+    elif overall < 71:
+        return random.uniform(4500000, 5500000)
+    elif overall < 74:
+        return random.uniform(7000000, 8000000)
+    elif overall < 77:
+        return random.uniform(9000000, 11000000)
+    elif overall < 80:
+        return random.uniform(13000000, 15000000)
+    elif overall < 83:
+        return random.uniform(20000000, 24000000)
+    else:
+        return random.uniform(30000000, 50000000)
 
 
-def create_sample_players(db):
-    """
-    Crea jugadores de ejemplo para pruebas
-    TODO: Reemplazar con datos reales de Sportmonks API
-    """
+def determinar_rareza(overall: int) -> CardRarity:
+    """Determina la rareza de la carta"""
+    if overall >= 80:
+        return CardRarity.GOLD
+    elif overall >= 70:
+        return CardRarity.SILVER
+    else:
+        return CardRarity.BRONZE
+
+
+def mapear_posicion(pos_str: str) -> Position:
+    """Mapea la posición a nuestro enum"""
+    if not pos_str:
+        return Position.MID
     
-    print("📦 Creando jugadores de ejemplo...")
+    # Buscar en el mapa
+    for key, value in POSITION_MAP.items():
+        if key.lower() in pos_str.lower():
+            return value
     
-    sample_players = [
-        # Rangers FC
-        Player(
-            name="James Tavernier",
-            age=32,
-            position="DEF",
-            nationality="England",
-            overall_rating=78,
-            potential=78,
-            pace=75,
-            shooting=70,
-            passing=72,
-            dribbling=68,
-            defending=76,
-            physical=74,
-            is_legend=False,
-            card_rarity="gold",
-            current_team="Rangers FC",
-            market_value=500000.0
-        ),
-        Player(
-            name="Alfredo Morelos",
-            age=27,
-            position="FWD",
-            nationality="Colombia",
-            overall_rating=76,
-            potential=80,
-            pace=78,
-            shooting=80,
-            passing=65,
-            dribbling=73,
-            defending=40,
-            physical=79,
-            is_legend=False,
-            card_rarity="gold",
-            current_team="Rangers FC",
-            market_value=750000.0
-        ),
+    return Position.MID
+
+
+def generar_stats_desde_overall(overall: int, posicion: Position) -> dict:
+    """Genera stats realistas basadas en el overall y la posición"""
+    base = overall - random.randint(5, 10)
+    
+    stats = {
+        'pace': base,
+        'shooting': base,
+        'passing': base,
+        'dribbling': base,
+        'defending': base,
+        'physical': base
+    }
+    
+    # Ajustes por posición
+    if posicion == Position.GK:
+        stats['defending'] = overall - 5
+        stats['shooting'] = overall - 30
+        stats['dribbling'] = overall - 20
+        stats['pace'] = overall - 15
+    elif posicion == Position.DEF:
+        stats['defending'] = overall + random.randint(0, 5)
+        stats['physical'] = overall + random.randint(0, 3)
+        stats['shooting'] = overall - random.randint(15, 25)
+    elif posicion == Position.MID:
+        stats['passing'] = overall + random.randint(0, 5)
+        stats['dribbling'] = overall + random.randint(0, 3)
+    elif posicion == Position.FWD:
+        stats['shooting'] = overall + random.randint(0, 5)
+        stats['pace'] = overall + random.randint(0, 5)
+        stats['defending'] = overall - random.randint(20, 30)
+    
+    # Asegurar rango válido
+    for key in stats:
+        stats[key] = max(20, min(99, stats[key]))
+    
+    return stats
+
+
+def obtener_jugadores_sportmonks():
+    """Obtiene jugadores desde Sportmonks API"""
+    print("📡 Conectando con Sportmonks API...")
+    url = f"https://api.sportmonks.com/v3/football/teams/seasons/{SEASON_ID}"
+    params = {
+        "api_token": API_TOKEN,
+        "include": "players"  # ¡Este es el correcto!
+    }
+    
+    response = requests.get(url, params=params, timeout=30)
+    
+    if response.status_code != 200:
+        print(f"❌ Error API: {response.status_code}")
+        return []
+    
+    teams_data = response.json().get('data', [])
+    print(f"✅ {len(teams_data)} equipos encontrados\n")
+    
+    all_players = []
+    for team in teams_data:
+        team_name = team.get('name')
+        players = team.get('players', [])
         
-        # Celtic FC
-        Player(
-            name="Callum McGregor",
-            age=30,
-            position="MID",
-            nationality="Scotland",
-            overall_rating=77,
-            potential=77,
-            pace=70,
-            shooting=72,
-            passing=80,
-            dribbling=76,
-            defending=68,
-            physical=70,
-            is_legend=False,
-            card_rarity="gold",
-            current_team="Celtic FC",
-            market_value=600000.0
-        ),
-        Player(
-            name="Kyogo Furuhashi",
-            age=28,
-            position="FWD",
-            nationality="Japan",
-            overall_rating=79,
-            potential=82,
-            pace=86,
-            shooting=81,
-            passing=70,
-            dribbling=80,
-            defending=35,
-            physical=65,
-            is_legend=False,
-            card_rarity="gold",
-            current_team="Celtic FC",
-            market_value=850000.0
-        ),
+        print(f"   📋 {team_name}: {len(players)} jugadores")
         
-        # LEYENDAS (para el modo Arena)
-        Player(
-            name="Henrik Larsson",
-            age=52,
-            position="FWD",
-            nationality="Sweden",
-            overall_rating=91,
-            potential=91,
-            pace=85,
-            shooting=92,
-            passing=80,
-            dribbling=88,
-            defending=40,
-            physical=75,
-            is_legend=True,
-            card_rarity="legend",
-            current_team=None,
-            market_value=5000000.0
-        ),
-        Player(
-            name="Paul Gascoigne",
-            age=56,
-            position="MID",
-            nationality="England",
-            overall_rating=90,
-            potential=90,
-            pace=78,
-            shooting=85,
-            passing=91,
-            dribbling=92,
-            defending=65,
-            physical=80,
-            is_legend=True,
-            card_rarity="legend",
-            current_team=None,
-            market_value=4500000.0
-        ),
-    ]
+        for player in players:
+            all_players.append({
+                'sportmonks_data': player,
+                'team_name': team_name
+            })
     
-    db.add_all(sample_players)
-    db.commit()
-    
-    print(f"✅ {len(sample_players)} jugadores creados correctamente")
+    print(f"\n✅ Total: {len(all_players)} jugadores de Sportmonks\n")
+    return all_players
 
 
-def create_sample_team(db):
-    """
-    Crea un equipo de ejemplo
-    """
+def run_seed():
+    """Ejecuta el proceso de seed completo"""
     
-    print("🏟️ Creando equipo de ejemplo...")
+    print("="*60)
+    print("🌱 SEED DATABASE - SPORTMONKS + FIFA")
+    print("="*60 + "\n")
     
-    sample_team = Team(
-        name="FC Ultimate Legends",
-        shield_url="https://example.com/shield.png",
-        kit_color_primary="#FF0000",
-        kit_color_secondary="#FFFFFF",
-        budget=1000000.0
-    )
-    
-    db.add(sample_team)
-    db.commit()
-    
-    # Asignar algunos jugadores al equipo
-    players = db.query(Player).filter(Player.is_legend == False).limit(5).all()
-    for player in players:
-        player.team_id = sample_team.id
-    
-    db.commit()
-    
-    # Calcular media del equipo
-    sample_team.calculate_overall_rating()
-    db.commit()
-    
-    print(f"✅ Equipo '{sample_team.name}' creado (OVR: {sample_team.overall_rating})")
-
-
-def main():
-    """
-    Función principal del seed
-    """
-    
-    print("🚀 Iniciando seed de la base de datos...\n")
-    
-    # 1. Probar conexión
-    if not test_connection():
-        print("❌ No se pudo conectar a MySQL. Verifica tu .env")
-        return
-    
-    # 2. Crear tablas
-    print("\n📋 Creando tablas...")
-    init_db()
-    
-    # 3. Crear datos de ejemplo
     db = SessionLocal()
+    
     try:
-        create_sample_players(db)
-        create_sample_team(db)
+        # 1. LIMPIAR BASE DE DATOS
+        print("🧹 Limpiando base de datos...")
+        try:
+            db.execute(text("SET FOREIGN_KEY_CHECKS = 0;"))
+            db.execute(text("TRUNCATE TABLE players;"))
+            db.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
+            db.commit()
+            print("✅ Base de datos limpia\n")
+        except Exception as e:
+            print(f"⚠️  Error limpiando: {e}\n")
+            db.rollback()
         
-        print("\n✅ ¡Seed completado con éxito!")
-        print(f"📊 Total jugadores: {db.query(Player).count()}")
-        print(f"🏟️ Total equipos: {db.query(Team).count()}")
+        # 2. CARGAR CSV FIFA
+        print("📂 Cargando datos de FIFA...")
+        df_fifa = None
+        try:
+            df_fifa = pd.read_csv(CSV_PATH)
+            equipos_escoceses = [
+                "Celtic", "Rangers", "Aberdeen", "Hearts",
+                "Hibernian", "Livingston", "Motherwell",
+                "St. Mirren", "Dundee FC", "Kilmarnock", "Dundee United"
+            ]
+            df_fifa = df_fifa[df_fifa['Team'].isin(equipos_escoceses)]
+            print(f"✅ {len(df_fifa)} jugadores de FIFA\n")
+        except Exception as e:
+            print(f"⚠️  CSV no disponible: {e}")
+            print("   Continuando solo con Sportmonks...\n")
+        
+        # 3. OBTENER JUGADORES DE SPORTMONKS
+        sportmonks_players = obtener_jugadores_sportmonks()
+        
+        if not sportmonks_players:
+            print("❌ No se pudieron obtener jugadores de Sportmonks")
+            return
+        
+        # 4. PROCESAR Y FUSIONAR
+        print("🔄 Fusionando datos Sportmonks + FIFA...")
+        print("="*60 + "\n")
+        
+        total = 0
+        con_fifa = 0
+        sin_fifa = 0
+        
+        for sp_data in sportmonks_players:
+            try:
+                sp_player = sp_data['sportmonks_data']
+                team_name = sp_data['team_name']
+                
+                # Datos de Sportmonks
+                player_id = sp_player.get('id')
+                player_name = sp_player.get('display_name') or sp_player.get('common_name') or sp_player.get('name', 'Unknown')
+                
+                # Posición
+                position_data = sp_player.get('position', {})
+                position_name = position_data.get('name', 'Midfielder') if isinstance(position_data, dict) else 'Midfielder'
+                posicion = mapear_posicion(position_name)
+                
+                # Edad
+                dob = sp_player.get('date_of_birth')
+                edad = 25
+                if dob:
+                    try:
+                        birth_year = int(dob.split('-')[0])
+                        edad = datetime.now().year - birth_year
+                    except:
+                        pass
+                
+                # Nacionalidad
+                nationality_data = sp_player.get('nationality', {})
+                nacionalidad = nationality_data.get('name', 'Scotland') if isinstance(nationality_data, dict) else 'Scotland'
+                
+                # FUZZY MATCHING con FIFA
+                fifa_match = None
+                best_score = 0
+                
+                if df_fifa is not None:
+                    for _, row in df_fifa.iterrows():
+                        score = fuzz.token_sort_ratio(player_name, str(row.get('Name', '')))
+                        if score > 85 and score > best_score:
+                            best_score = score
+                            fifa_match = row
+                
+                # CREAR JUGADOR
+                if fifa_match is not None:
+                    # CON DATOS FIFA
+                    overall = int(fifa_match['OVR'])
+                    
+                    # Stats de FIFA
+                    pace = int(fifa_match.get('PAC', overall - 5))
+                    shooting = int(fifa_match.get('SHO', overall - 5))
+                    passing = int(fifa_match.get('PAS', overall - 5))
+                    dribbling = int(fifa_match.get('DRI', overall - 5))
+                    defending = int(fifa_match.get('DEF', overall - 5))
+                    physical = int(fifa_match.get('PHY', overall - 5))
+                    potential = int(fifa_match.get('POT', overall + 3))
+                    
+                    # Foto
+                    foto = fifa_match.get('Photo', '')
+                    if not foto or pd.isna(foto):
+                        foto = sp_player.get('image_path')
+                    
+                    con_fifa += 1
+                    print(f"   ✅ {player_name} ({posicion.value}) - OVR {overall} [FIFA]")
+                    
+                else:
+                    # SIN DATOS FIFA (usar estimación)
+                    overall = random.randint(58, 68)
+                    stats = generar_stats_desde_overall(overall, posicion)
+                    pace = stats['pace']
+                    shooting = stats['shooting']
+                    passing = stats['passing']
+                    dribbling = stats['dribbling']
+                    defending = stats['defending']
+                    physical = stats['physical']
+                    potential = overall + random.randint(3, 10)
+                    foto = sp_player.get('image_path')
+                    
+                    sin_fifa += 1
+                    print(f"   👻 {player_name} ({posicion.value}) - OVR {overall} [Estimado]")
+                
+                precio = calcular_precio(overall)
+                
+                # Insertar en BD
+                player = Player(
+                    sportmonks_id=player_id,
+                    name=player_name,
+                    age=edad,
+                    position=posicion,
+                    nationality=nacionalidad,
+                    overall_rating=overall,
+                    potential=potential,
+                    current_team=team_name,
+                    is_legend=False,
+                    base_rarity=determinar_rareza(overall),
+                    current_price=precio,
+                    target_price=precio,
+                    image_url=foto,
+                    pace=pace,
+                    shooting=shooting,
+                    passing=passing,
+                    dribbling=dribbling,
+                    defending=defending,
+                    physical=physical
+                )
+                
+                db.add(player)
+                total += 1
+                
+                # Commit cada 20 jugadores
+                if total % 20 == 0:
+                    db.commit()
+                
+            except Exception as e:
+                print(f"   ❌ Error con {sp_player.get('name', 'Unknown')}: {e}")
+                continue
+        
+        # Commit final
+        db.commit()
+        
+        # 5. RESUMEN
+        print("\n" + "="*60)
+        print("🏁 SEED COMPLETADO")
+        print("="*60)
+        print(f"📊 Total jugadores insertados: {total}")
+        print(f"✅ Con datos FIFA:              {con_fifa}")
+        print(f"👻 Sin datos FIFA (estimados):  {sin_fifa}")
+        print("="*60)
+        
+        # Verificación
+        result = db.execute(text("SELECT COUNT(*) FROM players"))
+        count = result.fetchone()[0]
+        print(f"\n✅ Jugadores en BD: {count}")
+        
+        # Top jugadores
+        result = db.execute(text("""
+            SELECT name, position, overall_rating, current_team 
+            FROM players 
+            ORDER BY overall_rating DESC 
+            LIMIT 5
+        """))
+        
+        print("\n⭐ Top 5 jugadores:")
+        for row in result:
+            print(f"   {row[0]} ({row[1]}) - OVR {row[2]} - {row[3]}")
+        
+        print("\n✅ ¡Base de datos lista!")
         
     except Exception as e:
-        print(f"\n❌ Error durante el seed: {e}")
+        print(f"\n❌ ERROR CRÍTICO: {e}")
+        import traceback
+        traceback.print_exc()
         db.rollback()
+    
     finally:
         db.close()
 
 
 if __name__ == "__main__":
-    main()
+    run_seed()

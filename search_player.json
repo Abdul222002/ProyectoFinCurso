@@ -1,0 +1,56 @@
+{
+  "data": [
+    {
+      "id": 460810,
+      "sport_id": 1,
+      "country_id": 479,
+      "nationality_id": 479,
+      "city_id": 60898,
+      "position_id": 27,
+      "detailed_position_id": 151,
+      "type_id": 27,
+      "common_name": "K. Furuhashi",
+      "firstname": "Kyogo",
+      "lastname": "Furuhashi",
+      "name": "Kyogo Furuhashi",
+      "display_name": "Kyogo Furuhashi",
+      "image_path": "https://cdn.sportmonks.com/images/soccer/players/10/460810.png",
+      "height": 170,
+      "weight": 63,
+      "date_of_birth": "1995-01-20",
+      "gender": "male"
+    }
+  ],
+  "pagination": {
+    "count": 1,
+    "per_page": 25,
+    "current_page": 1,
+    "next_page": null,
+    "has_more": false
+  },
+  "subscription": [
+    {
+      "meta": [],
+      "plans": [
+        {
+          "plan": "Football Free Plan",
+          "sport": "Football",
+          "category": "Standard"
+        },
+        {
+          "plan": "Cricket Free Plan",
+          "sport": "Cricket",
+          "category": "Standard"
+        }
+      ],
+      "add_ons": [],
+      "widgets": []
+    }
+  ],
+  "rate_limit": {
+    "resets_in_seconds": 3600,
+    "remaining": 2999,
+    "requested_entity": "Player"
+  },
+  "timezone": "UTC"
+}
