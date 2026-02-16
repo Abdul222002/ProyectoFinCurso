@@ -1,0 +1,530 @@
+/* ==========================================
+   PRICE ANALYSIS PAGE
+   ========================================== */
+
+.price-page {
+  min-height: 100vh;
+  background: #102210;
+  color: #e2e8f0;
+  font-family: 'Spline Sans', sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Header ---- */
+.price-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: rgba(16,34,16,0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #162e16;
+}
+
+.price-header-btn {
+  padding: 0.5rem;
+  border-radius: 50%;
+  color: #94a3b8;
+  transition: all 0.2s;
+  font-size: 1rem;
+}
+.price-header-btn:hover { background: #162e16; color: #fff; }
+
+.price-header-title {
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* ---- Main ---- */
+.price-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1rem 6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ---- Player Card ---- */
+.price-player-card {
+  position: relative;
+  background: #162e16;
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+
+.price-player-glow {
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 120px;
+  height: 120px;
+  background: rgba(13,242,13,0.08);
+  border-radius: 50%;
+  filter: blur(40px);
+}
+
+.price-player-info {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.price-player-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.price-avatar {
+  position: relative;
+}
+
+.price-avatar-img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #0a160a;
+  border: 2px solid rgba(13,242,13,0.3);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.price-avatar-ovr {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: #0a160a;
+  color: #0df20d;
+  font-weight: 700;
+  font-size: 0.65rem;
+  border: 1px solid #0df20d;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.price-player-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.price-player-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-top: 0.25rem;
+}
+
+.price-player-pos { font-weight: 500; color: #cbd5e1; }
+.price-player-dot { color: #475569; }
+
+.price-watchlist {
+  color: #64748b;
+  font-size: 1.2rem;
+  transition: color 0.2s;
+}
+.price-watchlist:hover { color: #0df20d; }
+
+/* ---- Chart Section ---- */
+.price-chart-section { display: flex; flex-direction: column; gap: 1rem; }
+
+.price-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 4px;
+}
+
+.price-chart-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #94a3b8;
+  font-weight: 500;
+  margin: 0 0 0.25rem;
+}
+
+.price-chart-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.price-chart-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.price-chip-up {
+  font-size: 0.75rem;
+  color: #0df20d;
+  font-weight: 500;
+  background: rgba(13,242,13,0.1);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+
+.price-time-toggles {
+  display: flex;
+  background: #162e16;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.price-toggle {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: #94a3b8;
+  border-radius: 6px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.price-toggle:hover { color: #fff; }
+.price-toggle--active {
+  background: rgba(13,242,13,0.2);
+  color: #0df20d;
+  box-shadow: 0 0 4px rgba(13,242,13,0.1);
+}
+
+/* Chart */
+.price-chart-container {
+  background: #162e16;
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid rgba(255,255,255,0.05);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.price-chart-ylabels {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  bottom: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 0.55rem;
+  color: #64748b;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.price-chart-area {
+  flex: 1;
+  margin-left: 2rem;
+  margin-bottom: 1.5rem;
+  height: 180px;
+  border-left: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  /* Grid */
+  background-image:
+    linear-gradient(to right, #162e16 1px, transparent 1px),
+    linear-gradient(to bottom, #162e16 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.price-chart-svg {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+}
+
+.price-chart-cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 1px;
+  background: rgba(13,242,13,0.5);
+  border-right: 1px dashed #0df20d;
+}
+
+.price-chart-xlabels {
+  display: flex;
+  justify-content: space-between;
+  margin-left: 2rem;
+  font-size: 0.55rem;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.price-chart-tooltip {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  background: #0a160a;
+  border: 1px solid rgba(13,242,13,0.3);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  z-index: 20;
+}
+
+.price-tooltip-time { font-size: 0.55rem; color: #94a3b8; margin: 0; }
+.price-tooltip-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0.15rem 0 0;
+}
+.price-tooltip-value span { font-size: 0.55rem; color: #0df20d; margin-left: 4px; }
+
+/* ---- Stats Grid ---- */
+.price-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.price-stat-card {
+  background: #162e16;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.price-stat-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.price-stat-icon { font-size: 0.85rem; }
+
+.price-stat-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.price-stat-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.price-stat-sub {
+  font-size: 0.65rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+/* ---- Supply/Demand ---- */
+.price-demand {
+  background: #162e16;
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.price-demand-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.price-demand-label {
+  font-size: 0.6rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.price-demand-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #0df20d;
+  background: rgba(13,242,13,0.1);
+  padding: 0.2rem 0.5rem;
+  border-radius: 99px;
+}
+
+.price-demand-bar-wrap {
+  position: relative;
+  padding-top: 0.5rem;
+}
+
+.price-demand-bar {
+  height: 8px;
+  background: #0a160a;
+  border-radius: 99px;
+  overflow: hidden;
+  display: flex;
+}
+
+.price-demand-seg {
+  flex: 1;
+  background: #0df20d;
+  border-right: 2px solid #102210;
+}
+.price-demand-seg:last-child { border-right: none; }
+
+.price-demand-indicator {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  transition: left 0.5s;
+}
+
+.price-demand-arrow {
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  transform: rotate(45deg);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  border: 1px solid #162e16;
+}
+
+.price-demand-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.55rem;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  margin-top: 0.4rem;
+}
+
+/* ---- Transactions ---- */
+.price-transactions { padding-bottom: 1rem; }
+
+.price-trans-title {
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin: 0 0 0.75rem 4px;
+}
+
+.price-trans-list {
+  background: #162e16;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.05);
+  overflow: hidden;
+}
+
+.price-trans-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  font-size: 0.7rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.price-trans-row:last-child { border-bottom: none; }
+
+.price-trans-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #cbd5e1;
+}
+
+.price-trans-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #64748b;
+}
+.price-trans-dot--active { background: #0df20d; }
+
+.price-trans-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.price-trans-amount { font-weight: 500; color: #fff; }
+.price-trans-time { color: #64748b; }
+
+/* ---- Bottom Bar ---- */
+.price-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #162e16;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: 1rem 1rem 2rem;
+  z-index: 50;
+}
+
+.price-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.price-bottom-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.price-bottom-btn:active { transform: scale(0.98); }
+
+.price-bottom-btn--bid {
+  background: transparent;
+  border: 1px solid rgba(13,242,13,0.3);
+  color: #0df20d;
+}
+.price-bottom-btn--bid:hover { background: rgba(13,242,13,0.05); }
+
+.price-bottom-btn--buy {
+  background: #0df20d;
+  color: #0a160a;
+  box-shadow: 0 4px 12px rgba(13,242,13,0.2);
+}
+.price-bottom-btn--buy:hover { background: #0bb80b; }
+
+.price-bottom-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.8;
+}
+
+.price-bottom-amount {
+  font-size: 0.95rem;
+  font-weight: 700;
+}

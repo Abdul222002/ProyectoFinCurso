@@ -1,0 +1,54 @@
+"""
+Pydantic Schemas para la Arena PvP
+"""
+
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
+
+
+class ArenaMatchResponse(BaseModel):
+    """Resultado de una simulación PvP"""
+    id: int
+    team1_name: str
+    team1_ovr: float
+    team1_score: int
+    team2_name: str
+    team2_ovr: float
+    team2_score: int
+    winner_name: Optional[str]
+    result: str  # "victory", "defeat", "draw"
+    rating_change: int
+    simulated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class LeaderboardEntry(BaseModel):
+    """Entrada del ranking"""
+    rank: int
+    team_id: int
+    team_name: str
+    username: str
+    arena_rating: int
+    arena_wins: int
+    arena_losses: int
+    arena_draws: int
+    overall_rating: float
+
+    class Config:
+        from_attributes = True
+
+
+class BattleHistoryResponse(BaseModel):
+    """Historial de batalla simplificado"""
+    id: int
+    opponent_name: str
+    my_score: int
+    opponent_score: int
+    result: str  # "victory", "defeat", "draw"
+    simulated_at: datetime
+
+    class Config:
+        from_attributes = True

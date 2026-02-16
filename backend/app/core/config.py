@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # JWT para autenticación
     SECRET_KEY: str = "tu-clave-super-secreta-cambiala-en-produccion"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 días
     
     # Sportmonks API
     SPORTMONKS_API_KEY: str = ""

@@ -3,7 +3,7 @@ Database Models - Esquema completo unificado
 Todos los modelos de la base de datos en un solo archivo
 """
 
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, DateTime, Text, Enum
+from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, DateTime, Text, Enum, UniqueConstraint
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.core.database import Base
@@ -72,7 +72,7 @@ class User(Base):
     experience = Column(Integer, default=0)
     
     # Relaciones
-    team = relationship("Team", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    teams = relationship("Team", back_populates="user", cascade="all, delete-orphan")
     owned_players = relationship("UserCard", back_populates="user", cascade="all, delete-orphan")
     
     # Metadatos
@@ -233,16 +233,24 @@ class UserCard(Base):
 
 class Team(Base):
     """
-    Equipo de cada usuario (su plantilla activa)
+    Equipo de cada usuario dentro de una liga.
+    Un usuario puede tener un equipo diferente por cada liga.
     """
     __tablename__ = "teams"
+    __table_args__ = (
+        UniqueConstraint('user_id', 'league_id', name='uq_user_league_team'),
+    )
     
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=False, unique=True)
+    name = Column(String(100), nullable=False)
     
-    # Relación con usuario (1 a 1)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
-    user = relationship("User", back_populates="team")
+    # Relación con usuario (muchos a 1 — un usuario tiene N equipos)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user = relationship("User", back_populates="teams")
+    
+    # Relación con liga (1 equipo por usuario por liga)
+    league_id = Column(Integer, ForeignKey("leagues.id"), nullable=False)
+    league = relationship("League")
     
     # Personalización
     shield_url = Column(String(255), nullable=True)
@@ -260,7 +268,7 @@ class Team(Base):
     arena_rating = Column(Integer, default=1000)  # ELO-style
     
     # Táctica/Formación
-    active_formation = Column(String(10), default="4-4-2")  # Ej: "4-3-3", "4-4-2", "3-5-2"
+    active_formation = Column(String(10), default="4-4-2")
     
     # Relaciones
     players = relationship("UserCard", back_populates="team")
@@ -472,3 +480,121 @@ class ArenaBattle(Base):
     
     def __repr__(self):
         return f"<ArenaBattle {self.team1_id} vs {self.team2_id}>"
+
+
+# ==========================================
+# ENUM: INVITATION STATUS
+# ==========================================
+
+class InvitationStatus(enum.Enum):
+    """Estado de una invitación a liga"""
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+
+
+# ==========================================
+# MODELO: LEAGUE (Liga Fantasy)
+# ==========================================
+
+class League(Base):
+    """
+    Liga creada por un usuario. Otros usuarios pueden unirse
+    mediante código de invitación o invitaciones directas.
+    """
+    __tablename__ = "leagues"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
+
+    # Creador
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    owner = relationship("User", foreign_keys=[owner_id])
+
+    # Configuración
+    max_members = Column(Integer, default=10)
+    is_public = Column(Boolean, default=False)
+
+    # Código de invitación único (UUID corto)
+    invite_code = Column(String(20), unique=True, nullable=False, index=True)
+
+    # Relaciones
+    members = relationship("LeagueMember", back_populates="league", cascade="all, delete-orphan")
+    invitations = relationship("LeagueInvitation", back_populates="league", cascade="all, delete-orphan")
+
+    # Metadatos
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @property
+    def member_count(self) -> int:
+        return len(self.members) if self.members else 0
+
+    def __repr__(self):
+        return f"<League {self.name} ({self.member_count}/{self.max_members})>"
+
+
+# ==========================================
+# MODELO: LEAGUE_MEMBER (Miembro de Liga)
+# ==========================================
+
+class LeagueMember(Base):
+    """
+    Relación usuario ↔ liga. Cada fila = un usuario en una liga.
+    """
+    __tablename__ = "league_members"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    league_id = Column(Integer, ForeignKey("leagues.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    league = relationship("League", back_populates="members")
+    user = relationship("User")
+
+    # Puntos acumulados dentro de esta liga
+    league_points = Column(Integer, default=0)
+
+    # Rol dentro de la liga
+    is_admin = Column(Boolean, default=False)
+
+    joined_at = Column(DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<LeagueMember User:{self.user_id} League:{self.league_id}>"
+
+
+# ==========================================
+# MODELO: LEAGUE_INVITATION (Invitación)
+# ==========================================
+
+class LeagueInvitation(Base):
+    """
+    Invitación a una liga. Se puede enviar por email o username.
+    """
+    __tablename__ = "league_invitations"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    league_id = Column(Integer, ForeignKey("leagues.id"), nullable=False)
+    invited_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    invited_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # NULL si invitado por email externo
+
+    league = relationship("League", back_populates="invitations")
+    invited_by = relationship("User", foreign_keys=[invited_by_id])
+    invited_user = relationship("User", foreign_keys=[invited_user_id])
+
+    # Email del invitado (por si no tiene cuenta aún)
+    invited_email = Column(String(100), nullable=True)
+
+    # Estado
+    status = Column(Enum(InvitationStatus), default=InvitationStatus.PENDING)
+
+    # Token único para aceptar/rechazar
+    token = Column(String(40), unique=True, nullable=False, index=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<LeagueInvitation League:{self.league_id} Status:{self.status.value}>"

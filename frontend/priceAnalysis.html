@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Player Price Analysis - Fantasy Football</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0df20d",
+                        "primary-dark": "#0bb80b",
+                        "background-light": "#f5f8f5",
+                        "background-dark": "#102210",
+                        "surface-dark": "#162e16",
+                        "surface-darker": "#0a160a",
+                        "danger": "#ef4444" 
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for clean look */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #102210;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #162e16;
+            border-radius: 4px;
+        }
+        /* Chart grid lines */
+        .chart-grid {
+            background-image: linear-gradient(to right, #162e16 1px, transparent 1px),
+                              linear-gradient(to bottom, #162e16 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        
+        /* Neon glow effect */
+        .neon-text {
+            text-shadow: 0 0 10px rgba(13, 242, 13, 0.5);
+        }
+        .neon-border {
+            box-shadow: 0 0 8px rgba(13, 242, 13, 0.3);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-200 font-display antialiased selection:bg-primary selection:text-background-dark min-h-screen flex flex-col">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between px-4 py-4 sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/95 backdrop-blur-md border-b border-surface-dark">
+<button class="p-2 rounded-full hover:bg-surface-dark transition-colors text-slate-400 hover:text-white">
+<span class="material-icons">arrow_back</span>
+</button>
+<h1 class="text-sm font-medium tracking-wide uppercase text-slate-400">Market Analysis</h1>
+<button class="p-2 rounded-full hover:bg-surface-dark transition-colors text-slate-400 hover:text-white">
+<span class="material-icons">more_vert</span>
+</button>
+</header>
+<main class="flex-1 overflow-y-auto pb-24 px-4 pt-4 space-y-6">
+<!-- Player Header Card -->
+<div class="relative bg-surface-dark rounded-xl p-5 border border-white/5 shadow-lg overflow-hidden group">
+<!-- Background Pattern -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+<div class="flex items-start justify-between relative z-10">
+<div class="flex gap-4 items-center">
+<div class="relative">
+<!-- Player Image -->
+<div class="w-16 h-16 rounded-full bg-surface-darker border-2 border-primary/30 p-1 overflow-hidden relative">
+<img alt="Headshot of a confident male soccer player looking forward" class="w-full h-full object-cover rounded-full" data-alt="Close up portrait of a soccer player" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCsXBJWSeMc3bRmaSEK2mUFuPztNTVeDmAd8C8C6qjMrT_EyZKnXWzXauH-xihKG7ILE-DloZlH0diTPRcLFXlf3upU2N7J1AxdimqCT-jdXwqlM3kCR3gKswFx2tnUHrW5Ck7z7W8KocKOfo0imlkN00_1-0hQeC0036FNGvHf4auC-kORvS2tq5EMNub3y8pTYPZx1epH5QzHp48m5nHzvlNEyfKQT4-L60j9HLBaAsDSEcM7BiXuRFBsUWO1ef_-QctGz0pYpyI"/>
+</div>
+<!-- OVR Badge -->
+<div class="absolute -bottom-1 -right-1 bg-surface-darker text-primary font-bold text-xs border border-primary px-1.5 py-0.5 rounded shadow-sm">
+                            78
+                        </div>
+</div>
+<div>
+<h2 class="text-xl font-bold text-white tracking-tight">Kyogo Furuhashi</h2>
+<div class="flex items-center gap-2 text-sm text-slate-400 mt-1">
+<span class="font-medium text-slate-300">ST</span>
+<span class="w-1 h-1 rounded-full bg-slate-600"></span>
+<div class="flex items-center gap-1">
+<img alt="Small Celtic FC club crest logo" class="w-4 h-4 rounded-full opacity-80" data-alt="Small soccer club crest logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzvk31ybTyfRLkHzjX8fG5n-rAr97LLJqyvcVFdNegmfSiiYG9KOUauIypxAQgR4DSQ-HpYqxC9JIZQI9HJAjSv_Opzk3l8YvhLsq-mLG5jdqvHjM2SGtrik8A3T2MWWosZnSc1Vy62b_9SDw_TvXXTVUSuauU9J-FK4EKSQAz4CeZlFYlY2KTulP4ancS7HN3OhlyK-rWeGsuJFRP6WNHf-srRQ9OjXB8WlO4r5WBHqfHUlUBTZBnxE6q0AB50nPg2Lav6MIJ9H0"/>
+<span>Celtic FC</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Favorite/Watchlist Button -->
+<button class="text-slate-500 hover:text-primary transition-colors">
+<span class="material-icons">star_border</span>
+</button>
+</div>
+</div>
+<!-- Price Chart Section -->
+<div class="space-y-4">
+<div class="flex justify-between items-end px-1">
+<div>
+<p class="text-xs text-slate-400 uppercase font-medium mb-1">Current Market Value</p>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold text-white">14,250</span>
+<span class="text-primary text-sm font-medium flex items-center bg-primary/10 px-1.5 py-0.5 rounded">
+<span class="material-icons text-xs mr-0.5">trending_up</span>
+                            5.2%
+                        </span>
+</div>
+</div>
+<!-- Time Toggles -->
+<div class="flex bg-surface-dark p-1 rounded-lg border border-white/5">
+<button class="px-3 py-1 text-xs font-medium rounded text-slate-400 hover:text-white transition-colors">24H</button>
+<button class="px-3 py-1 text-xs font-medium rounded bg-primary/20 text-primary shadow-sm">7D</button>
+<button class="px-3 py-1 text-xs font-medium rounded text-slate-400 hover:text-white transition-colors">1M</button>
+</div>
+</div>
+<!-- Chart Visualization -->
+<div class="bg-surface-dark rounded-xl p-4 border border-white/5 relative h-64 flex flex-col justify-between">
+<!-- Y-Axis Labels (Overlay) -->
+<div class="absolute left-4 top-4 bottom-8 flex flex-col justify-between text-[10px] text-slate-500 font-medium pointer-events-none z-10">
+<span>16k</span>
+<span>15k</span>
+<span>14k</span>
+<span>13k</span>
+</div>
+<!-- Chart Area -->
+<div class="relative flex-1 ml-6 mb-6 chart-grid rounded-lg border-l border-b border-white/5 overflow-hidden">
+<!-- The Chart Line (SVG) -->
+<svg class="w-full h-full absolute inset-0 overflow-visible" preserveaspectratio="none" viewbox="0 0 100 100">
+<!-- Gradient Fill -->
+<defs>
+<lineargradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#0df20d" stop-opacity="0.2"></stop>
+<stop offset="100%" stop-color="#0df20d" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<path d="M0,80 Q10,75 20,60 T40,55 T60,40 T80,30 T100,20 L100,100 L0,100 Z" fill="url(#chartGradient)"></path>
+<!-- Line -->
+<path d="M0,80 Q10,75 20,60 T40,55 T60,40 T80,30 T100,20" fill="none" stroke="#0df20d" stroke-linecap="round" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+<!-- Current Point -->
+<circle class="shadow-lg shadow-primary" cx="100" cy="20" fill="#0df20d" r="3"></circle>
+</svg>
+<!-- Interactive Cursor Line (Vertical) -->
+<div class="absolute top-0 bottom-0 right-0 w-[1px] bg-primary/50 border-r border-dashed border-primary"></div>
+</div>
+<!-- X-Axis Labels -->
+<div class="flex justify-between ml-6 text-[10px] text-slate-500 font-medium uppercase tracking-wider">
+<span>Mon</span>
+<span>Tue</span>
+<span>Wed</span>
+<span>Thu</span>
+<span>Fri</span>
+<span>Sat</span>
+<span>Sun</span>
+</div>
+<!-- Floating Tooltip (Simulated Active State) -->
+<div class="absolute top-8 right-8 bg-surface-darker border border-primary/30 px-3 py-2 rounded-lg shadow-xl z-20">
+<p class="text-[10px] text-slate-400">Sun, 12:00 PM</p>
+<p class="text-sm font-bold text-white mt-0.5">14,250 <span class="text-primary text-[10px] ml-1">Coins</span></p>
+</div>
+</div>
+</div>
+<!-- Market Stats Grid -->
+<div class="grid grid-cols-2 gap-3">
+<!-- Lowest BIN -->
+<div class="bg-surface-dark p-4 rounded-xl border border-white/5">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-icons text-primary text-base">shopping_cart</span>
+<span class="text-xs text-slate-400 font-medium uppercase">Lowest BIN</span>
+</div>
+<div class="text-xl font-bold text-white">14,250</div>
+<div class="text-xs text-slate-500 mt-1">Last seen 2m ago</div>
+</div>
+<!-- Avg Sale -->
+<div class="bg-surface-dark p-4 rounded-xl border border-white/5">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-icons text-primary/60 text-base">analytics</span>
+<span class="text-xs text-slate-400 font-medium uppercase">Avg. Sale</span>
+</div>
+<div class="text-xl font-bold text-white">14,800</div>
+<div class="text-xs text-slate-500 mt-1">Daily Volume: 420</div>
+</div>
+</div>
+<!-- Supply vs Demand Meter -->
+<div class="bg-surface-dark p-5 rounded-xl border border-white/5 space-y-3">
+<div class="flex justify-between items-center">
+<span class="text-xs font-medium uppercase text-slate-400">Market Saturation</span>
+<span class="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">High Demand</span>
+</div>
+<div class="relative pt-2">
+<!-- Meter Background -->
+<div class="h-2 w-full bg-surface-darker rounded-full overflow-hidden flex">
+<div class="h-full bg-primary/20 flex-1 border-r border-background-dark/50"></div> <!-- Low -->
+<div class="h-full bg-primary/40 flex-1 border-r border-background-dark/50"></div> <!-- Med -->
+<div class="h-full bg-primary/60 flex-1 border-r border-background-dark/50"></div> <!-- High -->
+<div class="h-full bg-primary flex-1"></div> <!-- Max -->
+</div>
+<!-- Indicator Arrow -->
+<div class="absolute top-0 left-[82%] -ml-1.5 transition-all duration-500">
+<div class="w-3 h-3 bg-white rotate-45 transform translate-y-1 shadow-md border border-surface-dark"></div>
+</div>
+</div>
+<div class="flex justify-between text-[10px] text-slate-500 font-medium uppercase pt-1">
+<span>Flooded</span>
+<span>Balanced</span>
+<span>Scarce</span>
+</div>
+</div>
+<!-- Recent Sales List (Extra context) -->
+<div class="pb-4">
+<h3 class="text-sm font-medium text-white mb-3 px-1">Recent Transactions</h3>
+<div class="bg-surface-dark rounded-xl border border-white/5 divide-y divide-white/5">
+<div class="flex justify-between items-center p-3 text-xs">
+<div class="flex items-center gap-2 text-slate-300">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span>Sold via BIN</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-white font-medium">14,250</span>
+<span class="text-slate-500">1m ago</span>
+</div>
+</div>
+<div class="flex justify-between items-center p-3 text-xs">
+<div class="flex items-center gap-2 text-slate-300">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+<span>Sold via Bid</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-white font-medium">13,900</span>
+<span class="text-slate-500">4m ago</span>
+</div>
+</div>
+<div class="flex justify-between items-center p-3 text-xs">
+<div class="flex items-center gap-2 text-slate-300">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span>Sold via BIN</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-white font-medium">14,500</span>
+<span class="text-slate-500">12m ago</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Sticky Bottom Transaction Bar -->
+<div class="fixed bottom-0 left-0 right-0 bg-surface-dark border-t border-white/10 p-4 pb-8 z-50">
+<div class="grid grid-cols-2 gap-4 max-w-md mx-auto">
+<button class="flex flex-col items-center justify-center bg-transparent border border-primary/30 text-primary hover:bg-primary/5 active:bg-primary/10 rounded-lg py-3 px-4 transition-all">
+<span class="text-xs font-medium uppercase tracking-wide opacity-80">Place Bid</span>
+<span class="font-bold text-sm">~13,500</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary text-surface-darker hover:bg-primary-dark rounded-lg py-3 px-4 shadow-lg shadow-primary/20 transition-all active:scale-[0.98]">
+<span class="text-xs font-bold uppercase tracking-wide opacity-80">Buy Now</span>
+<span class="font-bold text-base">14,250</span>
+</button>
+</div>
+</div>
+</body></html>

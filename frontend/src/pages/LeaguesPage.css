@@ -1,0 +1,356 @@
+/* ==========================================
+   LEAGUES PAGE
+   ========================================== */
+
+.leagues-page {
+  min-height: 100vh;
+  background: #0d1117;
+  color: #e2e8f0;
+  font-family: 'Spline Sans', sans-serif;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 80px;
+}
+
+/* Header */
+.lg-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.2rem;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.lg-back-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 0.3rem 0.6rem;
+}
+
+.lg-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.lg-coins {
+  font-size: 0.9rem;
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+/* Message */
+.lg-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1.2rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.lg-message.success { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+.lg-message.error { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+
+.lg-msg-close {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+/* Tabs */
+.lg-tabs {
+  display: flex;
+  gap: 0;
+  background: #151b28;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  overflow-x: auto;
+}
+
+.lg-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.9rem 0.5rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.lg-tab.active {
+  color: #60a5fa;
+  border-bottom-color: #60a5fa;
+}
+
+/* Content */
+.lg-content {
+  flex: 1;
+  padding: 1.2rem;
+}
+
+.lg-loading, .lg-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #64748b;
+}
+
+.lg-empty p { margin-bottom: 1.2rem; font-size: 1rem; }
+
+.lg-cta-btn {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  margin: 0.5rem auto;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff;
+  transition: transform 0.2s;
+}
+
+.lg-cta-btn:hover { transform: scale(1.02); }
+.lg-cta-btn.secondary { background: #1e293b; color: #94a3b8; }
+
+/* League Cards */
+.lg-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.lg-card {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: transform 0.2s;
+}
+
+.lg-card:hover { transform: translateY(-2px); }
+
+.lg-card-main {
+  margin-bottom: 0.6rem;
+}
+
+.lg-card-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.2rem;
+}
+
+.lg-card-owner {
+  font-size: 0.8rem;
+  color: #60a5fa;
+}
+
+.lg-card-stats {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-top: 0.3rem;
+}
+
+.lg-card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.lg-card-btn {
+  flex: 1;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lg-card-btn.view {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+}
+
+.lg-card-btn.invite {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+}
+
+.lg-card-btn:hover { filter: brightness(1.2); }
+
+/* Inline Invite */
+.lg-invite-inline {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.lg-invite-send {
+  padding: 0.5rem 1rem;
+  background: #4ade80;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+/* Forms */
+.lg-form {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.lg-form-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+  color: #fff;
+}
+
+.lg-form-desc {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin-bottom: 1.2rem;
+}
+
+.lg-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.lg-input, .lg-textarea, .lg-select {
+  display: block;
+  width: 100%;
+  margin-top: 0.3rem;
+  padding: 0.7rem 1rem;
+  background: #1e293b;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.lg-input:focus, .lg-textarea:focus, .lg-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.lg-input-code {
+  text-align: center;
+  font-size: 1.3rem;
+  letter-spacing: 0.3rem;
+  font-weight: 700;
+}
+
+.lg-submit-btn {
+  display: block;
+  width: 100%;
+  padding: 0.9rem;
+  margin-top: 1.2rem;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.lg-submit-btn:hover { transform: scale(1.02); }
+.lg-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Invitation Cards */
+.lg-invite-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.lg-invite-info h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+  color: #fff;
+}
+
+.lg-invite-info span {
+  font-size: 0.8rem;
+  color: #60a5fa;
+}
+
+.lg-invite-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.lg-invite-btn {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.lg-invite-btn.accept {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+}
+
+.lg-invite-btn.reject {
+  background: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+}
+
+/* Bottom Bar */
+.lg-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: #0d1117;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 0.5rem 0;
+  z-index: 50;
+}
+
+.lg-bottom-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.6rem 0;
+  cursor: pointer;
+}
+
+.lg-bottom-btn.active { color: #60a5fa; }
+.lg-bottom-btn:hover { color: #fff; }

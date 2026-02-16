@@ -1,0 +1,97 @@
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import Dashboard from './pages/Dashboard';
+import TeamManagementPage from './pages/TeamManagementPage';
+import MarketPage from './pages/MarketPage';
+import PvPArenaPage from './pages/PvPArenaPage';
+import CardDetailPage from './pages/CardDetailPage';
+import PriceAnalysisPage from './pages/PriceAnalysisPage';
+import LeaguesPage from './pages/LeaguesPage';
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Rutas públicas */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+
+          {/* Rutas protegidas */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/team"
+            element={
+              <ProtectedRoute>
+                <TeamManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/market"
+            element={
+              <ProtectedRoute>
+                <MarketPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/arena"
+            element={
+              <ProtectedRoute>
+                <PvPArenaPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/player/:playerId"
+            element={
+              <ProtectedRoute>
+                <CardDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analysis/:playerId"
+            element={
+              <ProtectedRoute>
+                <PriceAnalysisPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/leagues"
+            element={
+              <ProtectedRoute>
+                <LeaguesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/leagues/:leagueId"
+            element={
+              <ProtectedRoute>
+                <LeaguesPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Redirección por defecto */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
+  );
+}
+
+export default App;
