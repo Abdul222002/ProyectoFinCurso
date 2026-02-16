@@ -12,6 +12,7 @@ from app.routers.teams import router as teams_router
 from app.routers.players import router as players_router
 from app.routers.market import router as market_router
 from app.routers.arena import router as arena_router
+from app.routers.packs import router as packs_router
 
 # Database
 from app.core.database import engine
@@ -73,6 +74,7 @@ app.include_router(teams_router, prefix="/api/teams", tags=["Equipos"])
 app.include_router(players_router, prefix="/api/players", tags=["Jugadores"])
 app.include_router(market_router, prefix="/api/market", tags=["Mercado"])
 app.include_router(arena_router, prefix="/api/arena", tags=["Arena PvP"])
+app.include_router(packs_router, prefix="/api/packs", tags=["Sobres"])
 
 
 if __name__ == "__main__":

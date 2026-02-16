@@ -598,3 +598,34 @@ class LeagueInvitation(Base):
 
     def __repr__(self):
         return f"<LeagueInvitation League:{self.league_id} Status:{self.status.value}>"
+
+
+# ==========================================
+# MODELO: PACK_OPENING (Apertura de Sobres)
+# ==========================================
+
+class PackOpening(Base):
+    """
+    Registro de cada sobre abierto por un usuario dentro de una liga.
+    Actualmente solo hay sobres de iconos (legends).
+    """
+    __tablename__ = "pack_openings"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    league_id = Column(Integer, ForeignKey("leagues.id"), nullable=False)
+
+    pack_type = Column(String(20), default="icon")  # Por ahora solo "icon"
+    cost = Column(Integer, nullable=False)
+    cards_obtained = Column(Integer, default=0)
+
+    opened_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relaciones
+    user = relationship("User")
+    league = relationship("League")
+
+    def __repr__(self):
+        return f"<PackOpening User:{self.user_id} League:{self.league_id} Type:{self.pack_type}>"
+

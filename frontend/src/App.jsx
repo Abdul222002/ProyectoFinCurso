@@ -10,6 +10,7 @@ import PvPArenaPage from './pages/PvPArenaPage';
 import CardDetailPage from './pages/CardDetailPage';
 import PriceAnalysisPage from './pages/PriceAnalysisPage';
 import LeaguesPage from './pages/LeaguesPage';
+import LeagueDetailPage from './pages/LeagueDetailPage';
 
 function App() {
   return (
@@ -81,7 +82,7 @@ function App() {
             path="/leagues/:leagueId"
             element={
               <ProtectedRoute>
-                <LeaguesPage />
+                <LeagueDetailPage />
               </ProtectedRoute>
             }
           />

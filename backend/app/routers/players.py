@@ -23,7 +23,7 @@ async def list_players(
     rarity: Optional[str] = Query(None, description="bronze, silver, gold, legend"),
     sort_by: str = Query("overall_rating", description="overall_rating, current_price, name"),
     order: str = Query("desc", description="asc o desc"),
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(600, ge=1, le=1000),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db)
 ):

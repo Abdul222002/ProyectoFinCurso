@@ -19,15 +19,22 @@ async def market_listings(
     position: Optional[str] = Query(None),
     sort_by: str = Query("current_price", description="current_price, overall_rating"),
     order: str = Query("desc"),
-    limit: int = Query(50, ge=1, le=200),
+    search: Optional[str] = Query(None, description="Buscar por nombre"),
+    limit: int = Query(200, ge=1, le=500),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db)
 ):
-    """Listar jugadores disponibles en el mercado con precios"""
+    """Listar jugadores disponibles en el mercado con precios (sin legends)"""
     query = db.query(Player)
+
+    # EXCLUIR legends del mercado — solo obtenerlos en sobres
+    query = query.filter(Player.is_legend == False)
 
     if position:
         query = query.filter(Player.position == position)
+
+    if search:
+        query = query.filter(Player.name.ilike(f"%{search}%"))
 
     sort_column = getattr(Player, sort_by, Player.current_price)
     if order == "asc":

@@ -31,7 +31,7 @@ export const playersAPI = {
 // ==========================================
 
 export const marketAPI = {
-  list: (params = {}) => api.get('/market/', { params }),
+  list: (params = {}) => api.get('/market/', { params: { limit: 200, ...params } }),
   buy: (playerId) => api.post(`/market/buy/${playerId}`),
   sell: (cardId) => api.post(`/market/sell/${cardId}`),
 };
@@ -61,3 +61,13 @@ export const leaguesAPI = {
   rejectInvitation: (id) => api.post(`/leagues/invitations/${id}/reject`),
   leave: (leagueId) => api.delete(`/leagues/${leagueId}/leave`),
 };
+
+// ==========================================
+// PACKS (Sobres)
+// ==========================================
+
+export const packsAPI = {
+  openIcon: (leagueId) => api.post('/packs/open', null, { params: { league_id: leagueId } }),
+  history: (leagueId) => api.get('/packs/history', { params: { league_id: leagueId } }),
+};
+
