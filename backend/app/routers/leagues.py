@@ -69,6 +69,7 @@ def _create_team_for_league(user: User, league: League, db: Session) -> Team:
             user_id=user.id,
             player_id=player.id,
             team_id=team.id,
+            league_id=league.id,
             current_overall=player.overall_rating,
             is_in_lineup=is_lineup,
             is_tradeable=True

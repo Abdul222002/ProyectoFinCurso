@@ -45,11 +45,11 @@ async def open_icon_pack(
             detail="No perteneces a esta liga"
         )
 
-    # Verificar que tiene suficientes monedas
-    if current_user.coins < ICON_PACK_COST:
+    # Verificar que tiene suficientes monedas (DE LA LIGA)
+    if membership.coins < ICON_PACK_COST:
         raise HTTPException(
             status_code=400,
-            detail=f"No tienes suficientes monedas. Necesitas {ICON_PACK_COST:,}, tienes {current_user.coins:,}"
+            detail=f"No tienes suficientes monedas en esta liga. Necesitas {ICON_PACK_COST:,}, tienes {membership.coins:,}"
         )
 
     # Obtener jugadores legendarios disponibles
@@ -77,18 +77,19 @@ async def open_icon_pack(
     )
     db.add(pack)
 
-    # Restar monedas
-    current_user.coins -= ICON_PACK_COST
+    # Restar monedas de la LIGA
+    membership.coins -= ICON_PACK_COST
 
-    # Dar XP por abrir sobre
+    # Dar XP por abrir sobre (al usuario global)
     current_user.experience += 100
 
-    # Crear las cartas para el usuario
+    # Crear las cartas para el usuario (Vinculadas a la liga)
     result_cards = []
     for player in selected_players:
         card = UserCard(
             user_id=current_user.id,
             player_id=player.id,
+            league_id=league_id,  # Importante: carta de esta liga
             current_overall=player.overall_rating,
             is_tradeable=False  # Las cartas de sobre no son vendibles
         )
@@ -113,7 +114,7 @@ async def open_icon_pack(
         pack_type="icon",
         cards=result_cards,
         cost=ICON_PACK_COST,
-        remaining_coins=current_user.coins
+        remaining_coins=membership.coins
     )
 
 

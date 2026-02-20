@@ -8,13 +8,32 @@ from typing import List, Optional
 
 from app.core.database import get_db
 from app.models.models import User, Player, UserCard
-from app.schemas.market import UserCardResponse, MarketPlayerResponse
+from pydantic import BaseModel
+from app.schemas.market import UserCardResponse
 from app.routers.auth import get_current_user
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[MarketPlayerResponse])
+class PlayerListResponse(BaseModel):
+    """Respuesta de listado de jugadores"""
+    id: int
+    name: str
+    position: str
+    overall_rating: int
+    current_team: Optional[str]
+    current_price: float
+    target_price: float
+    base_rarity: str
+    is_legend: bool
+    image_url: Optional[str]
+    price_change_pct: float
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("/", response_model=List[PlayerListResponse])
 async def list_players(
     position: Optional[str] = Query(None, description="Filtrar por posición: GK, DEF, MID, FWD"),
     team: Optional[str] = Query(None, description="Filtrar por equipo"),
@@ -51,7 +70,7 @@ async def list_players(
     players = query.offset(offset).limit(limit).all()
 
     return [
-        MarketPlayerResponse(
+        PlayerListResponse(
             id=p.id,
             name=p.name,
             position=p.position.value,
@@ -68,7 +87,7 @@ async def list_players(
     ]
 
 
-@router.get("/{player_id}", response_model=MarketPlayerResponse)
+@router.get("/{player_id}", response_model=PlayerListResponse)
 async def get_player_detail(
     player_id: int,
     db: Session = Depends(get_db)
@@ -78,7 +97,7 @@ async def get_player_detail(
     if not player:
         raise HTTPException(status_code=404, detail="Jugador no encontrado")
 
-    return MarketPlayerResponse(
+    return PlayerListResponse(
         id=player.id,
         name=player.name,
         position=player.position.value,

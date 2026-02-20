@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { leaguesAPI, marketAPI, packsAPI } from '../services/endpoints';
+import { leaguesAPI, auctionAPI, packsAPI } from '../services/endpoints';
 import './LeagueDetailPage.css';
 
 export default function LeagueDetailPage() {
@@ -14,11 +14,12 @@ export default function LeagueDetailPage() {
   const [activeTab, setActiveTab] = useState('standings');
   const [message, setMessage] = useState('');
 
-  // Market state
-  const [players, setPlayers] = useState([]);
-  const [marketLoading, setMarketLoading] = useState(false);
-  const [buying, setBuying] = useState(null);
-  const [marketFilter, setMarketFilter] = useState({ position: '', sort_by: 'overall_rating', order: 'desc', search: '' });
+  // Auction state
+  const [auction, setAuction] = useState(null);
+  const [auctionLoading, setAuctionLoading] = useState(false);
+  const [timeLeft, setTimeLeft] = useState('');
+  const [bidAmounts, setBidAmounts] = useState({});
+  const [bidding, setBidding] = useState(null);
 
   // Packs state
   const [opening, setOpening] = useState(false);
@@ -42,26 +43,47 @@ export default function LeagueDetailPage() {
 
   useEffect(() => { loadLeague(); }, [loadLeague]);
 
-  // Load market players
-  const loadMarket = useCallback(async () => {
-    setMarketLoading(true);
+  // Load auction
+  const loadAuction = useCallback(async () => {
+    setAuctionLoading(true);
     try {
-      const params = { limit: 200 };
-      if (marketFilter.position) params.position = marketFilter.position;
-      if (marketFilter.search) params.search = marketFilter.search;
-      params.sort_by = marketFilter.sort_by;
-      params.order = marketFilter.order;
-      const res = await marketAPI.list(params);
-      setPlayers(res.data);
+      const res = await auctionAPI.getAuction(leagueId);
+      setAuction(res.data);
     } catch {
-      setPlayers([]);
+      setAuction(null);
     }
-    setMarketLoading(false);
-  }, [marketFilter]);
+    setAuctionLoading(false);
+  }, [leagueId]);
 
   useEffect(() => {
-    if (activeTab === 'market') loadMarket();
-  }, [activeTab, loadMarket]);
+    if (activeTab === 'market') loadAuction();
+    // Auto-refresh every 10s to see new bids
+    const interval = setInterval(() => {
+        if (activeTab === 'market') loadAuction();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [activeTab, loadAuction]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!auction?.ends_at) return;
+    const interval = setInterval(() => {
+      const now = new Date().getTime();
+      const end = new Date(auction.ends_at).getTime(); // is ISO string
+      const distance = end - now;
+      
+      if (distance < 0) {
+        setTimeLeft('SUBASTA FINALIZADA');
+        if (auction.is_active) loadAuction(); // Reload to see if new one started
+      } else {
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [auction]);
 
   // Load pack history
   const loadPackHistory = useCallback(async () => {
@@ -77,24 +99,29 @@ export default function LeagueDetailPage() {
     if (activeTab === 'packs') loadPackHistory();
   }, [activeTab, loadPackHistory]);
 
-  const handleBuy = async (playerId, playerName, price) => {
-    if (buying) return;
-    if (user?.coins < price) {
-      setMessage(`❌ No tienes suficientes monedas para ${playerName}`);
-      setTimeout(() => setMessage(''), 3000);
-      return;
+  const handleBid = async (slotId, currentBid, basePrice) => {
+    const amount = parseInt(bidAmounts[slotId]);
+    if (!amount) return;
+    
+    // Validations (min bid)
+    const minBid = currentBid > 0 ? currentBid + 1 : basePrice;
+    if (amount < minBid) {
+        setMessage(`❌ La puja debe ser al menos ${formatPrice(minBid)}`);
+        return;
     }
-    setBuying(playerId);
+
+    setBidding(slotId);
     try {
-      const res = await marketAPI.buy(playerId);
-      setMessage(`✅ ${res.data.message} — Te quedan 🪙 ${res.data.remaining_coins.toLocaleString()}`);
-      if (refreshUser) refreshUser();
-      setTimeout(() => setMessage(''), 4000);
+      const res = await auctionAPI.placeBid(leagueId, slotId, amount);
+      setMessage(`✅ ${res.data.message}`);
+      // Force reload to get updated status
+      loadAuction();
+      // Clear input
+      setBidAmounts(prev => ({ ...prev, [slotId]: '' }));
     } catch (err) {
-      setMessage(`❌ ${err.response?.data?.detail || 'Error al comprar'}`);
-      setTimeout(() => setMessage(''), 3000);
+      setMessage(`❌ ${err.response?.data?.detail || 'Error al pujar'}`);
     }
-    setBuying(null);
+    setBidding(null);
   };
 
   const handleOpenPack = async () => {
@@ -234,72 +261,77 @@ export default function LeagueDetailPage() {
         </div>
       )}
 
-      {/* ==== MARKET TAB ==== */}
+       {/* ==== MARKET TAB (AUCTION) ==== */}
       {activeTab === 'market' && (
         <div className="ld-content">
-          {/* Search & Filters */}
-          <div className="ld-market-filters">
-            <input
-              type="text"
-              value={marketFilter.search}
-              onChange={(e) => setMarketFilter({ ...marketFilter, search: e.target.value })}
-              placeholder="🔍 Buscar jugador..."
-              className="ld-search-input"
-            />
-            <select
-              value={marketFilter.position}
-              onChange={(e) => setMarketFilter({ ...marketFilter, position: e.target.value })}
-              className="ld-filter-select"
-            >
-              <option value="">Todas</option>
-              <option value="GK">Porteros</option>
-              <option value="DEF">Defensas</option>
-              <option value="MID">Medios</option>
-              <option value="FWD">Delanteros</option>
-            </select>
-            <button
-              className="ld-filter-btn"
-              onClick={() => setMarketFilter({ ...marketFilter, order: marketFilter.order === 'desc' ? 'asc' : 'desc' })}
-            >
-              {marketFilter.order === 'desc' ? '↓' : '↑'}
-            </button>
+          <div className="ld-auction-header">
+            <h2>⏳ Subasta Diaria</h2>
+            <div className="ld-timer">
+                {timeLeft || 'Calculando...'}
+            </div>
           </div>
+          <p className="ld-auction-desc">
+            Los mejores postores al finalizar el tiempo se llevan a los jugadores.
+          </p>
 
-          {/* Player List */}
           <div className="ld-market-list">
-            {marketLoading ? (
-              <div className="ld-loading-small">Cargando jugadores...</div>
-            ) : players.length === 0 ? (
-              <div className="ld-empty">No hay jugadores disponibles</div>
+            {auctionLoading ? (
+              <div className="ld-loading-small">Cargando subasta...</div>
+            ) : !auction || auction.slots.length === 0 ? (
+              <div className="ld-empty">No hay subasta activa</div>
             ) : (
-              <>
-                <div className="ld-market-count">{players.length} jugadores disponibles</div>
-                {players.map(player => (
-                  <div key={player.id} className="ld-player-row">
-                    <div className="ld-player-info">
-                      <div className="ld-player-ovr" style={{ borderColor: getRarityColor(player.base_rarity) }}>
-                        {player.overall_rating}
-                      </div>
-                      <div className="ld-player-details">
-                        <span className="ld-player-name">{player.name}</span>
-                        <span className="ld-player-meta">
-                          {player.position} · {player.current_team || 'Free Agent'}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="ld-player-price-section">
-                      <span className="ld-price">🪙 {formatPrice(player.current_price)}</span>
-                      <button
-                        className="ld-buy-btn"
-                        onClick={() => handleBuy(player.id, player.name, player.current_price)}
-                        disabled={buying === player.id}
-                      >
-                        {buying === player.id ? '...' : 'Comprar'}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </>
+              <div className="ld-auction-grid">
+                {auction.slots.map(slot => {
+                    const minBid = slot.current_bid > 0 ? slot.current_bid + 1 : slot.base_price;
+                    const isWinning = slot.highest_bidder_id === user?.id;
+                    
+                    return (
+                        <div key={slot.id} className={`ld-auction-card ${isWinning ? 'winning' : ''}`}>
+                            <div className="ld-auction-card-top">
+                                <div className="ld-player-ovr" style={{ borderColor: getRarityColor(slot.base_rarity) }}>
+                                    {slot.overall_rating}
+                                </div>
+                                <div className="ld-auction-info">
+                                    <div className="ld-player-name">{slot.player_name}</div>
+                                    <div className="ld-player-pos">{slot.position}</div>
+                                </div>
+                            </div>
+                            
+                            <div className="ld-auction-stats">
+                                <div className="ld-stat-row">
+                                    <span>Precio Base</span>
+                                    <span>{formatPrice(slot.base_price)}</span>
+                                </div>
+                                <div className="ld-stat-row bid">
+                                    <span>Puja Actual</span>
+                                    <span className="ld-current-bid">{formatPrice(slot.current_bid)}</span>
+                                </div>
+                                <div className="ld-stat-row bidder">
+                                    <span>Ganador</span>
+                                    <span>{slot.highest_bidder_username ? `@${slot.highest_bidder_username}` : 'Nadie'}</span>
+                                </div>
+                            </div>
+
+                            <div className="ld-bid-controls">
+                                <input 
+                                    type="number" 
+                                    placeholder={`Mín: ${formatPrice(minBid)}`}
+                                    value={bidAmounts[slot.id] || ''}
+                                    onChange={(e) => setBidAmounts({...bidAmounts, [slot.id]: e.target.value})}
+                                    className="ld-bid-input"
+                                />
+                                <button 
+                                    className="ld-bid-btn"
+                                    onClick={() => handleBid(slot.id, slot.current_bid, slot.base_price)}
+                                    disabled={bidding === slot.id}
+                                >
+                                    {bidding === slot.id ? '...' : 'Pujar'}
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })}
+              </div>
             )}
           </div>
         </div>

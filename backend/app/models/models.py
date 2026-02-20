@@ -199,6 +199,7 @@ class UserCard(Base):
     
     # Relaciones
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    league_id = Column(Integer, ForeignKey("leagues.id"), nullable=True)  # Vinculado a una liga específica
     player_id = Column(Integer, ForeignKey("players.id"), nullable=False)
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)  # NULL = en el inventario
     
@@ -555,6 +556,9 @@ class LeagueMember(Base):
 
     # Puntos acumulados dentro de esta liga
     league_points = Column(Integer, default=0)
+    
+    # Economía de la liga (cada usuario empieza con 100M)
+    coins = Column(Integer, default=100000000)
 
     # Rol dentro de la liga
     is_admin = Column(Boolean, default=False)
@@ -628,4 +632,72 @@ class PackOpening(Base):
 
     def __repr__(self):
         return f"<PackOpening User:{self.user_id} League:{self.league_id} Type:{self.pack_type}>"
+
+
+# ==========================================
+# MODELO: MARKET_AUCTION (Subasta Diaria)
+# ==========================================
+
+class MarketAuction(Base):
+    """
+    Representa una subasta diaria de 24h en una liga específica.
+    Cada día se crea una nueva con 12 jugadores aleatorios.
+    """
+    __tablename__ = "market_auctions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    league_id = Column(Integer, ForeignKey("leagues.id"), nullable=False)
+    
+    # Tiempos
+    started_at = Column(DateTime, default=datetime.utcnow)
+    ends_at = Column(DateTime, nullable=False)
+    
+    # Estado
+    is_active = Column(Boolean, default=True)
+    is_resolved = Column(Boolean, default=False)
+    
+    league = relationship("League")
+    slots = relationship("AuctionSlot", back_populates="auction", cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f"<MarketAuction League:{self.league_id} Ends:{self.ends_at}>"
+
+
+class AuctionSlot(Base):
+    """
+    Un hueco en la subasta (un jugador a la venta).
+    """
+    __tablename__ = "auction_slots"
+
+    id = Column(Integer, primary_key=True, index=True)
+    auction_id = Column(Integer, ForeignKey("market_auctions.id"), nullable=False)
+    player_id = Column(Integer, ForeignKey("players.id"), nullable=False)
+    
+    # Economía
+    base_price = Column(Integer, nullable=False)
+    current_bid = Column(Integer, default=0)
+    highest_bidder_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    
+    # Relaciones
+    auction = relationship("MarketAuction", back_populates="slots")
+    player = relationship("Player")
+    highest_bidder = relationship("User", foreign_keys=[highest_bidder_id])
+    bids = relationship("AuctionBid", back_populates="slot", cascade="all, delete-orphan")
+
+
+class AuctionBid(Base):
+    """
+    Historial de pujas
+    """
+    __tablename__ = "auction_bids"
+
+    id = Column(Integer, primary_key=True, index=True)
+    slot_id = Column(Integer, ForeignKey("auction_slots.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    amount = Column(Integer, nullable=False)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    slot = relationship("AuctionSlot", back_populates="bids")
+    user = relationship("User")
 

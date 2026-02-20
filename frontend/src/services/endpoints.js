@@ -54,7 +54,12 @@ export const leaguesAPI = {
   create: (data) => api.post('/leagues/', data),
   myLeagues: () => api.get('/leagues/'),
   getDetail: (id) => api.get(`/leagues/${id}`),
-  invite: (leagueId, data) => api.post(`/leagues/${leagueId}/invite`, data),
+  list: (leagueId) => api.get(`/leagues/${leagueId}/members`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    }),
+  invite: (leagueId, email) => api.post(`/leagues/${leagueId}/invite`, { email }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    }),
   joinByCode: (code) => api.post(`/leagues/join/${code}`),
   pendingInvitations: () => api.get('/leagues/invitations/pending'),
   acceptInvitation: (id) => api.post(`/leagues/invitations/${id}/accept`),
@@ -63,11 +68,32 @@ export const leaguesAPI = {
 };
 
 // ==========================================
+// AUCTION
+// ==========================================
+
+export const auctionAPI = {
+    getAuction: (leagueId) => api.get(`/market/${leagueId}/auction`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    }),
+    placeBid: (leagueId, slotId, amount) => api.post(`/market/${leagueId}/bid/${slotId}`, { amount }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    }),
+    sellCard: (leagueId, cardId) => api.post(`/market/${leagueId}/sell/${cardId}`, { }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+};
+
+// ==========================================
 // PACKS (Sobres)
 // ==========================================
 
 export const packsAPI = {
-  openIcon: (leagueId) => api.post('/packs/open', null, { params: { league_id: leagueId } }),
-  history: (leagueId) => api.get('/packs/history', { params: { league_id: leagueId } }),
+  openIcon: (leagueId) => api.post('/packs/open', null, {
+        params: { league_id: leagueId },
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    }),
+  history: (leagueId) => api.get('/packs/history', {
+        params: { league_id: leagueId },
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
 };
-

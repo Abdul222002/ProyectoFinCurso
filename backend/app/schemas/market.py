@@ -1,46 +1,77 @@
 """
-Pydantic Schemas para el Mercado de Transferencias
+Pydantic Schemas para el Mercado de Subastas (Auction Market)
 """
 
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 
-class MarketPlayerResponse(BaseModel):
-    """Jugador en el mercado"""
-    id: int
-    name: str
-    position: str
-    overall_rating: int
-    current_team: Optional[str]
-    current_price: float
-    target_price: float
-    base_rarity: str
-    is_legend: bool
-    image_url: Optional[str]
+# ==========================================
+# RESPUESTAS DE SUBASTA
+# ==========================================
 
-    # Calculados
-    price_change_pct: float  # Diferencia % respecto al target
+class AuctionBidResponse(BaseModel):
+    id: int
+    user_id: int
+    username: str
+    amount: int
+    created_at: datetime
 
     class Config:
         from_attributes = True
 
 
-class BuyResponse(BaseModel):
-    """Respuesta tras comprar"""
-    message: str
-    card_id: int
+class AuctionSlotResponse(BaseModel):
+    id: int
+    player_id: int
     player_name: str
-    price_paid: float
+    position: str
+    overall_rating: int
+    base_rarity: str
+    image_url: Optional[str]
+    
+    base_price: int
+    current_bid: int
+    highest_bidder_id: Optional[int]
+    highest_bidder_username: Optional[str]  # Para mostrar quién va ganando
+    
+    class Config:
+        from_attributes = True
+
+
+class AuctionResponse(BaseModel):
+    id: int
+    league_id: int
+    ends_at: datetime
+    is_active: bool
+    server_time: datetime
+    slots: List[AuctionSlotResponse]
+
+    class Config:
+        from_attributes = True
+
+
+# ==========================================
+# ACCIONES
+# ==========================================
+
+class BidRequest(BaseModel):
+    amount: int
+
+
+class BidResponse(BaseModel):
+    message: str
+    slot_id: int
+    new_bid: int
     remaining_coins: int
 
 
 class SellResponse(BaseModel):
-    """Respuesta tras vender"""
+    """Respuesta tras vender una carta al sistema (85% valor)"""
     message: str
     player_name: str
-    price_received: float
+    price_received: int
     remaining_coins: int
 
 
@@ -59,6 +90,7 @@ class UserCardResponse(BaseModel):
     is_in_lineup: bool
     image_url: Optional[str]
     acquired_at: datetime
+    league_id: Optional[int]
 
     class Config:
         from_attributes = True
