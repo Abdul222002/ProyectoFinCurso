@@ -1,0 +1,398 @@
+[
+    {
+        "id": 330,
+        "name": "Pelé"
+    },
+    {
+        "id": 331,
+        "name": "Diego Maradona"
+    },
+    {
+        "id": 332,
+        "name": "Zinedine Zidane"
+    },
+    {
+        "id": 333,
+        "name": "Ronaldo Nazário"
+    },
+    {
+        "id": 334,
+        "name": "Ronaldinho"
+    },
+    {
+        "id": 335,
+        "name": "Cristiano Ronaldo"
+    },
+    {
+        "id": 336,
+        "name": "Lionel Messi"
+    },
+    {
+        "id": 337,
+        "name": "Franz Beckenbauer"
+    },
+    {
+        "id": 338,
+        "name": "Johan Cruyff"
+    },
+    {
+        "id": 339,
+        "name": "Alfredo Di Stéfano"
+    },
+    {
+        "id": 340,
+        "name": "Ferenc Puskás"
+    },
+    {
+        "id": 341,
+        "name": "Garrincha"
+    },
+    {
+        "id": 342,
+        "name": "George Best"
+    },
+    {
+        "id": 343,
+        "name": "Michel Platini"
+    },
+    {
+        "id": 344,
+        "name": "Marco van Basten"
+    },
+    {
+        "id": 345,
+        "name": "Paolo Maldini"
+    },
+    {
+        "id": 346,
+        "name": "Roberto Carlos"
+    },
+    {
+        "id": 347,
+        "name": "Cafu"
+    },
+    {
+        "id": 348,
+        "name": "Franco Baresi"
+    },
+    {
+        "id": 349,
+        "name": "Lev Yashin"
+    },
+    {
+        "id": 350,
+        "name": "Dino Zoff"
+    },
+    {
+        "id": 351,
+        "name": "Iker Casillas"
+    },
+    {
+        "id": 352,
+        "name": "Gianluigi Buffon"
+    },
+    {
+        "id": 353,
+        "name": "Oliver Kahn"
+    },
+    {
+        "id": 354,
+        "name": "Peter Schmeichel"
+    },
+    {
+        "id": 355,
+        "name": "Lothar Matthäus"
+    },
+    {
+        "id": 356,
+        "name": "Xavi Hernández"
+    },
+    {
+        "id": 357,
+        "name": "Andrés Iniesta"
+    },
+    {
+        "id": 358,
+        "name": "Luka Modrić"
+    },
+    {
+        "id": 359,
+        "name": "Andrea Pirlo"
+    },
+    {
+        "id": 360,
+        "name": "Frank Rijkaard"
+    },
+    {
+        "id": 361,
+        "name": "Patrick Vieira"
+    },
+    {
+        "id": 362,
+        "name": "Clarence Seedorf"
+    },
+    {
+        "id": 363,
+        "name": "Steven Gerrard"
+    },
+    {
+        "id": 364,
+        "name": "Frank Lampard"
+    },
+    {
+        "id": 365,
+        "name": "Paul Scholes"
+    },
+    {
+        "id": 366,
+        "name": "Zinedine Yazid"
+    },
+    {
+        "id": 367,
+        "name": "Roy Keane"
+    },
+    {
+        "id": 368,
+        "name": "Bastian Schweinsteiger"
+    },
+    {
+        "id": 369,
+        "name": "Wesley Sneijder"
+    },
+    {
+        "id": 370,
+        "name": "Kaká"
+    },
+    {
+        "id": 371,
+        "name": "Thierry Henry"
+    },
+    {
+        "id": 372,
+        "name": "Ruud van Nistelrooy"
+    },
+    {
+        "id": 373,
+        "name": "Romário"
+    },
+    {
+        "id": 374,
+        "name": "Raúl González"
+    },
+    {
+        "id": 375,
+        "name": "Samuel Eto'o"
+    },
+    {
+        "id": 376,
+        "name": "David Villa"
+    },
+    {
+        "id": 377,
+        "name": "Fernando Torres"
+    },
+    {
+        "id": 378,
+        "name": "Didier Drogba"
+    },
+    {
+        "id": 379,
+        "name": "Zlatan Ibrahimović"
+    },
+    {
+        "id": 380,
+        "name": "Carlos Tévez"
+    },
+    {
+        "id": 381,
+        "name": "Sergio Agüero"
+    },
+    {
+        "id": 382,
+        "name": "Luis Suárez"
+    },
+    {
+        "id": 383,
+        "name": "Robert Lewandowski"
+    },
+    {
+        "id": 384,
+        "name": "Karim Benzema"
+    },
+    {
+        "id": 385,
+        "name": "Wayne Rooney"
+    },
+    {
+        "id": 386,
+        "name": "Fabio Cannavaro"
+    },
+    {
+        "id": 387,
+        "name": "Carles Puyol"
+    },
+    {
+        "id": 388,
+        "name": "Alessandro Nesta"
+    },
+    {
+        "id": 389,
+        "name": "Rio Ferdinand"
+    },
+    {
+        "id": 390,
+        "name": "John Terry"
+    },
+    {
+        "id": 391,
+        "name": "Nemanja Vidić"
+    },
+    {
+        "id": 392,
+        "name": "Javier Zanetti"
+    },
+    {
+        "id": 393,
+        "name": "Philipp Lahm"
+    },
+    {
+        "id": 394,
+        "name": "Sergio Ramos"
+    },
+    {
+        "id": 395,
+        "name": "Gerard Piqué"
+    },
+    {
+        "id": 396,
+        "name": "Thiago Silva"
+    },
+    {
+        "id": 397,
+        "name": "Virgil van Dijk"
+    },
+    {
+        "id": 398,
+        "name": "Ashley Cole"
+    },
+    {
+        "id": 399,
+        "name": "Marcelo"
+    },
+    {
+        "id": 400,
+        "name": "Dani Alves"
+    },
+    {
+        "id": 401,
+        "name": "Lilian Thuram"
+    },
+    {
+        "id": 402,
+        "name": "Sol Campbell"
+    },
+    {
+        "id": 403,
+        "name": "Ledley King"
+    },
+    {
+        "id": 404,
+        "name": "Vincent Kompany"
+    },
+    {
+        "id": 405,
+        "name": "Pepe"
+    },
+    {
+        "id": 406,
+        "name": "Raphaël Varane"
+    },
+    {
+        "id": 407,
+        "name": "Jaap Stam"
+    },
+    {
+        "id": 408,
+        "name": "Matthijs de Ligt"
+    },
+    {
+        "id": 409,
+        "name": "Eric Cantona"
+    },
+    {
+        "id": 410,
+        "name": "Dennis Bergkamp"
+    },
+    {
+        "id": 411,
+        "name": "Alessandro Del Piero"
+    },
+    {
+        "id": 412,
+        "name": "Francesco Totti"
+    },
+    {
+        "id": 413,
+        "name": "Pavel Nedvěd"
+    },
+    {
+        "id": 414,
+        "name": "Ruud Gullit"
+    },
+    {
+        "id": 415,
+        "name": "Michael Ballack"
+    },
+    {
+        "id": 416,
+        "name": "Rivaldo"
+    },
+    {
+        "id": 417,
+        "name": "Gheorghe Hagi"
+    },
+    {
+        "id": 418,
+        "name": "Socrates"
+    },
+    {
+        "id": 419,
+        "name": "Gerd Müller"
+    },
+    {
+        "id": 420,
+        "name": "Giuseppe Meazza"
+    },
+    {
+        "id": 421,
+        "name": "Eusébio"
+    },
+    {
+        "id": 422,
+        "name": "Kenny Dalglish"
+    },
+    {
+        "id": 423,
+        "name": "Bobby Charlton"
+    },
+    {
+        "id": 424,
+        "name": "Gordon Banks"
+    },
+    {
+        "id": 425,
+        "name": "Gianfranco Zola"
+    },
+    {
+        "id": 426,
+        "name": "Michael Laudrup"
+    },
+    {
+        "id": 427,
+        "name": "Hugo Sánchez"
+    },
+    {
+        "id": 428,
+        "name": "Ian Rush"
+    }
+]

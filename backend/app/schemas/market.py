@@ -94,3 +94,41 @@ class UserCardResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ==========================================
+# LISTADOS DE USUARIO (Venta entre jugadores)
+# ==========================================
+
+class ListCardRequest(BaseModel):
+    asking_price: int
+
+
+class ListingResponse(BaseModel):
+    id: int
+    card_id: int
+    player_name: str
+    position: str
+    overall_rating: int
+    base_rarity: str
+    image_url: Optional[str]
+    asking_price: int
+    seller_username: str
+    is_mine: bool = False
+    listed_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class SystemOfferResponse(BaseModel):
+    id: int
+    listing_id: int
+    player_name: str
+    offer_price: int
+    asking_price: int
+    offered_at: datetime
+    expires_at: datetime
+
+    class Config:
+        from_attributes = True

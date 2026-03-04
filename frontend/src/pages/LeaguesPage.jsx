@@ -39,7 +39,7 @@ export default function LeaguesPage() {
       ]);
       setLeagues(leaguesRes.data);
       setInvitations(invRes.data);
-    } catch {}
+    } catch { }
     setLoading(false);
   };
 
@@ -95,7 +95,7 @@ export default function LeaguesPage() {
     try {
       await leaguesAPI.rejectInvitation(id);
       await loadData();
-    } catch {}
+    } catch { }
   };
 
   const handleInvite = async (leagueId) => {
@@ -128,7 +128,6 @@ export default function LeaguesPage() {
       <header className="lg-header">
         <button className="lg-back-btn" onClick={() => navigate('/dashboard')}>←</button>
         <h1 className="lg-title">🏆 Ligas</h1>
-        <div className="lg-coins">🪙 {user?.coins?.toLocaleString()}</div>
       </header>
 
       {/* Message */}

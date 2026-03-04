@@ -23,6 +23,7 @@ class TeamUpdate(BaseModel):
     """Actualizar equipo"""
     name: Optional[str] = Field(None, min_length=3, max_length=100)
     formation: Optional[str] = Field(None, max_length=10)
+    shield_url: Optional[str] = Field(None, max_length=500)
     kit_color_primary: Optional[str] = Field(None, max_length=7)
     kit_color_secondary: Optional[str] = Field(None, max_length=7)
 
@@ -63,4 +64,18 @@ class TeamResponse(BaseModel):
 
 class SetLineupRequest(BaseModel):
     """Establecer alineación — IDs de UserCard"""
-    lineup_card_ids: List[int] = Field(..., min_length=1, max_length=11)
+    lineup_card_ids: List[int] = Field(default=[], max_length=11)
+
+
+class GameweekLineupResponse(BaseModel):
+    """Respuesta de una alineación guardada para una jornada"""
+    id: int
+    team_id: int
+    gameweek_id: int
+    player_ids: str
+    active_formation: str
+    points_earned: float
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True

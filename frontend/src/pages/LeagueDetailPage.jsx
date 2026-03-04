@@ -2,6 +2,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { leaguesAPI, auctionAPI, packsAPI } from '../services/endpoints';
+import PlayerDetailModal from '../components/PlayerDetailModal';
+import PackOpeningModal from '../components/PackOpeningModal';
 import './LeagueDetailPage.css';
 
 export default function LeagueDetailPage() {
@@ -20,6 +22,14 @@ export default function LeagueDetailPage() {
   const [timeLeft, setTimeLeft] = useState('');
   const [bidAmounts, setBidAmounts] = useState({});
   const [bidding, setBidding] = useState(null);
+  const [selectedPlayerForDetail, setSelectedPlayerForDetail] = useState(null);
+
+  // User listings state
+  const [listings, setListings] = useState([]);
+  const [listingsLoading, setListingsLoading] = useState(false);
+
+  // System offers state
+  const [offers, setOffers] = useState([]);
 
   // Packs state
   const [opening, setOpening] = useState(false);
@@ -55,14 +65,44 @@ export default function LeagueDetailPage() {
     setAuctionLoading(false);
   }, [leagueId]);
 
+  // Silent versions for polling - no loading spinner flash
+  const pollAuction = useCallback(async () => {
+    try {
+      const res = await auctionAPI.getAuction(leagueId);
+      setAuction(res.data);
+    } catch { /* silently fail */ }
+  }, [leagueId]);
+
+  const pollListings = useCallback(async () => {
+    try {
+      const res = await auctionAPI.getListings(leagueId);
+      setListings(Array.isArray(res.data) ? res.data : []);
+    } catch { /* silently fail */ }
+  }, [leagueId]);
+
+  const loadListings = useCallback(async () => {
+    setListingsLoading(true);
+    try {
+      const res = await auctionAPI.getListings(leagueId);
+      setListings(Array.isArray(res.data) ? res.data : []);
+    } catch { setListings([]); }
+    setListingsLoading(false);
+  }, [leagueId]);
+
+  const loadOffers = useCallback(async () => {
+    try {
+      const res = await auctionAPI.getOffers(leagueId);
+      setOffers(Array.isArray(res.data) ? res.data : []);
+    } catch { setOffers([]); }
+  }, [leagueId]);
+
   useEffect(() => {
-    if (activeTab === 'market') loadAuction();
-    // Auto-refresh every 10s to see new bids
+    if (activeTab === 'market') { loadAuction(); loadListings(); loadOffers(); }
     const interval = setInterval(() => {
-        if (activeTab === 'market') loadAuction();
+      if (activeTab === 'market') { pollAuction(); pollListings(); }
     }, 10000);
     return () => clearInterval(interval);
-  }, [activeTab, loadAuction]);
+  }, [activeTab, loadAuction, loadListings, loadOffers, pollAuction, pollListings]);
 
   // Countdown timer
   useEffect(() => {
@@ -71,7 +111,7 @@ export default function LeagueDetailPage() {
       const now = new Date().getTime();
       const end = new Date(auction.ends_at).getTime(); // is ISO string
       const distance = end - now;
-      
+
       if (distance < 0) {
         setTimeLeft('SUBASTA FINALIZADA');
         if (auction.is_active) loadAuction(); // Reload to see if new one started
@@ -102,12 +142,12 @@ export default function LeagueDetailPage() {
   const handleBid = async (slotId, currentBid, basePrice) => {
     const amount = parseInt(bidAmounts[slotId]);
     if (!amount) return;
-    
+
     // Validations (min bid)
     const minBid = currentBid > 0 ? currentBid + 1 : basePrice;
     if (amount < minBid) {
-        setMessage(`❌ La puja debe ser al menos ${formatPrice(minBid)}`);
-        return;
+      setMessage(`❌ La puja debe ser al menos ${formatPrice(minBid)}`);
+      return;
     }
 
     setBidding(slotId);
@@ -126,8 +166,13 @@ export default function LeagueDetailPage() {
 
   const handleOpenPack = async () => {
     if (opening) return;
-    if (user?.coins < 150000000) {
-      setMessage('❌ Necesitas 150.000.000 monedas para abrir un sobre de iconos');
+
+    // Find user's league membership to get specific league coins
+    const myMembership = league?.members?.find(m => m.user_id === user?.id);
+    const leagueCoins = myMembership ? myMembership.coins : 0;
+
+    if (leagueCoins < 150000000) {
+      setMessage('❌ Necesitas 150.000.000 monedas en esta liga para abrir un sobre de iconos');
       setTimeout(() => setMessage(''), 4000);
       return;
     }
@@ -203,6 +248,19 @@ export default function LeagueDetailPage() {
     );
   }
 
+  // Find user's league membership to get specific league coins
+  const myMembership = league?.members?.find(m => m.user_id === user?.id);
+  const leagueCoins = myMembership ? myMembership.coins : 0;
+
+  // Calculate coins locked in active winning bids so user can see real available balance
+  const lockedCoins = auction?.slots?.reduce((total, slot) => {
+    if (slot.highest_bidder_id === user?.id && slot.current_bid > 0) {
+      return total + slot.current_bid;
+    }
+    return total;
+  }, 0) || 0;
+  const availableCoins = leagueCoins - lockedCoins;
+
   return (
     <div className="ld-page">
       {/* Header */}
@@ -214,7 +272,12 @@ export default function LeagueDetailPage() {
             👥 {league.member_count}/{league.max_members} · Código: <strong>{league.invite_code}</strong>
           </span>
         </div>
-        <div className="ld-coins">🪙 {formatPrice(user?.coins)}</div>
+        <div className="ld-coins-wrap">
+          <div className="ld-coins">🪙 {formatPrice(availableCoins)}</div>
+          {lockedCoins > 0 && (
+            <div className="ld-coins-locked" title="Monedas bloqueadas en pujas activas">🔒 {formatPrice(lockedCoins)}</div>
+          )}
+        </div>
       </header>
 
       {/* Message */}
@@ -225,10 +288,22 @@ export default function LeagueDetailPage() {
         </div>
       )}
 
+      {/* Player Detail Modal */}
+      {selectedPlayerForDetail && (
+        <PlayerDetailModal
+          playerId={selectedPlayerForDetail.player_id}
+          playerObj={selectedPlayerForDetail}
+          onClose={() => setSelectedPlayerForDetail(null)}
+        />
+      )}
+
       {/* Tabs */}
       <div className="ld-tabs">
         <button className={`ld-tab ${activeTab === 'standings' ? 'active' : ''}`} onClick={() => setActiveTab('standings')}>
           🏅 Clasificación
+        </button>
+        <button className="ld-tab" onClick={() => navigate(`/team?league_id=${leagueId}`)}>
+          ⚽ Mi Equipo
         </button>
         <button className={`ld-tab ${activeTab === 'market' ? 'active' : ''}`} onClick={() => setActiveTab('market')}>
           📈 Mercado
@@ -261,13 +336,13 @@ export default function LeagueDetailPage() {
         </div>
       )}
 
-       {/* ==== MARKET TAB (AUCTION) ==== */}
+      {/* ==== MARKET TAB (AUCTION) ==== */}
       {activeTab === 'market' && (
         <div className="ld-content">
           <div className="ld-auction-header">
             <h2>⏳ Subasta Diaria</h2>
             <div className="ld-timer">
-                {timeLeft || 'Calculando...'}
+              {timeLeft || 'Calculando...'}
             </div>
           </div>
           <p className="ld-auction-desc">
@@ -280,119 +355,229 @@ export default function LeagueDetailPage() {
             ) : !auction || auction.slots.length === 0 ? (
               <div className="ld-empty">No hay subasta activa</div>
             ) : (
-              <div className="ld-auction-grid">
+              <div className="ld-market-list-view">
+                <div className="ld-market-list-header">
+                  <div>Jugador</div>
+                  <div style={{ textAlign: 'right' }}>Puja / Base</div>
+                  <div style={{ textAlign: 'right' }}>Acción</div>
+                </div>
                 {auction.slots.map(slot => {
-                    const minBid = slot.current_bid > 0 ? slot.current_bid + 1 : slot.base_price;
-                    const isWinning = slot.highest_bidder_id === user?.id;
-                    
-                    return (
-                        <div key={slot.id} className={`ld-auction-card ${isWinning ? 'winning' : ''}`}>
-                            <div className="ld-auction-card-top">
-                                <div className="ld-player-ovr" style={{ borderColor: getRarityColor(slot.base_rarity) }}>
-                                    {slot.overall_rating}
-                                </div>
-                                <div className="ld-auction-info">
-                                    <div className="ld-player-name">{slot.player_name}</div>
-                                    <div className="ld-player-pos">{slot.position}</div>
-                                </div>
-                            </div>
-                            
-                            <div className="ld-auction-stats">
-                                <div className="ld-stat-row">
-                                    <span>Precio Base</span>
-                                    <span>{formatPrice(slot.base_price)}</span>
-                                </div>
-                                <div className="ld-stat-row bid">
-                                    <span>Puja Actual</span>
-                                    <span className="ld-current-bid">{formatPrice(slot.current_bid)}</span>
-                                </div>
-                                <div className="ld-stat-row bidder">
-                                    <span>Ganador</span>
-                                    <span>{slot.highest_bidder_username ? `@${slot.highest_bidder_username}` : 'Nadie'}</span>
-                                </div>
-                            </div>
+                  const minBid = slot.current_bid > 0 ? slot.current_bid + 1 : slot.base_price;
+                  const isWinning = slot.highest_bidder_id === user?.id;
 
-                            <div className="ld-bid-controls">
-                                <input 
-                                    type="number" 
-                                    placeholder={`Mín: ${formatPrice(minBid)}`}
-                                    value={bidAmounts[slot.id] || ''}
-                                    onChange={(e) => setBidAmounts({...bidAmounts, [slot.id]: e.target.value})}
-                                    className="ld-bid-input"
-                                />
-                                <button 
-                                    className="ld-bid-btn"
-                                    onClick={() => handleBid(slot.id, slot.current_bid, slot.base_price)}
-                                    disabled={bidding === slot.id}
-                                >
-                                    {bidding === slot.id ? '...' : 'Pujar'}
-                                </button>
-                            </div>
+                  return (
+                    <div
+                      key={slot.id}
+                      className="ld-market-row"
+                      onClick={() => setSelectedPlayerForDetail({ ...slot, name: slot.player_name, current_price: slot.base_price })}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <div className={`ld-market-row-accent ${isWinning ? 'winning' : 'neutral'}`}></div>
+
+                      {/* Player Info Col */}
+                      <div className="ld-market-row-info-col">
+                        <div className="ld-market-row-img-wrap" style={{ borderBottomColor: getRarityColor(slot.base_rarity) }}>
+                          <img
+                            src={slot.image_url || '/images/placeholder.png'}
+                            alt={slot.player_name}
+                            className="ld-market-row-img"
+                            onError={(e) => { e.target.src = '/images/placeholder.png'; }}
+                          />
+                          <div className="ld-market-row-pos">{slot.position}</div>
                         </div>
-                    );
+                        <div className="ld-market-row-details">
+                          <div className="ld-market-row-name">{slot.player_name}</div>
+                          <div className="ld-market-row-team">
+                            <span style={{ color: getRarityColor(slot.base_rarity) }}>OVR {slot.overall_rating}</span>
+                            <span>•</span>
+                            <span>{isWinning ? '¡Vas ganando!' : slot.highest_bidder_id ? 'Pujado' : 'Sin pujas'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Price Col */}
+                      <div className="ld-market-row-price-col">
+                        <div className={`ld-market-row-price ${slot.current_bid > 0 ? 'highlight' : ''}`}>
+                          {formatPrice(slot.current_bid > 0 ? slot.current_bid : slot.base_price)}
+                        </div>
+                        <div className="ld-market-row-subprice">
+                          {slot.current_bid > 0 ? `Base: ${formatPrice(slot.base_price)}` : 'Precio Base'}
+                        </div>
+                      </div>
+
+                      {/* Action Col */}
+                      <div className="ld-market-row-action-col" onClick={(e) => e.stopPropagation()}>
+                        <div className="ld-market-row-bid-wrap">
+                          <input
+                            type="number"
+                            placeholder={`Mín: ${formatPrice(minBid)}`}
+                            value={bidAmounts[slot.id] || ''}
+                            onChange={(e) => setBidAmounts({ ...bidAmounts, [slot.id]: e.target.value })}
+                            className="ld-market-row-input"
+                          />
+                          <button
+                            className="ld-market-row-btn primary"
+                            onClick={() => handleBid(slot.id, slot.current_bid, slot.base_price)}
+                            disabled={bidding === slot.id}
+                          >
+                            {bidding === slot.id ? '...' : 'Pujar'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
                 })}
               </div>
             )}
           </div>
-        </div>
-      )}
 
-      {/* ==== PACKS TAB ==== */}
-      {activeTab === 'packs' && (
-        <div className="ld-content">
-          <div className="ld-packs-section">
-            {/* Pack Card */}
-            <div className="ld-pack-card">
-              <div className="ld-pack-glow"></div>
-              <div className="ld-pack-icon">🎴</div>
-              <h2 className="ld-pack-title">Sobre de Iconos</h2>
-              <p className="ld-pack-desc">
-                Contiene <strong>3 cartas legendarias</strong> aleatorias.
-                Los iconos solo se pueden obtener a través de sobres.
-              </p>
-              <div className="ld-pack-price">🪙 150.000.000</div>
-              <button
-                className={`ld-pack-btn ${opening ? 'opening' : ''}`}
-                onClick={handleOpenPack}
-                disabled={opening}
-              >
-                {opening ? (
-                  <span className="ld-pack-spinner">⚽</span>
-                ) : (
-                  '🎴 Abrir Sobre'
-                )}
-              </button>
-            </div>
+          {/* ═══ SYSTEM OFFERS ═══ */}
+          {offers.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#fbbf24', marginBottom: 12 }}>🤖 Ofertas del Sistema</h2>
+              <p className="ld-auction-desc">El sistema te ha hecho una oferta por tus jugadores en venta.</p>
+              <div className="ld-market-list-view">
+                {offers.map(offer => (
+                  <div key={offer.id} className="ld-market-row">
+                    <div className="ld-market-row-accent warning"></div>
 
-            {/* Pack Result */}
-            {packResult && packResult.cards && (
-              <div className="ld-pack-result">
-                <h3 className="ld-result-title">¡Sobre abierto!</h3>
-                <div className="ld-result-cards">
-                  {packResult.cards.map((card, idx) => (
-                    <div key={idx} className="ld-result-card legend">
-                      <div className="ld-card-ovr">{card.overall_rating}</div>
-                      <div className="ld-card-name">{card.player_name}</div>
-                      <div className="ld-card-pos">{card.position}</div>
-                      <div className="ld-card-badge">⭐ ICON</div>
+                    {/* Player Info Col */}
+                    <div className="ld-market-row-info-col">
+                      <div className="ld-market-row-img-wrap" style={{ borderBottomColor: '#fbbf24' }}>
+                        <div className="ld-player-fallback" style={{ display: 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>🤖</div>
+                      </div>
+                      <div className="ld-market-row-details">
+                        <div className="ld-market-row-name">{offer.player_name}</div>
+                        <div className="ld-market-row-team">
+                          <span style={{ color: '#fbbf24' }}>Oferta del Sistema</span>
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                </div>
-                <div className="ld-result-coins">
-                  Monedas restantes: 🪙 {formatPrice(packResult.remaining_coins)}
-                </div>
-              </div>
-            )}
 
-            {/* Pack History */}
-            {packHistory.length > 0 && (
-              <div className="ld-pack-history">
-                <h3>Historial de sobres</h3>
-                {packHistory.map(p => (
-                  <div key={p.id} className="ld-history-row">
-                    <span>🎴 Sobre de Iconos</span>
-                    <span>{p.cards_obtained} cartas</span>
-                    <span>{new Date(p.opened_at).toLocaleDateString()}</span>
+                    {/* Price Col */}
+                    <div className="ld-market-row-price-col">
+                      <div className="ld-market-row-price highlight">
+                        {formatPrice(offer.offer_price)}
+                      </div>
+                      <div className="ld-market-row-subprice" style={{ color: '#ef4444' }}>
+                        Tú pedías: {formatPrice(offer.asking_price)}
+                      </div>
+                    </div>
+
+                    {/* Action Col */}
+                    <div className="ld-market-row-action-col" onClick={e => e.stopPropagation()}>
+                      <div className="ld-market-row-bid-wrap">
+                        <div style={{ fontSize: '0.7rem', color: '#64748b', marginRight: '8px', textAlign: 'right', lineHeight: 1.2 }}>
+                          Expira:<br />{new Date(offer.expires_at).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                        <button
+                          className="ld-market-row-btn primary"
+                          onClick={async () => {
+                            try {
+                              const res = await auctionAPI.acceptOffer(leagueId, offer.id);
+                              setMessage(`✅ ${res.data.message}`);
+                              loadOffers(); loadListings();
+                            } catch (err) { setMessage(`❌ ${err.response?.data?.detail || 'Error'}`); }
+                          }}
+                        >
+                          Aceptar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ═══ USER LISTINGS ═══ */}
+          <div style={{ marginTop: 24 }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#e2e8f0', marginBottom: 12 }}>🏷️ Jugadores en Venta</h2>
+            <p className="ld-auction-desc">Jugadores puestos a la venta por usuarios de la liga.</p>
+
+            {listingsLoading ? (
+              <div className="ld-loading-small">Cargando listados...</div>
+            ) : listings.length === 0 ? (
+              <div className="ld-empty">No hay jugadores en venta</div>
+            ) : (
+              <div className="ld-market-list-view">
+                {listings.map(listing => (
+                  <div
+                    key={listing.id}
+                    className="ld-market-row"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setSelectedPlayerForDetail({
+                      ...listing,
+                      name: listing.player_name,
+                      current_price: listing.asking_price,
+                      current_market_value: listing.asking_price
+                    })}
+                  >
+                    <div className={`ld-market-row-accent ${listing.is_mine ? 'warning' : 'neutral'}`}></div>
+
+                    {/* Player Info Col */}
+                    <div className="ld-market-row-info-col">
+                      <div className="ld-market-row-img-wrap" style={{ borderBottomColor: getRarityColor(listing.base_rarity) }}>
+                        <img
+                          src={listing.image_url || '/images/placeholder.png'}
+                          alt={listing.player_name}
+                          className="ld-market-row-img"
+                          onError={(e) => { e.target.src = '/images/placeholder.png'; }}
+                        />
+                        <div className="ld-market-row-pos">{listing.position}</div>
+                      </div>
+                      <div className="ld-market-row-details">
+                        <div className="ld-market-row-name">{listing.player_name}</div>
+                        <div className="ld-market-row-team">
+                          <span style={{ color: getRarityColor(listing.base_rarity) }}>OVR {listing.overall_rating}</span>
+                          <span>•</span>
+                          <span>Vendedor: @{listing.seller_username}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Price Col */}
+                    <div className="ld-market-row-price-col">
+                      <div className="ld-market-row-price highlight">
+                        {formatPrice(listing.asking_price)}
+                      </div>
+                      <div className="ld-market-row-subprice">
+                        Precio
+                      </div>
+                    </div>
+
+                    {/* Action Col */}
+                    <div className="ld-market-row-action-col" onClick={e => e.stopPropagation()}>
+                      <div className="ld-market-row-bid-wrap">
+                        {listing.is_mine ? (
+                          <button
+                            className="ld-market-row-btn danger"
+                            onClick={async () => {
+                              try {
+                                await auctionAPI.cancelListing(leagueId, listing.id);
+                                setMessage('✅ Listado cancelado');
+                                loadListings();
+                              } catch (err) { setMessage(`❌ ${err.response?.data?.detail || 'Error'}`); }
+                            }}
+                          >
+                            Retirar
+                          </button>
+                        ) : (
+                          <button
+                            className="ld-market-row-btn primary"
+                            onClick={async () => {
+                              try {
+                                const res = await auctionAPI.buyListing(leagueId, listing.id);
+                                setMessage(`✅ ${res.data.message}`);
+                                loadListings();
+                              } catch (err) { setMessage(`❌ ${err.response?.data?.detail || 'Error'}`); }
+                            }}
+                          >
+                            Comprar
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -401,64 +586,153 @@ export default function LeagueDetailPage() {
         </div>
       )}
 
-      {/* ==== INFO TAB ==== */}
-      {activeTab === 'info' && (
+      {/* ==== PACKS TAB — Premium Design ==== */}
+      {activeTab === 'packs' && (
         <div className="ld-content">
-          <div className="ld-info-section">
-            <div className="ld-info-card">
-              <h3>📋 Información de la Liga</h3>
-              <div className="ld-info-row">
-                <span>Nombre</span>
-                <strong>{league.name}</strong>
-              </div>
-              {league.description && (
-                <div className="ld-info-row">
-                  <span>Descripción</span>
-                  <span>{league.description}</span>
+          <div className="ld-packs-premium">
+            {/* Background effects */}
+            <div className="ld-pack-rays">
+              {[0, 45, 90, 135, 180, 225, 270, 315].map(deg => (
+                <div key={deg} className="ld-pack-ray" style={{ transform: `rotate(${deg}deg)` }} />
+              ))}
+              <div className="ld-pack-center-glow" />
+              <div className="ld-pack-center-glow-inner" />
+            </div>
+
+            {/* Floating particles */}
+            <div className="ld-pack-particle" style={{ top: '20%', left: '15%', animationDelay: '0s' }} />
+            <div className="ld-pack-particle" style={{ top: '30%', right: '20%', animationDelay: '1.5s' }} />
+            <div className="ld-pack-particle" style={{ bottom: '25%', left: '25%', animationDelay: '0.8s' }} />
+            <div className="ld-pack-particle" style={{ top: '50%', right: '10%', animationDelay: '2s' }} />
+
+            {/* Top label */}
+            <div className="ld-pack-top-label">
+              <div className="ld-pack-live-dot" />
+              <span>Legendary Scottish Pack</span>
+            </div>
+
+            {/* The Pack */}
+            <div className="ld-pack-container">
+              <div className="ld-pack-energy-flare" />
+              <div className="ld-pack-card-wrapper">
+                <div className="ld-pack-card-premium">
+                  <div className="ld-pack-card-gradient" />
+                  <div className="ld-pack-card-content">
+                    <div className="ld-pack-card-circle">
+                      <span>🏆</span>
+                    </div>
+                    <div className="ld-pack-card-badge-text">LEGENDARY</div>
+                    <div className="ld-pack-card-sub">SCOTTISH PREMIERSHIP</div>
+                  </div>
+                  <div className="ld-pack-foil-shine" />
                 </div>
-              )}
-              <div className="ld-info-row">
-                <span>Propietario</span>
-                <span>@{league.owner_username}</span>
-              </div>
-              <div className="ld-info-row">
-                <span>Miembros</span>
-                <span>{league.member_count} / {league.max_members}</span>
-              </div>
-              <div className="ld-info-row">
-                <span>Código de invitación</span>
-                <strong className="ld-invite-code">{league.invite_code}</strong>
-              </div>
-              <div className="ld-info-row">
-                <span>Creada</span>
-                <span>{new Date(league.created_at).toLocaleDateString()}</span>
               </div>
             </div>
 
-            {/* Invite */}
-            <div className="ld-info-card">
-              <h3>📩 Invitar amigo</h3>
-              <div className="ld-invite-form">
-                <input
-                  type="text"
-                  value={inviteUsername}
-                  onChange={(e) => setInviteUsername(e.target.value)}
-                  placeholder="Username del amigo"
-                  className="ld-input"
-                />
-                <button className="ld-invite-btn" onClick={handleInvite} disabled={inviting}>
-                  {inviting ? '...' : 'Enviar'}
-                </button>
-              </div>
+            {/* Pack info */}
+            <div className="ld-pack-info-area">
+              <p className="ld-pack-info-desc">Contiene <strong>3 cartas legendarias</strong> aleatorias</p>
+              <div className="ld-pack-price-tag">🪙 150.000.000</div>
             </div>
 
-            {/* Leave */}
-            <button className="ld-leave-btn" onClick={handleLeave}>
-              🚪 Salir de la liga
+            {/* Open button */}
+            <button
+              className={`ld-pack-open-btn ${opening ? 'opening' : ''}`}
+              onClick={handleOpenPack}
+              disabled={opening}
+            >
+              <span className="ld-pack-btn-text">
+                {opening ? '⚽ Abriendo...' : '⚡ ABRIR SOBRE'}
+              </span>
+              <div className="ld-pack-btn-shine" />
             </button>
           </div>
+
+          {/* Pack Result Modal */}
+          {packResult && packResult.cards && (
+            <PackOpeningModal
+              cards={packResult.cards}
+              remainingCoins={packResult.remaining_coins}
+              onClose={() => setPackResult(null)}
+            />
+          )}
+
+          {/* Pack History */}
+          {packHistory.length > 0 && (
+            <div className="ld-pack-history">
+              <h3>Historial de sobres</h3>
+              {packHistory.map(p => (
+                <div key={p.id} className="ld-history-row">
+                  <span>🎴 Sobre de Iconos</span>
+                  <span>{p.cards_obtained} cartas</span>
+                  <span>{new Date(p.opened_at).toLocaleDateString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
+
+      {/* ==== INFO TAB ==== */}
+      {
+        activeTab === 'info' && (
+          <div className="ld-content">
+            <div className="ld-info-section">
+              <div className="ld-info-card">
+                <h3>📋 Información de la Liga</h3>
+                <div className="ld-info-row">
+                  <span>Nombre</span>
+                  <strong>{league.name}</strong>
+                </div>
+                {league.description && (
+                  <div className="ld-info-row">
+                    <span>Descripción</span>
+                    <span>{league.description}</span>
+                  </div>
+                )}
+                <div className="ld-info-row">
+                  <span>Propietario</span>
+                  <span>@{league.owner_username}</span>
+                </div>
+                <div className="ld-info-row">
+                  <span>Miembros</span>
+                  <span>{league.member_count} / {league.max_members}</span>
+                </div>
+                <div className="ld-info-row">
+                  <span>Código de invitación</span>
+                  <strong className="ld-invite-code">{league.invite_code}</strong>
+                </div>
+                <div className="ld-info-row">
+                  <span>Creada</span>
+                  <span>{new Date(league.created_at).toLocaleDateString()}</span>
+                </div>
+              </div>
+
+              {/* Invite */}
+              <div className="ld-info-card">
+                <h3>📩 Invitar amigo</h3>
+                <div className="ld-invite-form">
+                  <input
+                    type="text"
+                    value={inviteUsername}
+                    onChange={(e) => setInviteUsername(e.target.value)}
+                    placeholder="Username del amigo"
+                    className="ld-input"
+                  />
+                  <button className="ld-invite-btn" onClick={handleInvite} disabled={inviting}>
+                    {inviting ? '...' : 'Enviar'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Leave */}
+              <button className="ld-leave-btn" onClick={handleLeave}>
+                🚪 Salir de la liga
+              </button>
+            </div>
+          </div>
+        )
+      }
 
       {/* Bottom Nav */}
       <div className="ld-bottom-bar">
@@ -466,6 +740,6 @@ export default function LeagueDetailPage() {
         <button className="ld-bottom-btn" onClick={() => navigate(`/team?league=${leagueId}`)}>⚽ Equipo</button>
         <button className="ld-bottom-btn active">🏆 Liga</button>
       </div>
-    </div>
+    </div >
   );
 }

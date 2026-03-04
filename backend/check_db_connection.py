@@ -21,6 +21,7 @@ try:
 except ImportError:
     print("❌ passlib NO instalado")
     errors.append("passlib")
+# Removed passlib check as it's replaced by bcrypt native
 
 try:
     from email_validator import validate_email, EmailNotValidError
@@ -29,15 +30,16 @@ except ImportError:
     print("❌ email-validator NO instalado (Necesario para Pydantic EmailStr)")
     errors.append("email-validator")
 
-print("\n--- Verificando Hash Hasher ---")
-try:
-    from passlib.context import CryptContext
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    hash_test = pwd_context.hash("test")
-    print("✅ Password hashing (bcrypt) funcional")
-except Exception as e:
-    print(f"❌ Error en hashing password: {e}")
-    errors.append(f"Fallo hashing: {e}")
+def verify_hash_hasher(errors):
+    print("\n--- Verificando Hash Hasher ---")
+    try:
+        hash_test = bcrypt.hashpw(b"test", bcrypt.gensalt())
+        print("✅ Password hashing (bcrypt) funcional")
+    except Exception as e:
+        print(f"❌ Error en hashing password: {e}")
+        errors.append(f"Fallo hashing: {e}")
+
+verify_hash_hasher(errors)
 
 # 2. Base de datos y Tablas
 try:

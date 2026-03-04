@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.core.database import get_db
-from app.models.models import User, Player, UserCard
+from app.models.models import User, Player, UserCard, PlayerMatchStats, Match, Gameweek
 from pydantic import BaseModel
 from app.schemas.market import UserCardResponse
 from app.routers.auth import get_current_user
@@ -140,3 +140,66 @@ async def my_cards(
         )
         for c in cards
     ]
+
+
+class PlayerMatchHistoryResponse(BaseModel):
+    match_id: int
+    gameweek_number: int
+    home_team: str
+    away_team: str
+    home_score: Optional[int]
+    away_score: Optional[int]
+    status: str
+    minutes_played: int
+    rating: Optional[float]
+    goals: int
+    assists: int
+    fantasy_points: float
+    clean_sheet: bool
+    goals_conceded: int
+    yellow_cards: int
+    red_cards: int
+    saves: int
+
+    class Config:
+        from_attributes = True
+
+@router.get("/{player_id}/history", response_model=List[PlayerMatchHistoryResponse])
+async def get_player_history(
+    player_id: int,
+    db: Session = Depends(get_db)
+):
+    """Obtiene el historial de puntos de un jugador partido a partido"""
+    
+    player = db.query(Player).filter(Player.id == player_id).first()
+    if not player:
+        raise HTTPException(status_code=404, detail="Jugador no encontrado")
+        
+    stats = db.query(PlayerMatchStats).join(Match).join(Gameweek).filter(
+        PlayerMatchStats.player_id == player_id
+    ).order_by(Match.kickoff_time.desc()).all()
+    
+    history = []
+    for stat in stats:
+        match = stat.match
+        history.append(PlayerMatchHistoryResponse(
+            match_id=match.id,
+            gameweek_number=match.gameweek.number if match.gameweek else 0,
+            home_team=match.home_team,
+            away_team=match.away_team,
+            home_score=match.home_score,
+            away_score=match.away_score,
+            status=match.status.value,
+            minutes_played=stat.minutes_played,
+            rating=stat.rating,
+            goals=stat.goals,
+            assists=stat.assists,
+            fantasy_points=stat.fantasy_points,
+            clean_sheet=stat.clean_sheet,
+            goals_conceded=stat.goals_conceded_team,
+            yellow_cards=stat.yellow_cards,
+            red_cards=stat.red_cards,
+            saves=stat.saves
+        ))
+        
+    return history

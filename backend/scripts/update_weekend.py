@@ -15,7 +15,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from app.core.database import SessionLocal, test_connection
-from app.models.models import Player, PlayerMatchStats, Gameweek, Match, Position
+from app.models.models import Player, PlayerMatchStats, Gameweek, Match, Position, Team, GameweekLineup, UserCard, LeagueMember
 from app.services.calculator import calculator
 from app.services.economy import PriceInertiaSystem
 from datetime import datetime
@@ -132,6 +132,64 @@ def update_weekend_stats():
         print("\n📉 TOP 5 BAJADAS:")
         for pc in price_changes[-5:]:
             print(f"   ↘️  {pc['name']}: €{pc['old']:,.0f} → €{pc['new']:,.0f} ({pc['change_pct']:+.1f}%)")
+        
+        # -------------------------------------------------------------------
+        # 4.5. ASIGNAR PUNTOS A LOS EQUIPOS Y LIGAS
+        # -------------------------------------------------------------------
+        print(f"\n🏆 CALCULANDO PUNTOS DE EQUIPOS...\n")
+        teams = db.query(Team).all()
+        teams_updated = 0
+        
+        # Diccionario rápido de puntos por jugador en esta jornada
+        player_points_dict = {}
+        for stats in db.query(PlayerMatchStats).filter(PlayerMatchStats.match_id.in_([m.id for m in matches])).all():
+            player_points_dict[stats.player_id] = stats.fantasy_points
+
+        for team in teams:
+            team_points = 0.0
+            
+            # Buscar si el equipo guardó una alineación específica para esta jornada
+            gw_lineup = db.query(GameweekLineup).filter(
+                GameweekLineup.team_id == team.id,
+                GameweekLineup.gameweek_id == active_gameweek.id
+            ).first()
+            
+            if gw_lineup:
+                # Calcular puntos usando los jugadores guardados (snapshot)
+                player_ids = [int(pid) for pid in gw_lineup.player_ids.split(",") if pid.strip()]
+                for pid in player_ids:
+                    # El player_ids guardado en GameweekLineup es en realidad el ID del UserCard
+                    # Tenemos que obtener la carta para saber de qué jugador real es
+                    card = db.query(UserCard).filter(UserCard.id == pid).first()
+                    if card and card.player_id in player_points_dict:
+                        team_points += player_points_dict[card.player_id]
+                        
+                # Actualizar puntos del snapshot
+                gw_lineup.points_earned = team_points
+            else:
+                # Fallback: Si no guardaron alineación explícita, usar los titulares actuales
+                lineup_cards = db.query(UserCard).filter(
+                    UserCard.team_id == team.id,
+                    UserCard.is_in_lineup == True
+                ).all()
+                for card in lineup_cards:
+                    if card.player_id in player_points_dict:
+                        team_points += player_points_dict[card.player_id]
+
+            # Sumar al total histórico del equipo
+            team.total_fantasy_points += team_points
+            
+            # Sumar a los puntos de la liga para la clasificación
+            league_member = db.query(LeagueMember).filter(
+                LeagueMember.user_id == team.user_id,
+                LeagueMember.league_id == team.league_id
+            ).first()
+            if league_member:
+                league_member.league_points += team_points
+                
+            teams_updated += 1
+            
+        print(f"   - Se han calculado los puntos de {teams_updated} equipos.")
         
         # 5. Marcar la jornada como finalizada
         active_gameweek.is_active = False

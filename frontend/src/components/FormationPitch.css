@@ -1,0 +1,303 @@
+/* ==========================================
+   FORMATION PITCH - Premium Visual
+   ========================================== */
+
+.pitch {
+    margin: 12px auto 0;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    max-width: 420px;
+    width: 100%;
+}
+
+.pitch-field {
+    position: relative;
+    background: repeating-linear-gradient(180deg, #1b7a30 0px, #1b7a30 40px, #1e8835 40px, #1e8835 80px);
+    padding: 24px 8px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 540px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+}
+
+/* Field markings */
+.pitch-center-line {
+    position: absolute;
+    top: 50%;
+    left: 8%;
+    right: 8%;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.pitch-center-circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 90px;
+    height: 90px;
+    border: 2px solid rgba(255, 255, 255, 0.18);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.pitch-penalty-area {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 44%;
+    height: 48px;
+    border: 2px solid rgba(255, 255, 255, 0.14);
+    pointer-events: none;
+}
+
+.pitch-penalty-top {
+    top: 0;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+}
+
+.pitch-penalty-bottom {
+    bottom: 0;
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+}
+
+/* Rows */
+.pitch-row {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    padding: 0 4px;
+}
+
+.pitch-row-gk {
+    flex: 0.7;
+}
+
+/* ==========================================
+   PLAYER NODE 
+   ========================================== */
+.pitch-player {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.2s ease;
+    width: 68px;
+}
+
+.pitch-player:hover {
+    transform: translateY(-4px) scale(1.06);
+}
+
+.pitch-player:active {
+    transform: scale(0.94);
+}
+
+.pitch-player-badge {
+    position: absolute;
+    top: -4px;
+    right: 4px;
+    z-index: 6;
+    font-size: 0.58rem;
+    font-weight: 900;
+    color: #111;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    padding: 2px 5px;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    line-height: 1;
+}
+
+.pitch-player-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: linear-gradient(145deg, #1a1a2e, #0f0f1a);
+    border: 2.5px solid rgba(255, 255, 255, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    position: relative;
+}
+
+/* Rarity glow */
+.pitch-player[data-rarity="gold"] .pitch-player-avatar {
+    border-color: #ffd700;
+    box-shadow: 0 0 14px rgba(255, 215, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+.pitch-player[data-rarity="legend"] .pitch-player-avatar {
+    border-color: #c084fc;
+    box-shadow: 0 0 18px rgba(147, 51, 234, 0.45), 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+.pitch-player[data-rarity="silver"] .pitch-player-avatar {
+    border-color: #d1d5db;
+    box-shadow: 0 0 10px rgba(200, 200, 200, 0.3), 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+.pitch-player[data-rarity="bronze"] .pitch-player-avatar {
+    border-color: #cd7f32;
+    box-shadow: 0 0 8px rgba(205, 127, 50, 0.3), 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+.pitch-player-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.pitch-player-fallback {
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pitch-player-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.pitch-player-name {
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #fff;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.75);
+    padding: 2px 7px;
+    border-radius: 6px;
+    max-width: 70px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.3px;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pitch-player-remove {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ef4444;
+    color: white;
+    border: 2px solid rgba(0, 0, 0, 0.4);
+    font-size: 0.55rem;
+    font-weight: 900;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s, transform 0.15s;
+    z-index: 8;
+}
+
+.pitch-player:hover .pitch-player-remove {
+    opacity: 1;
+}
+
+.pitch-player-remove:hover {
+    transform: scale(1.15);
+    background: #dc2626;
+}
+
+/* ==========================================
+   EMPTY SLOT — Clickable "+"
+   ========================================== */
+.pitch-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    width: 68px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.pitch-slot:hover {
+    transform: scale(1.1);
+}
+
+.pitch-slot:hover .pitch-slot-circle {
+    border-color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.pitch-slot-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2.5px dashed rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.15);
+    transition: all 0.2s;
+}
+
+.pitch-slot-plus {
+    font-size: 1.4rem;
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1;
+}
+
+.pitch-slot-label {
+    font-size: 0.55rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.45);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+@media (max-width: 440px) {
+
+    .pitch-player,
+    .pitch-slot {
+        width: 56px;
+    }
+
+    .pitch-player-avatar {
+        width: 44px;
+        height: 44px;
+    }
+
+    .pitch-slot-circle {
+        width: 40px;
+        height: 40px;
+    }
+
+    .pitch-player-name {
+        font-size: 0.55rem;
+        max-width: 56px;
+    }
+
+    .pitch-field {
+        min-height: 420px;
+        padding: 18px 4px 14px;
+    }
+}

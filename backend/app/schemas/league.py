@@ -40,6 +40,7 @@ class LeagueMemberResponse(BaseModel):
     user_id: int
     username: str
     league_points: int
+    coins: int
     is_admin: bool
     joined_at: datetime
 

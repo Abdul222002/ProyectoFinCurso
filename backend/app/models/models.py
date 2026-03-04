@@ -313,6 +313,45 @@ class Gameweek(Base):
 
 
 # ==========================================
+# MODELO: GAMEWEEK_LINEUP (Alineación por Jornada)
+# ==========================================
+
+class GameweekLineup(Base):
+    """
+    Alineación guardada por un equipo para una jornada específica = "Snapshot".
+    Los puntos de la jornada se calculan sobre esta alineación.
+    """
+    __tablename__ = "gameweek_lineups"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
+    gameweek_id = Column(Integer, ForeignKey("gameweeks.id"), nullable=False)
+    
+    # Snapshot de los datos
+    # Como SQLite no tiene tipo de array nativo, guardaremos los IDs como CSV "12,4,45,2..."
+    player_ids = Column(String(255), nullable=False) 
+    active_formation = Column(String(10), nullable=False)
+    
+    # Puntos calculados específicamente para esta jornada con esta alineación
+    points_earned = Column(Float, default=0.0)
+    
+    # Relaciones
+    team = relationship("Team")
+    gameweek = relationship("Gameweek")
+    
+    __table_args__ = (
+        UniqueConstraint('team_id', 'gameweek_id', name='uq_team_gameweek'),
+    )
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<GameweekLineup Team:{self.team_id} GW:{self.gameweek_id}>"
+
+
+# ==========================================
 # MODELO: MATCH (Partido Real)
 # ==========================================
 
@@ -701,3 +740,70 @@ class AuctionBid(Base):
     slot = relationship("AuctionSlot", back_populates="bids")
     user = relationship("User")
 
+
+# ==========================================
+# MODELO: MARKET_LISTING (Venta de Usuario)
+# ==========================================
+
+class MarketListing(Base):
+    """
+    Un usuario pone a la venta una carta en el mercado de la liga.
+    Precio mínimo = valor actual del jugador (Player.current_price).
+    """
+    __tablename__ = "market_listings"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    card_id = Column(Integer, ForeignKey("user_cards.id"), nullable=False)
+    seller_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    league_id = Column(Integer, ForeignKey("leagues.id"), nullable=False)
+
+    asking_price = Column(Integer, nullable=False)
+    is_active = Column(Boolean, default=True)
+
+    listed_at = Column(DateTime, default=datetime.utcnow)
+    sold_at = Column(DateTime, nullable=True)
+    buyer_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    card = relationship("UserCard")
+    seller = relationship("User", foreign_keys=[seller_id])
+    buyer = relationship("User", foreign_keys=[buyer_id])
+    league = relationship("League")
+
+    def __repr__(self):
+        return f"<MarketListing Card:{self.card_id} Price:{self.asking_price}>"
+
+
+# ==========================================
+# MODELO: SYSTEM_OFFER (Oferta del Sistema)
+# ==========================================
+
+class SystemOffer(Base):
+    """
+    Oferta automática del sistema para comprar una carta.
+    Se genera 24h después de listar si nadie compra.
+    Precio = 80-95% del asking_price.
+    """
+    __tablename__ = "system_offers"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    listing_id = Column(Integer, ForeignKey("market_listings.id"), nullable=False)
+    card_id = Column(Integer, ForeignKey("user_cards.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    league_id = Column(Integer, ForeignKey("leagues.id"), nullable=False)
+
+    offer_price = Column(Integer, nullable=False)
+    is_accepted = Column(Boolean, default=False)
+    is_expired = Column(Boolean, default=False)
+
+    offered_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False)
+
+    listing = relationship("MarketListing")
+    card = relationship("UserCard")
+    user = relationship("User")
+    league = relationship("League")
+
+    def __repr__(self):
+        return f"<SystemOffer Listing:{self.listing_id} Price:{self.offer_price}>"

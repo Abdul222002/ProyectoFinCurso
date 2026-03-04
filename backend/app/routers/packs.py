@@ -17,7 +17,7 @@ router = APIRouter()
 
 # Precio del sobre de iconos
 ICON_PACK_COST = 150_000_000  # 150M monedas
-ICON_PACK_CARDS = 3  # 3 cartas por sobre
+ICON_PACK_CARDS = 1  # 1 carta por sobre
 
 
 @router.post("/open", response_model=PackOpenResponse)
@@ -52,10 +52,16 @@ async def open_icon_pack(
             detail=f"No tienes suficientes monedas en esta liga. Necesitas {ICON_PACK_COST:,}, tienes {membership.coins:,}"
         )
 
-    # Obtener jugadores legendarios disponibles
     legends = db.query(Player).filter(
         Player.is_legend == True
     ).all()
+
+    # Find User's Team in this League (to auto-assign the card)
+    from app.models.models import Team
+    team = db.query(Team).filter(
+        Team.user_id == current_user.id,
+        Team.league_id == league_id
+    ).first()
 
     if len(legends) < ICON_PACK_CARDS:
         raise HTTPException(
@@ -90,6 +96,7 @@ async def open_icon_pack(
             user_id=current_user.id,
             player_id=player.id,
             league_id=league_id,  # Importante: carta de esta liga
+            team_id=team.id if team else None,  # Adding to the team if exists
             current_overall=player.overall_rating,
             is_tradeable=False  # Las cartas de sobre no son vendibles
         )
@@ -110,7 +117,7 @@ async def open_icon_pack(
     db.commit()
 
     return PackOpenResponse(
-        message=f"¡Has abierto un Sobre de Iconos! Has obtenido {len(result_cards)} leyendas",
+        message=f"¡Has abierto un Sobre de Iconos! Has obtenido un jugador Leyenda que se ha añadido directamente a tu equipo.",
         pack_type="icon",
         cards=result_cards,
         cost=ICON_PACK_COST,

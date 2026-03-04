@@ -1,166 +1,161 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { marketAPI } from '../services/endpoints';
+import { leaguesAPI } from '../services/endpoints';
 import './MarketPage.css';
 
 export default function MarketPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [players, setPlayers] = useState([]);
+  const [leagues, setLeagues] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [buying, setBuying] = useState(null);
-  const [message, setMessage] = useState('');
-  const [filter, setFilter] = useState({ position: '', sort_by: 'overall_rating', order: 'desc' });
 
-  useEffect(() => { loadPlayers(); }, [filter]);
-
-  const loadPlayers = async () => {
-    setLoading(true);
-    try {
-      const params = { limit: 50 };
-      if (filter.position) params.position = filter.position;
-      params.sort_by = filter.sort_by;
-      params.order = filter.order;
-      const res = await marketAPI.list(params);
-      setPlayers(res.data);
-    } catch {
-      setPlayers([]);
-    }
-    setLoading(false);
-  };
-
-  const handleBuy = async (playerId, playerName, price) => {
-    if (buying) return;
-    if (user?.coins < price) {
-      setMessage(`❌ No tienes suficientes monedas para ${playerName}`);
-      setTimeout(() => setMessage(''), 3000);
-      return;
-    }
-    setBuying(playerId);
-    try {
-      const res = await marketAPI.buy(playerId);
-      setMessage(`✅ ${res.data.message} — Te quedan 🪙 ${res.data.remaining_coins.toLocaleString()}`);
-      // Refresh user coins via auth (reload page data)
-      setTimeout(() => setMessage(''), 4000);
-    } catch (err) {
-      setMessage(`❌ ${err.response?.data?.detail || 'Error al comprar'}`);
-      setTimeout(() => setMessage(''), 3000);
-    }
-    setBuying(null);
-  };
-
-  const formatPrice = (price) => {
-    if (price >= 1000000) return (price / 1000000).toFixed(1) + 'M';
-    if (price >= 1000) return (price / 1000).toFixed(0) + 'K';
-    return price.toLocaleString();
-  };
-
-  const getRarityColor = (rarity) => {
-    switch (rarity) {
-      case 'gold': return '#fbbf24';
-      case 'silver': return '#94a3b8';
-      case 'legend': return '#a78bfa';
-      default: return '#cd7f32';
-    }
-  };
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await leaguesAPI.myLeagues();
+        setLeagues(Array.isArray(res.data) ? res.data : []);
+      } catch {
+        setLeagues([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   return (
-    <div className="market-page">
+    <div className="mkt">
+      {/* Background glow */}
+      <div className="mkt-bg-glow" />
+
       {/* Header */}
-      <header className="market-header">
-        <button className="market-back-btn" onClick={() => navigate('/dashboard')}>←</button>
-        <h1 className="market-title">Mercado de Fichajes</h1>
-        <div className="market-coins">🪙 {user?.coins?.toLocaleString()}</div>
+      <header className="mkt-header">
+        <button className="mkt-back" onClick={() => navigate('/dashboard')}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+        </button>
+        <div className="mkt-header-center">
+          <span className="mkt-header-icon">📈</span>
+          <h1>Mercado</h1>
+        </div>
+        <div style={{ width: 40 }} />
       </header>
 
-      {/* Message Banner */}
-      {message && (
-        <div className={`market-message ${message.startsWith('✅') ? 'success' : 'error'}`}>
-          {message}
+      {/* Hero promo section */}
+      <div className="mkt-promo-hero">
+        <div className="mkt-promo-content">
+          <span className="mkt-live-badge"><span className="mkt-pulsing-dot" /> MERCADO ABIERTO</span>
+          <h2>Ofertas Exclusivas</h2>
+          <p>Encuentra el próximo <strong>Jugador Franquicia</strong> para tu equipo. Subastas diarias con miles de cartas en juego.</p>
+          <div className="mkt-promo-stats">
+            <div className="mkt-stat-item">
+              <strong>24h</strong><span>Ciclo Diario</span>
+            </div>
+            <div className="mkt-stat-item">
+              <strong>12+</strong><span>Cartas/día</span>
+            </div>
+          </div>
         </div>
-      )}
-
-      {/* Filters */}
-      <div className="market-filters">
-        <select
-          value={filter.position}
-          onChange={(e) => setFilter({ ...filter, position: e.target.value })}
-          className="market-filter-select"
-        >
-          <option value="">Todas</option>
-          <option value="GK">Porteros</option>
-          <option value="DEF">Defensas</option>
-          <option value="MID">Medios</option>
-          <option value="FWD">Delanteros</option>
-        </select>
-        <select
-          value={filter.sort_by}
-          onChange={(e) => setFilter({ ...filter, sort_by: e.target.value })}
-          className="market-filter-select"
-        >
-          <option value="overall_rating">OVR</option>
-          <option value="current_price">Precio</option>
-          <option value="name">Nombre</option>
-        </select>
-        <button
-          className="market-filter-btn"
-          onClick={() => setFilter({ ...filter, order: filter.order === 'desc' ? 'asc' : 'desc' })}
-        >
-          {filter.order === 'desc' ? '↓' : '↑'}
-        </button>
+        <div className="mkt-promo-visual">
+          <div className="mkt-promo-card c1">
+            <div className="mkt-card-ovr">92</div>
+          </div>
+          <div className="mkt-promo-card c2">
+            <div className="mkt-card-ovr">88</div>
+          </div>
+        </div>
       </div>
 
-      {/* Player List */}
-      <div className="market-list">
-        {loading ? (
-          <div className="market-loading">Cargando jugadores...</div>
-        ) : players.length === 0 ? (
-          <div className="market-empty">No hay jugadores disponibles</div>
-        ) : (
-          players.map(player => (
-            <div key={player.id} className="market-player-row">
-              <div className="market-player-info">
-                <div
-                  className="market-player-ovr"
-                  style={{ borderColor: getRarityColor(player.base_rarity) }}
-                >
-                  {player.overall_rating}
-                </div>
-                <div className="market-player-details">
-                  <span className="market-player-name">{player.name}</span>
-                  <span className="market-player-meta">
-                    {player.position} · {player.current_team || 'Free Agent'}
-                    {player.is_legend && ' ⭐'}
-                  </span>
-                </div>
-              </div>
-              <div className="market-player-price-section">
-                <div className="market-price-info">
-                  <span className="market-price">🪙 {formatPrice(player.current_price)}</span>
-                  <span className={`market-price-change ${player.price_change_pct >= 0 ? 'up' : 'down'}`}>
-                    {player.price_change_pct >= 0 ? '▲' : '▼'} {Math.abs(player.price_change_pct).toFixed(1)}%
-                  </span>
-                </div>
-                <button
-                  className="market-buy-btn"
-                  onClick={() => handleBuy(player.id, player.name, player.current_price)}
-                  disabled={buying === player.id}
-                >
-                  {buying === player.id ? '...' : 'Comprar'}
-                </button>
-              </div>
+      {/* Trending highlights (Mock) */}
+      <div className="mkt-highlights">
+        <div className="mkt-section-header">
+          <h3 className="mkt-section-title">Top Fichajes Globales</h3>
+          <span className="mkt-badge-hot">🔥 Hot</span>
+        </div>
+        <div className="mkt-highlight-scroll">
+          {/* Mock Card 1 */}
+          <div className="mkt-h-card gold">
+            <div className="mkt-h-img">
+              <img src="/images/placeholder.png" alt="Player" />
+              <span className="mkt-h-ovr">82</span>
             </div>
-          ))
+            <div className="mkt-h-info">
+              <span className="mkt-h-name">K. Furuhashi</span>
+              <span className="mkt-h-price">💰 15.5M</span>
+            </div>
+          </div>
+          {/* Mock Card 2 */}
+          <div className="mkt-h-card premium">
+            <div className="mkt-h-img">
+              <img src="/images/placeholder.png" alt="Player" />
+              <span className="mkt-h-ovr">92</span>
+            </div>
+            <div className="mkt-h-info">
+              <span className="mkt-h-name">H. Larsson</span>
+              <span className="mkt-h-price">💰 65.0M</span>
+            </div>
+          </div>
+          {/* Mock Card 3 */}
+          <div className="mkt-h-card silver">
+            <div className="mkt-h-img">
+              <img src="/images/placeholder.png" alt="Player" />
+              <span className="mkt-h-ovr">76</span>
+            </div>
+            <div className="mkt-h-info">
+              <span className="mkt-h-name">L. Shankland</span>
+              <span className="mkt-h-price">💰 6.0M</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Leagues */}
+      <div className="mkt-section">
+        <h3 className="mkt-section-title">Selecciona tu liga</h3>
+
+        {loading ? (
+          <div className="mkt-loading">
+            <div className="mkt-loading-spinner" />
+            <span>Cargando ligas...</span>
+          </div>
+        ) : leagues.length === 0 ? (
+          <div className="mkt-empty">
+            <span className="mkt-empty-icon">🏆</span>
+            <p>No estás en ninguna liga todavía</p>
+            <button className="mkt-empty-btn" onClick={() => navigate('/leagues')}>
+              Unirme a una liga →
+            </button>
+          </div>
+        ) : (
+          <div className="mkt-league-list">
+            {leagues.map(league => (
+              <button
+                key={league.id}
+                className="mkt-league-card"
+                onClick={() => navigate(`/leagues/${league.id}`)}
+              >
+                <div className="mkt-league-icon-wrap">
+                  <span className="mkt-league-icon">🏆</span>
+                </div>
+                <div className="mkt-league-info">
+                  <span className="mkt-league-name">{league.name}</span>
+                  <span className="mkt-league-sub">
+                    {league.member_count || '?'} miembros · Subastas activas
+                  </span>
+                </div>
+                <svg className="mkt-league-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
       {/* Bottom Nav */}
-      <div className="market-bottom-bar">
-        <button className="market-bottom-btn" onClick={() => navigate('/team')}>⚽ Equipo</button>
-        <button className="market-bottom-btn active">📈 Mercado</button>
-        <button className="market-bottom-btn" onClick={() => navigate('/arena')}>⚔️ Arena</button>
-      </div>
+      <nav className="mkt-nav">
+        <button onClick={() => navigate('/dashboard')}>🏠</button>
+        <button onClick={() => navigate('/team')}>👥</button>
+        <button className="active">🛍️</button>
+        <button onClick={() => navigate('/arena')}>⚔️</button>
+        <button onClick={() => navigate('/leagues')}>🏆</button>
+      </nav>
     </div>
   );
 }

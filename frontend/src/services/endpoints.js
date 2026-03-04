@@ -14,6 +14,8 @@ export const teamsAPI = {
   },
   update: (leagueId, data) => api.put('/teams/my', data, { params: { league_id: leagueId } }),
   setLineup: (leagueId, cardIds) => api.put('/teams/my/lineup', { lineup_card_ids: cardIds }, { params: { league_id: leagueId } }),
+  getActiveGameweek: () => api.get('/teams/active-gameweek'),
+  getGameweekLineup: (leagueId, gameweekId) => api.get('/teams/my/gameweek-lineup', { params: { league_id: leagueId, gameweek_id: gameweekId } }),
 };
 
 // ==========================================
@@ -24,6 +26,7 @@ export const playersAPI = {
   list: (params = {}) => api.get('/players/', { params }),
   getDetail: (id) => api.get(`/players/${id}`),
   myCards: () => api.get('/players/my-cards/all'),
+  getHistory: (id) => api.get(`/players/${id}/history`),
 };
 
 // ==========================================
@@ -55,11 +58,11 @@ export const leaguesAPI = {
   myLeagues: () => api.get('/leagues/'),
   getDetail: (id) => api.get(`/leagues/${id}`),
   list: (leagueId) => api.get(`/leagues/${leagueId}/members`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }),
   invite: (leagueId, email) => api.post(`/leagues/${leagueId}/invite`, { email }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }),
   joinByCode: (code) => api.post(`/leagues/join/${code}`),
   pendingInvitations: () => api.get('/leagues/invitations/pending'),
   acceptInvitation: (id) => api.post(`/leagues/invitations/${id}/accept`),
@@ -72,15 +75,34 @@ export const leaguesAPI = {
 // ==========================================
 
 export const auctionAPI = {
-    getAuction: (leagueId) => api.get(`/market/${leagueId}/auction`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
-    placeBid: (leagueId, slotId, amount) => api.post(`/market/${leagueId}/bid/${slotId}`, { amount }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
-    sellCard: (leagueId, cardId) => api.post(`/market/${leagueId}/sell/${cardId}`, { }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    })
+  getAuction: (leagueId) => api.get(`/market/${leagueId}/auction`, {
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }),
+  placeBid: (leagueId, slotId, amount) => api.post(`/market/${leagueId}/bid/${slotId}`, { amount }, {
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }),
+  sellCard: (leagueId, cardId) => api.post(`/market/${leagueId}/sell/${cardId}`, {}, {
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }),
+  // User listings
+  listCard: (leagueId, cardId, askingPrice) => api.post(`/market/${leagueId}/list/${cardId}`, { asking_price: askingPrice }, {
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }),
+  cancelListing: (leagueId, listingId) => api.delete(`/market/${leagueId}/list/${listingId}`, {
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }),
+  getListings: (leagueId) => api.get(`/market/${leagueId}/listings`, {
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }),
+  buyListing: (leagueId, listingId) => api.post(`/market/${leagueId}/buy-listing/${listingId}`, {}, {
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }),
+  getOffers: (leagueId) => api.get(`/market/${leagueId}/my-offers`, {
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }),
+  acceptOffer: (leagueId, offerId) => api.post(`/market/${leagueId}/accept-offer/${offerId}`, {}, {
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }),
 };
 
 // ==========================================
@@ -89,11 +111,26 @@ export const auctionAPI = {
 
 export const packsAPI = {
   openIcon: (leagueId) => api.post('/packs/open', null, {
-        params: { league_id: leagueId },
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }),
+    params: { league_id: leagueId },
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }),
   history: (leagueId) => api.get('/packs/history', {
-        params: { league_id: leagueId },
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    })
+    params: { league_id: leagueId },
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  })
+};
+
+// ==========================================
+// ADMIN
+// ==========================================
+
+export const adminAPI = {
+  getStats: () => api.get('/admin/stats'),
+  getUsers: (search) => api.get('/admin/users', { params: search ? { search } : {} }),
+  deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
+  getLeagues: (search) => api.get('/admin/leagues', { params: search ? { search } : {} }),
+  deleteLeague: (leagueId) => api.delete(`/admin/leagues/${leagueId}`),
+  getPlayers: (params = {}) => api.get('/admin/players', { params }),
+  updatePlayer: (playerId, data) => api.put(`/admin/players/${playerId}`, data),
+  getTeams: (search) => api.get('/admin/teams', { params: search ? { search } : {} }),
 };

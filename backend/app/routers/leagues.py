@@ -46,16 +46,32 @@ def _create_team_for_league(user: User, league: League, db: Session) -> Team:
     db.add(team)
     db.flush()  # Para obtener team.id
 
-    # Obtener jugadores aleatorios por posición
-    gk_players = db.query(Player).filter(Player.position == Position.GK).order_by(func.rand()).limit(2).all()
-    def_players = db.query(Player).filter(Player.position == Position.DEF).order_by(func.rand()).limit(4).all()
-    mid_players = db.query(Player).filter(Player.position == Position.MID).order_by(func.rand()).limit(4).all()
-    fwd_players = db.query(Player).filter(Player.position == Position.FWD).order_by(func.rand()).limit(3).all()
+    # Obtener jugadores aleatorios por posición, EXCLUYENDO LEYENDAS
+    gk_players = db.query(Player).filter(
+        Player.position == Position.GK,
+        Player.base_rarity != 'legend'
+    ).order_by(func.rand()).limit(2).all()
+    
+    def_players = db.query(Player).filter(
+        Player.position == Position.DEF,
+        Player.base_rarity != 'legend'
+    ).order_by(func.rand()).limit(4).all()
+    
+    mid_players = db.query(Player).filter(
+        Player.position == Position.MID,
+        Player.base_rarity != 'legend'
+    ).order_by(func.rand()).limit(4).all()
+    
+    fwd_players = db.query(Player).filter(
+        Player.position == Position.FWD,
+        Player.base_rarity != 'legend'
+    ).order_by(func.rand()).limit(3).all()
 
-    # 2 suplentes extra aleatorios (de cualquier posición, evitando duplicados)
+    # 2 suplentes extra aleatorios (de cualquier posición, evitando duplicados, sin leyendas)
     assigned_ids = [p.id for p in gk_players + def_players + mid_players + fwd_players]
     extra_players = db.query(Player).filter(
-        ~Player.id.in_(assigned_ids)
+        ~Player.id.in_(assigned_ids),
+        Player.base_rarity != 'legend'
     ).order_by(func.rand()).limit(2).all()
 
     all_players = gk_players + def_players + mid_players + fwd_players + extra_players
@@ -107,6 +123,7 @@ def _member_to_response(member: LeagueMember) -> LeagueMemberResponse:
         user_id=member.user_id,
         username=member.user.username,
         league_points=member.league_points,
+        coins=member.coins,
         is_admin=member.is_admin,
         joined_at=member.joined_at
     )

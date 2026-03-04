@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from fastapi.security import OAuth2PasswordBearer
 
 from app.core.database import get_db
@@ -20,21 +20,25 @@ router = APIRouter()
 # CONFIGURACIÓN DE SEGURIDAD
 # ==========================================
 
-# Hash de contraseñas con bcrypt
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
+# Hash de contraseñas con bcrypt (native)
 # OAuth2 scheme para extraer el token del header Authorization
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verifica que la contraseña coincida con el hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        truncated = plain_password.encode('utf-8')[:72]
+        return bcrypt.checkpw(truncated, hashed_password.encode('utf-8'))
+    except Exception:
+        return False
 
 
 def hash_password(password: str) -> str:
     """Genera hash bcrypt de la contraseña"""
-    return pwd_context.hash(password)
+    truncated = password.encode('utf-8')[:72]
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(truncated, salt).decode('utf-8')
 
 
 def create_access_token(data: dict) -> str:

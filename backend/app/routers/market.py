@@ -16,11 +16,13 @@ from typing import List, Optional
 from app.core.database import get_db
 from app.models.models import (
     User, Player, UserCard, LeagueMember, 
-    MarketAuction, AuctionSlot, AuctionBid
+    MarketAuction, AuctionSlot, AuctionBid,
+    MarketListing, SystemOffer
 )
 from app.schemas.market import (
     AuctionResponse, AuctionSlotResponse, BidRequest, 
-    BidResponse, SellResponse
+    BidResponse, SellResponse,
+    ListCardRequest, ListingResponse, SystemOfferResponse
 )
 from app.routers.auth import get_current_user
 
@@ -136,13 +138,6 @@ async def get_auction(
     # Construir respuesta
     slots_resp = []
     for slot in auction.slots:
-        # Buscar nombre del pujador más alto si existe
-        bidder_name = None
-        if slot.highest_bidder_id:
-            bidder = db.query(User).filter(User.id == slot.highest_bidder_id).first()
-            if bidder:
-                bidder_name = bidder.username
-                
         slots_resp.append(AuctionSlotResponse(
             id=slot.id,
             player_id=slot.player_id,
@@ -154,7 +149,7 @@ async def get_auction(
             base_price=slot.base_price,
             current_bid=slot.current_bid,
             highest_bidder_id=slot.highest_bidder_id,
-            highest_bidder_username=bidder_name
+            highest_bidder_username=None
         ))
         
     return AuctionResponse(
@@ -305,3 +300,269 @@ async def sell_card_league(
         price_received=sell_price,
         remaining_coins=member.coins
     )
+
+
+# ==========================================
+# LISTADOS DE USUARIO (Venta entre jugadores)
+# ==========================================
+
+@router.post("/{league_id}/list/{card_id}")
+async def list_card_for_sale(
+    league_id: int,
+    card_id: int,
+    data: ListCardRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Poner una carta a la venta en el mercado de la liga."""
+    member = db.query(LeagueMember).filter(
+        LeagueMember.league_id == league_id,
+        LeagueMember.user_id == current_user.id
+    ).first()
+    if not member:
+        raise HTTPException(status_code=403, detail="No perteneces a esta liga")
+
+    card = db.query(UserCard).filter(
+        UserCard.id == card_id,
+        UserCard.user_id == current_user.id,
+        UserCard.league_id == league_id
+    ).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Carta no encontrada")
+    if not card.is_tradeable:
+        raise HTTPException(status_code=400, detail="Esta carta no se puede vender")
+    if card.is_in_lineup:
+        raise HTTPException(status_code=400, detail="Quita la carta del 11 antes de venderla")
+
+    # Check not already listed
+    existing = db.query(MarketListing).filter(
+        MarketListing.card_id == card_id,
+        MarketListing.is_active == True
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Esta carta ya está en venta")
+
+    # Min price = player value
+    min_price = int(card.player.current_price)
+    if data.asking_price < min_price:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Precio mínimo: {min_price:,} (valor del jugador)"
+        )
+
+    listing = MarketListing(
+        card_id=card_id,
+        seller_id=current_user.id,
+        league_id=league_id,
+        asking_price=data.asking_price
+    )
+    db.add(listing)
+    db.commit()
+
+    return {
+        "message": f"{card.player.name} puesto a la venta por {data.asking_price:,}",
+        "listing_id": listing.id,
+        "player_name": card.player.name,
+        "asking_price": data.asking_price
+    }
+
+
+@router.delete("/{league_id}/list/{listing_id}")
+async def cancel_listing(
+    league_id: int,
+    listing_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Cancelar un listado de venta."""
+    listing = db.query(MarketListing).filter(
+        MarketListing.id == listing_id,
+        MarketListing.seller_id == current_user.id,
+        MarketListing.league_id == league_id,
+        MarketListing.is_active == True
+    ).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listado no encontrado")
+
+    listing.is_active = False
+    db.commit()
+    return {"message": "Listado cancelado"}
+
+
+@router.get("/{league_id}/listings")
+async def get_listings(
+    league_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Obtener todos los listados activos de la liga."""
+    member = db.query(LeagueMember).filter(
+        LeagueMember.league_id == league_id,
+        LeagueMember.user_id == current_user.id
+    ).first()
+    if not member:
+        raise HTTPException(status_code=403, detail="No perteneces a esta liga")
+
+    listings = db.query(MarketListing).filter(
+        MarketListing.league_id == league_id,
+        MarketListing.is_active == True
+    ).all()
+
+    result = []
+    for l in listings:
+        player = l.card.player
+        seller = l.seller
+        result.append({
+            "id": l.id,
+            "card_id": l.card_id,
+            "player_name": player.name,
+            "position": player.position.value,
+            "overall_rating": player.overall_rating,
+            "base_rarity": player.base_rarity.value,
+            "image_url": player.image_url,
+            "asking_price": l.asking_price,
+            "seller_username": seller.username,
+            "is_mine": l.seller_id == current_user.id,
+            "listed_at": l.listed_at.isoformat()
+        })
+
+    return result
+
+
+@router.post("/{league_id}/buy-listing/{listing_id}")
+async def buy_listing(
+    league_id: int,
+    listing_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Comprar una carta de otro usuario."""
+    member = db.query(LeagueMember).filter(
+        LeagueMember.league_id == league_id,
+        LeagueMember.user_id == current_user.id
+    ).first()
+    if not member:
+        raise HTTPException(status_code=403, detail="No perteneces a esta liga")
+
+    listing = db.query(MarketListing).filter(
+        MarketListing.id == listing_id,
+        MarketListing.league_id == league_id,
+        MarketListing.is_active == True
+    ).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listado no encontrado o ya vendido")
+    if listing.seller_id == current_user.id:
+        raise HTTPException(status_code=400, detail="No puedes comprar tu propia carta")
+    if member.coins < listing.asking_price:
+        raise HTTPException(status_code=400, detail="No tienes suficientes monedas")
+
+    # Transfer money
+    member.coins -= listing.asking_price
+    seller_member = db.query(LeagueMember).filter(
+        LeagueMember.league_id == league_id,
+        LeagueMember.user_id == listing.seller_id
+    ).first()
+    if seller_member:
+        seller_member.coins += listing.asking_price
+
+    # Transfer card
+    card = listing.card
+    card.user_id = current_user.id
+    card.team_id = None  # Remove from seller's team, buyer assigns manually
+
+    # Close listing
+    listing.is_active = False
+    listing.sold_at = datetime.utcnow()
+    listing.buyer_id = current_user.id
+
+    db.commit()
+
+    return {
+        "message": f"Has comprado a {card.player.name} por {listing.asking_price:,}",
+        "player_name": card.player.name,
+        "remaining_coins": member.coins
+    }
+
+
+# ==========================================
+# OFERTAS DEL SISTEMA
+# ==========================================
+
+@router.get("/{league_id}/my-offers")
+async def get_my_offers(
+    league_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Obtener ofertas del sistema pendientes para el usuario."""
+    offers = db.query(SystemOffer).filter(
+        SystemOffer.league_id == league_id,
+        SystemOffer.user_id == current_user.id,
+        SystemOffer.is_accepted == False,
+        SystemOffer.is_expired == False,
+        SystemOffer.expires_at > datetime.utcnow()
+    ).all()
+
+    result = []
+    for o in offers:
+        result.append({
+            "id": o.id,
+            "listing_id": o.listing_id,
+            "player_name": o.card.player.name,
+            "offer_price": o.offer_price,
+            "asking_price": o.listing.asking_price,
+            "offered_at": o.offered_at.isoformat(),
+            "expires_at": o.expires_at.isoformat()
+        })
+
+    return result
+
+
+@router.post("/{league_id}/accept-offer/{offer_id}")
+async def accept_offer(
+    league_id: int,
+    offer_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Aceptar una oferta del sistema — vende la carta al precio ofrecido."""
+    offer = db.query(SystemOffer).filter(
+        SystemOffer.id == offer_id,
+        SystemOffer.user_id == current_user.id,
+        SystemOffer.league_id == league_id,
+        SystemOffer.is_accepted == False,
+        SystemOffer.is_expired == False
+    ).first()
+    if not offer:
+        raise HTTPException(status_code=404, detail="Oferta no encontrada o expirada")
+    if offer.expires_at < datetime.utcnow():
+        offer.is_expired = True
+        db.commit()
+        raise HTTPException(status_code=400, detail="La oferta ha expirado")
+
+    member = db.query(LeagueMember).filter(
+        LeagueMember.league_id == league_id,
+        LeagueMember.user_id == current_user.id
+    ).first()
+
+    # Give coins
+    member.coins += offer.offer_price
+
+    # Delete card
+    card = offer.card
+    player_name = card.player.name
+    db.delete(card)
+
+    # Close offer and listing
+    offer.is_accepted = True
+    offer.listing.is_active = False
+    offer.listing.sold_at = datetime.utcnow()
+
+    db.commit()
+
+    return {
+        "message": f"Has vendido a {player_name} al sistema por {offer.offer_price:,}",
+        "player_name": player_name,
+        "price_received": offer.offer_price,
+        "remaining_coins": member.coins
+    }

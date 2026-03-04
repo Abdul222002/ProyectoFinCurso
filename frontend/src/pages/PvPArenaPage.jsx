@@ -19,7 +19,7 @@ export default function PvPArenaPage() {
     try {
       const res = await arenaAPI.leaderboard();
       setLeaderboard(res.data);
-      
+
       const historyRes = await arenaAPI.history();
       setHistory(historyRes.data);
     } catch {
@@ -72,7 +72,6 @@ export default function PvPArenaPage() {
       <header className="pvp-header">
         <button className="pvp-back-btn" onClick={() => navigate('/dashboard')}>←</button>
         <h1 className="pvp-title">⚔️ Arena PvP</h1>
-        <div className="pvp-coins">🪙 {user?.coins?.toLocaleString()}</div>
       </header>
 
       {/* Tab Nav */}

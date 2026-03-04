@@ -11,6 +11,7 @@ import CardDetailPage from './pages/CardDetailPage';
 import PriceAnalysisPage from './pages/PriceAnalysisPage';
 import LeaguesPage from './pages/LeaguesPage';
 import LeagueDetailPage from './pages/LeagueDetailPage';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   return (
@@ -83,6 +84,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <LeagueDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminDashboard />
               </ProtectedRoute>
             }
           />

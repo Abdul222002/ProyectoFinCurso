@@ -13,10 +13,19 @@ from app.routers.players import router as players_router
 from app.routers.market import router as market_router
 from app.routers.arena import router as arena_router
 from app.routers.packs import router as packs_router
+from app.routers.admin import router as admin_router
 
+from contextlib import asynccontextmanager
+import sys
+
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+
+from app.core.config import settings
 # Database
 from app.core.database import engine
 from app.models.models import Base
+from app.core.scheduler import start_scheduler, stop_scheduler
 
 app = FastAPI(
     title="Ultimate Fantasy Legends API",
@@ -45,6 +54,13 @@ async def on_startup():
     """Crea tablas que falten (leagues, league_members, league_invitations)"""
     Base.metadata.create_all(bind=engine)
     print("✅ Tablas verificadas/creadas correctamente")
+    start_scheduler()
+
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    stop_scheduler()
+    print("🛑 Tareas en segundo plano detenidas.")
 
 
 @app.get("/")
@@ -75,6 +91,7 @@ app.include_router(players_router, prefix="/api/players", tags=["Jugadores"])
 app.include_router(market_router, prefix="/api/market", tags=["Mercado"])
 app.include_router(arena_router, prefix="/api/arena", tags=["Arena PvP"])
 app.include_router(packs_router, prefix="/api/packs", tags=["Sobres"])
+app.include_router(admin_router, prefix="/api/admin", tags=["Admin"])
 
 
 if __name__ == "__main__":

@@ -1,0 +1,42 @@
+# ==================================================
+# ULTIMATE FANTASY LEGENDS - DEPENDENCIAS BACKEND
+# ==================================================
+
+# ---- Core Framework ----
+fastapi
+uvicorn[standard]
+gunicorn
+python-multipart
+
+# ---- Database ----
+sqlalchemy
+pymysql
+alembic
+
+# ---- Configuration ----
+pydantic
+pydantic-settings
+python-dotenv
+email-validator
+
+# ---- Authentication ----
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
+
+# ---- HTTP Client (para Sportmonks API) ----
+httpx
+requests
+
+# ---- Utilities & Background Tasks ----
+python-dateutil
+apscheduler
+redis
+
+# ---- Development & Testing ----
+pytest
+pytest-asyncio
+pytest-cov
+black
+flake8
+mypy
