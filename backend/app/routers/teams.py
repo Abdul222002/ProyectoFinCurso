@@ -8,7 +8,7 @@ from typing import Optional, List
 from datetime import datetime
 
 from app.core.database import get_db
-from app.models.models import User, Team, UserCard, Gameweek, GameweekLineup
+from app.models.models import User, Team, UserCard, Gameweek, GameweekLineup, LeagueMember
 from app.schemas.team import TeamResponse, TeamUpdate, SetLineupRequest, GameweekLineupResponse
 from app.routers.auth import get_current_user
 
@@ -227,3 +227,66 @@ async def get_active_gameweek(db: Session = Depends(get_db)):
         if not gw:
             raise HTTPException(status_code=404, detail="No hay jornadas configuradas")
     return gw
+
+
+@router.post("/my/release/{card_id}")
+async def release_player(
+    card_id: int,
+    league_id: int = Query(..., description="ID de la liga"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Liberar un jugador — venta instantánea al sistema por el 50% de su valor de mercado.
+    La carta se elimina y las monedas se acreditan inmediatamente.
+    """
+    member = db.query(LeagueMember).filter(
+        LeagueMember.league_id == league_id,
+        LeagueMember.user_id == current_user.id
+    ).first()
+    if not member:
+        raise HTTPException(status_code=403, detail="No perteneces a esta liga")
+
+    team = db.query(Team).filter(
+        Team.user_id == current_user.id,
+        Team.league_id == league_id
+    ).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="No tienes equipo en esta liga")
+
+    card = db.query(UserCard).filter(
+        UserCard.id == card_id,
+        UserCard.user_id == current_user.id
+    ).first()
+    
+    if not card:
+        raise HTTPException(status_code=404, detail="Carta no encontrada en tu inventario")
+        
+    if card.league_id != league_id:
+        if card.team and card.team.league_id == league_id:
+            card.league_id = league_id
+            db.commit()
+        else:
+            raise HTTPException(status_code=404, detail="Carta no encontrada en inventario de esta liga")
+            
+    if not card.is_tradeable:
+        raise HTTPException(status_code=400, detail="Esta carta no se puede liberar (intransferible)")
+    if card.is_in_lineup:
+        raise HTTPException(status_code=400, detail="Retira la carta de la alineación antes de liberarla")
+
+    player = card.player
+    release_price = int(player.current_price * 0.50)  # 50% del valor
+
+    # Acreditar monedas
+    member.coins += release_price
+
+    # Eliminar carta
+    db.delete(card)
+    db.commit()
+
+    return {
+        "message": f"Has liberado a {player.name} por {release_price:,} monedas",
+        "player_name": player.name,
+        "price_received": release_price,
+        "remaining_coins": member.coins
+    }

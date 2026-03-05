@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { teamsAPI, leaguesAPI, auctionAPI } from '../services/endpoints';
+import { teamsAPI, leaguesAPI, auctionAPI, marketAPI } from '../services/endpoints';
 import TeamCustomizerModal from '../components/TeamCustomizerModal';
 import PlayerDetailModal from '../components/PlayerDetailModal';
 import FormationPitch, { getFormationSlots } from '../components/FormationPitch';
@@ -29,8 +29,10 @@ export default function TeamManagementPage() {
   const [sellPrice, setSellPrice] = useState('');
   const [selling, setSelling] = useState(false);
 
-  // ── Listed cards tracking ──
+  // ── Listed cards tracking & Release state ──
   const [listedCardIds, setListedCardIds] = useState(new Set());
+  const [releaseCard, setReleaseCard] = useState(null);
+  const [releasing, setReleasing] = useState(false);
 
   const FORMATIONS = ['4-4-2', '4-3-3', '3-5-2', '4-2-3-1', '3-4-3', '5-3-2', '5-4-1'];
 
@@ -97,9 +99,8 @@ export default function TeamManagementPage() {
     }
     const currentIds = currentLineup.map(p => p.id);
     try {
-      const res = await teamsAPI.setLineup(selectedTeam.league_id, [...currentIds, cardId]);
-      setSelectedTeam(res.data);
-      setTeams(prev => prev.map(t => t.id === res.data.id ? res.data : t));
+      await teamsAPI.setLineup(selectedTeam.league_id, [...currentIds, cardId]);
+      await loadData(); // REFRESCA AL 100% LA BD
       setError('');
       setPickerPos(null);
       if (gameweek && new Date() < new Date(gameweek.start_date)) setGwLineup(true);
@@ -116,11 +117,8 @@ export default function TeamManagementPage() {
       .filter(p => p.is_in_lineup && p.id !== cardId)
       .map(p => p.id);
     try {
-      const res = await teamsAPI.setLineup(selectedTeam.league_id, newIds);
-      if (res && res.data) {
-        setSelectedTeam(res.data);
-        setTeams(prev => prev.map(t => t.id === res.data.id ? res.data : t));
-      }
+      await teamsAPI.setLineup(selectedTeam.league_id, newIds);
+      await loadData(); // REFRESCA AL 100% LA BD
       setError('');
     } catch (err) {
       setError(err.response?.data?.detail || 'Error al quitar jugador');
@@ -131,14 +129,61 @@ export default function TeamManagementPage() {
   const handleFormationChange = async (formation) => {
     if (!selectedTeam) return;
     try {
+      // 1. Calculate how many players of each position fit in the new formation
+      const slotsStr = getFormationSlots(formation);
+      // getFormationSlots returns { DEF: 4, MID: 3, FWD: 3 }
+
+      const currentLineup = selectedTeam.players.filter(p => p.is_in_lineup);
+      const counts = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
+      const newIds = [];
+
+      for (const p of currentLineup) {
+        if (!p.player || !p.player.position) {
+          if (p.position) { // Try card level if player level missing
+            p.player = { position: p.position };
+          } else {
+            continue;
+          }
+        }
+
+        const pos = p.player.position;
+        if (pos === 'GK' && counts.GK < 1) {
+          counts.GK++;
+          newIds.push(p.id);
+        } else if (pos === 'DEF' && counts.DEF < slotsStr.DEF) {
+          counts.DEF++;
+          newIds.push(p.id);
+        } else if (pos === 'MID' && counts.MID < slotsStr.MID) {
+          counts.MID++;
+          newIds.push(p.id);
+        } else if (pos === 'FWD' && counts.FWD < slotsStr.FWD) {
+          counts.FWD++;
+          newIds.push(p.id);
+        }
+      }
+
       await teamsAPI.update(selectedTeam.league_id, { formation });
-      const res = await teamsAPI.setLineup(selectedTeam.league_id, []);
-      setSelectedTeam(res.data);
-      setTeams(prev => prev.map(t => t.id === res.data.id ? res.data : t));
-      setSuccess(`Formación cambiada a ${formation}. Monta tu nuevo 11.`);
+      await teamsAPI.setLineup(selectedTeam.league_id, newIds);
+      await loadData();
+      setSuccess(`Formación cambiada a ${formation}. Alineación ajustada.`);
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError(err.response?.data?.detail || 'Error al cambiar formación');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  const handleSaveLineup = async () => {
+    if (!selectedTeam) return;
+    try {
+      const currentLineup = selectedTeam.players.filter(p => p.is_in_lineup);
+      const currentIds = currentLineup.map(p => p.id);
+      await teamsAPI.setLineup(selectedTeam.league_id, currentIds);
+      setSuccess('✅ Alineación guardada para la próxima jornada.');
+      setTimeout(() => setSuccess(''), 4000);
+      if (gameweek && new Date() < new Date(gameweek.start_date)) setGwLineup(true);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Error al guardar la alineación');
       setTimeout(() => setError(''), 3000);
     }
   };
@@ -249,7 +294,9 @@ export default function TeamManagementPage() {
 
       {/* ── Header ── */}
       <header className="team-header">
-        <button className="team-back-btn" onClick={() => navigate(leagueIdParam ? `/leagues/${leagueIdParam}` : '/dashboard')}>← Volver</button>
+        <button className="team-back-btn" onClick={() => navigate(leagueIdParam ? `/leagues/${leagueIdParam}` : '/dashboard')}>
+          <span style={{ fontSize: '1.2rem' }}>‹</span> Volver
+        </button>
         <div className="team-header-center">
           {selectedTeam?.shield_url && <img src={selectedTeam.shield_url} alt="Escudo" className="team-shield-mini" />}
           <h1 className="team-title">{selectedTeam?.name || 'Mi Equipo'}</h1>
@@ -303,16 +350,21 @@ export default function TeamManagementPage() {
 
       {/* ── Formation Selector ── */}
       <div className="team-formation">
-        <label>Formación:</label>
-        <div className="team-formation-options">
-          {FORMATIONS.map(f => (
-            <button
-              key={f}
-              className={`team-formation-btn ${selectedTeam?.active_formation === f ? 'active' : ''}`}
-              onClick={() => handleFormationChange(f)}
-            >{f}</button>
-          ))}
+        <div>
+          <label>Formación:</label>
+          <div className="team-formation-options">
+            {FORMATIONS.map(f => (
+              <button
+                key={f}
+                className={`team-formation-btn ${selectedTeam?.active_formation === f ? 'active' : ''}`}
+                onClick={() => handleFormationChange(f)}
+              >{f}</button>
+            ))}
+          </div>
         </div>
+        <button className="tm-save-lineup-btn" onClick={handleSaveLineup}>
+          💾 Guardar Alineación
+        </button>
       </div>
 
       {/* ── PITCH ── */}
@@ -382,6 +434,68 @@ export default function TeamManagementPage() {
         </div>
       )}
 
+      {/* ══ RELEASE MODAL ══ */}
+      {releaseCard && (
+        <div className="picker-overlay" onClick={() => setReleaseCard(null)} style={{ zIndex: 110 }}>
+          <div className="picker-modal" onClick={e => e.stopPropagation()}>
+            <div className="picker-header">
+              <h3>🔓 Confirmar Liberación</h3>
+              <button className="picker-close" onClick={() => setReleaseCard(null)}>✕</button>
+            </div>
+            <div style={{ padding: '24px 20px', textAlign: 'center' }}>
+              <div className="picker-card" data-rarity={releaseCard.base_rarity || 'bronze'} style={{ cursor: 'default', margin: '0 auto 16px', maxWidth: '300px' }}>
+                <div className="picker-card-img">
+                  {releaseCard.image_url ? <img src={releaseCard.image_url} alt={releaseCard.player_name} /> : <div className="picker-card-fallback">⚽</div>}
+                </div>
+                <div className="picker-card-info" style={{ textAlign: 'left' }}>
+                  <span className="picker-card-name">{releaseCard.player_name}</span>
+                  <span className="picker-card-pos">{releaseCard.position} · OVR {releaseCard.current_overall}</span>
+                </div>
+              </div>
+              <p style={{ color: '#fff', fontSize: '1.05rem', marginBottom: '8px' }}>
+                ¿Estás seguro de que quieres liberar a <strong>{releaseCard.player_name}</strong>?
+              </p>
+              <p style={{ color: '#fbbf24', fontSize: '1.2rem', fontWeight: '800', marginBottom: '8px' }}>
+                Recibirás {Math.round((releaseCard.current_market_value || 0) / 2).toLocaleString()} monedas
+              </p>
+              <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '24px' }}>
+                Esto es el 50% de su valor de mercado actual. Esta acción <span style={{ color: '#ef4444' }}>no se puede deshacer</span>.
+              </p>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={() => setReleaseCard(null)}
+                  style={{ flex: 1, padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontWeight: 600, fontSize: '1rem', cursor: 'pointer' }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  disabled={releasing}
+                  onClick={async () => {
+                    setReleasing(true);
+                    const releaseValue = Math.round((releaseCard.current_market_value || 0) / 2);
+                    try {
+                      await teamsAPI.releasePlayer(selectedTeam.league_id, releaseCard.id);
+                      setSuccess(`✅ ${releaseCard.player_name} liberado por ${releaseValue.toLocaleString()} monedas`);
+                      await loadData();
+                      setReleaseCard(null);
+                      setTimeout(() => setSuccess(''), 4000);
+                    } catch (err) {
+                      setError(err.response?.data?.detail || 'Error al liberar jugador');
+                      setTimeout(() => setError(''), 4000);
+                    }
+                    setReleasing(false);
+                  }}
+                  style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', background: releasing ? '#b45309' : 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', fontWeight: 800, fontSize: '1rem', cursor: releasing ? 'wait' : 'pointer' }}
+                >
+                  {releasing ? 'Liberando...' : '🔓 Liberar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Bench ── */}
       <section className="team-section">
         <h2 className="team-section-title">🪑 Suplentes ({bench.length})</h2>
@@ -416,14 +530,27 @@ export default function TeamManagementPage() {
                     onClick={(e) => { e.stopPropagation(); handleCancelListing(card.id); }}
                   >❌ Retirar</button>
                 ) : card.is_tradeable ? (
-                  <button
-                    className="team-player-action team-player-action--sell"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSellCard(card);
-                      setSellPrice(Math.round(card.current_market_value || 0).toString());
-                    }}
-                  >🏷️ Vender</button>
+                  <div className="team-player-actions-row" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      className="team-player-action team-player-action--sell"
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setSellCard(card);
+                        setSellPrice(Math.round(card.current_market_value || 0).toString());
+                      }}
+                    >🏷️ Vender</button>
+                    <button
+                      className="team-player-action team-player-action--release"
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setReleaseCard(card);
+                      }}
+                    >🔓 Liberar</button>
+                  </div>
                 ) : null}
               </div>
             );

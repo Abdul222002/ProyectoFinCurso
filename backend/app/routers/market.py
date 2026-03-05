@@ -271,12 +271,18 @@ async def sell_card_league(
         
     card = db.query(UserCard).filter(
         UserCard.id == card_id,
-        UserCard.user_id == current_user.id,
-        UserCard.league_id == league_id
+        UserCard.user_id == current_user.id
     ).first()
     
     if not card:
         raise HTTPException(status_code=404, detail="Carta no encontrada en tu inventario de esta liga")
+        
+    if card.league_id != league_id:
+        if card.team and card.team.league_id == league_id:
+            card.league_id = league_id
+            db.commit()
+        else:
+            raise HTTPException(status_code=404, detail="Carta no encontrada en tu inventario de esta liga")
 
     if not card.is_tradeable:
         raise HTTPException(status_code=400, detail="Esta carta no se puede vender (intransferible)")
@@ -324,11 +330,18 @@ async def list_card_for_sale(
 
     card = db.query(UserCard).filter(
         UserCard.id == card_id,
-        UserCard.user_id == current_user.id,
-        UserCard.league_id == league_id
+        UserCard.user_id == current_user.id
     ).first()
+    
     if not card:
         raise HTTPException(status_code=404, detail="Carta no encontrada")
+        
+    if card.league_id != league_id:
+        if card.team and card.team.league_id == league_id:
+            card.league_id = league_id
+            db.commit()
+        else:
+            raise HTTPException(status_code=404, detail="Carta no encontrada")
     if not card.is_tradeable:
         raise HTTPException(status_code=400, detail="Esta carta no se puede vender")
     if card.is_in_lineup:

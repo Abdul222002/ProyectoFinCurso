@@ -130,10 +130,11 @@ export default function FormationPitch({
 function EmptySlotNode({ label, position, onSlotClick }) {
     return (
         <div className="pitch-slot" onClick={() => onSlotClick && onSlotClick(position)}>
-            <div className="pitch-slot-circle">
-                <span className="pitch-slot-plus">+</span>
+            <div className="pitch-slot-circle">+</div>
+            <div className="pitch-slot-label">
+                <span className="pitch-slot-pos">{label}</span>
+                <span className="pitch-slot-text">AÑADIR JUGADOR</span>
             </div>
-            <span className="pitch-slot-label">{label}</span>
         </div>
     );
 }

@@ -152,8 +152,8 @@ export default function PlayerDetailModal({ playerId, playerObj, onClose }) {
                                     <tr>
                                         <th>JOR</th>
                                         <th>Partido</th>
-                                        <th>RES</th>
-                                        <th>MIN</th>
+                                        <th>Resultado</th>
+                                        <th>Minutos</th>
                                         <th>G/A</th>
                                         <th>Pts</th>
                                     </tr>

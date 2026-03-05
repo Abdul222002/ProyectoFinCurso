@@ -392,3 +392,77 @@ async def admin_list_teams(
         })
 
     return result
+
+
+# ==========================================
+# USER COINS PER LEAGUE
+# ==========================================
+
+@router.get("/users/{user_id}/league-coins")
+async def admin_get_user_league_coins(
+    user_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin)
+):
+    """Get a user's coin balance in each league they belong to."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    memberships = db.query(LeagueMember).filter(LeagueMember.user_id == user_id).all()
+    result = []
+    for m in memberships:
+        league = db.query(League).filter(League.id == m.league_id).first()
+        result.append({
+            "league_id": m.league_id,
+            "league_name": league.name if league else "???",
+            "coins": m.coins or 0,
+            "league_points": m.league_points or 0,
+        })
+
+    return {
+        "user_id": user_id,
+        "username": user.username,
+        "global_coins": user.coins,
+        "leagues": result,
+    }
+
+
+@router.put("/users/{user_id}/league-coins")
+async def admin_update_user_league_coins(
+    user_id: int,
+    data: dict,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin)
+):
+    """
+    Update a user's coins. Accepts:
+      - league_id + coins : update coins in that specific league
+      - global_coins      : update the user's global coin balance
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    # Update per-league coins
+    league_id = data.get("league_id")
+    new_coins = data.get("coins")
+
+    if league_id is not None and new_coins is not None:
+        membership = db.query(LeagueMember).filter(
+            LeagueMember.user_id == user_id,
+            LeagueMember.league_id == league_id
+        ).first()
+        if not membership:
+            raise HTTPException(status_code=404, detail="El usuario no pertenece a esa liga")
+        membership.coins = int(new_coins)
+
+    # Update global coins
+    global_coins = data.get("global_coins")
+    if global_coins is not None:
+        user.coins = int(global_coins)
+
+    db.commit()
+
+    return {"message": f"Monedas de @{user.username} actualizadas correctamente."}
+

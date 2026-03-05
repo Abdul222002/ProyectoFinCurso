@@ -36,6 +36,11 @@ export default function AdminDashboard() {
     const [editingPlayer, setEditingPlayer] = useState(null);
     const [editForm, setEditForm] = useState({});
 
+    // Coin editor modal
+    const [coinUser, setCoinUser] = useState(null);
+    const [coinData, setCoinData] = useState(null);
+    const [coinLoading, setCoinLoading] = useState(false);
+
     useEffect(() => {
         if (user && user.role !== 'admin') navigate('/dashboard');
     }, [user, navigate]);
@@ -132,6 +137,42 @@ export default function AdminDashboard() {
         setTimeout(() => setMessage(''), 4000);
     };
 
+    // ── Coin management ──
+    const openCoinEditor = async (u) => {
+        setCoinUser(u);
+        setCoinLoading(true);
+        try {
+            const r = await adminAPI.getUserLeagueCoins(u.id);
+            setCoinData(r.data);
+        } catch { setCoinData(null); }
+        setCoinLoading(false);
+    };
+
+    const handleSaveCoins = async (leagueId, newCoins) => {
+        if (!coinUser) return;
+        try {
+            await adminAPI.updateUserLeagueCoins(coinUser.id, { league_id: leagueId, coins: newCoins });
+            setMessage(`✅ Monedas actualizadas para @${coinUser.username}`);
+            // Refresh
+            const r = await adminAPI.getUserLeagueCoins(coinUser.id);
+            setCoinData(r.data);
+            loadUsers();
+        } catch (e) { setMessage(`❌ ${e.response?.data?.detail || 'Error'}`); }
+        setTimeout(() => setMessage(''), 4000);
+    };
+
+    const handleSaveGlobalCoins = async (newCoins) => {
+        if (!coinUser) return;
+        try {
+            await adminAPI.updateUserLeagueCoins(coinUser.id, { global_coins: newCoins });
+            setMessage(`✅ Monedas globales actualizadas para @${coinUser.username}`);
+            const r = await adminAPI.getUserLeagueCoins(coinUser.id);
+            setCoinData(r.data);
+            loadUsers();
+        } catch (e) { setMessage(`❌ ${e.response?.data?.detail || 'Error'}`); }
+        setTimeout(() => setMessage(''), 4000);
+    };
+
     const fmt = (p) => {
         if (p >= 1e9) return (p / 1e9).toFixed(1) + 'B';
         if (p >= 1e6) return (p / 1e6).toFixed(1) + 'M';
@@ -223,7 +264,10 @@ export default function AdminDashboard() {
                                             <td>{fmt(u.coins)}</td>
                                             <td>{u.league_count > 0 ? <span className="adm-league-count">{u.league_count}</span> : '0'}</td>
                                             <td className="adm-date">{u.created_at ? new Date(u.created_at).toLocaleDateString() : '-'}</td>
-                                            <td>{u.role !== 'admin' ? <button className="adm-delete-btn" onClick={() => handleDeleteUser(u.id, u.username)}>🗑️</button> : <span className="adm-protected">🛡️</span>}</td>
+                                            <td style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                                <button className="adm-edit-btn" title="Editar monedas" onClick={() => openCoinEditor(u)}>🪙</button>
+                                                {u.role !== 'admin' ? <button className="adm-delete-btn" onClick={() => handleDeleteUser(u.id, u.username)}>🗑️</button> : <span className="adm-protected">🛡️</span>}
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -455,6 +499,51 @@ export default function AdminDashboard() {
                         <div className="adm-modal-footer">
                             <button className="adm-cancel-btn" onClick={() => setEditingPlayer(null)}>Cancelar</button>
                             <button className="adm-save-btn" onClick={handleSavePlayer}>💾 Guardar Cambios</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ====== COIN EDITOR MODAL ====== */}
+            {coinUser && (
+                <div className="adm-modal-overlay" onClick={() => { setCoinUser(null); setCoinData(null); }}>
+                    <div className="adm-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 520 }}>
+                        <div className="adm-modal-header">
+                            <h2>🪙 Monedas de @{coinUser.username}</h2>
+                            <button className="adm-modal-close" onClick={() => { setCoinUser(null); setCoinData(null); }}>✕</button>
+                        </div>
+                        <div className="adm-modal-body">
+                            {coinLoading && <div className="adm-loading"><div className="adm-spinner" />Cargando...</div>}
+                            {coinData && !coinLoading && (
+                                <>
+                                    {/* Per-league coins */}
+                                    <div className="adm-edit-section">
+                                        <h3>🏆 Monedas por Liga</h3>
+                                        {coinData.leagues.length === 0 && <p style={{ color: 'rgba(255,255,255,0.5)', padding: '12px 0' }}>Este usuario no pertenece a ninguna liga.</p>}
+                                        {coinData.leagues.map(lg => (
+                                            <div key={lg.league_id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.04)' }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ fontWeight: 600, color: '#fff' }}>{lg.league_name}</div>
+                                                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Puntos: {lg.league_points}</div>
+                                                </div>
+                                                <input
+                                                    type="number"
+                                                    defaultValue={lg.coins}
+                                                    id={`league-coins-${lg.league_id}`}
+                                                    style={{ width: 140, padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 15, textAlign: 'right' }}
+                                                />
+                                                <button className="adm-save-btn" style={{ padding: '8px 14px' }} onClick={() => {
+                                                    const val = document.getElementById(`league-coins-${lg.league_id}`).value;
+                                                    handleSaveCoins(lg.league_id, parseInt(val) || 0);
+                                                }}>💾</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                        <div className="adm-modal-footer">
+                            <button className="adm-cancel-btn" onClick={() => { setCoinUser(null); setCoinData(null); }}>Cerrar</button>
                         </div>
                     </div>
                 </div>

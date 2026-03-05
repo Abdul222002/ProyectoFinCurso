@@ -531,7 +531,7 @@ export default function LeagueDetailPage() {
                         <div className="ld-market-row-team">
                           <span style={{ color: getRarityColor(listing.base_rarity) }}>OVR {listing.overall_rating}</span>
                           <span>•</span>
-                          <span>Vendedor: @{listing.seller_username}</span>
+                          <span>Venta de: @{listing.seller_username}</span>
                         </div>
                       </div>
                     </div>

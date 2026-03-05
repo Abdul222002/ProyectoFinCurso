@@ -59,21 +59,25 @@
 }
 
 .team-back-btn {
-    font-size: 1.5rem;
-    opacity: 0.7;
+    font-size: 0.85rem;
+    font-weight: 700;
+    opacity: 0.9;
     transition: all 0.2s;
-    padding: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    border: none;
-    color: white;
-    border-radius: 12px;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+    border-radius: 10px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .team-back-btn:hover {
     opacity: 1;
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateX(-2px);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
 .team-title {
@@ -162,12 +166,44 @@
     background: rgba(255, 255, 255, 0.1);
 }
 
+.tm-formation-picker select:focus {
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.tm-save-lineup-btn {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.tm-save-lineup-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.tm-save-lineup-btn:active {
+    transform: translateY(0);
+}
+
 /* ---- Formation Control ---- */
 .team-formation {
     padding: 16px 24px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 16px;
+    flex-wrap: wrap;
 }
 
 .team-formation label {
@@ -286,8 +322,8 @@
     background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9));
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 16px;
-    padding: 24px 12px 16px;
-    /* Extra top padding for badges */
+    padding: 24px 12px 0;
+    /* Extra top padding for badges, 0 bottom to flush buttons */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -803,11 +839,59 @@
     background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.08));
     color: #f87171;
     border-top: 1px solid rgba(239, 68, 68, 0.15);
+    border-radius: 0 0 12px 12px;
+    width: calc(100% + 24px);
+    margin: auto -12px 0;
+    padding: 10px;
+    font-size: 0.8rem;
+    z-index: 10;
 }
 
 .team-player-action--cancel:hover {
     background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(239, 68, 68, 0.15));
     color: #fca5a5;
+}
+
+/* Actions row (Vender + Liberar) */
+.team-player-actions-row {
+    display: flex;
+    width: calc(100% + 24px);
+    margin: auto -12px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    z-index: 10;
+}
+
+.team-player-actions-row .team-player-action {
+    flex: 1;
+    border-radius: 0;
+    font-size: 0.7rem;
+    padding: 8px 4px;
+}
+
+.team-player-actions-row .team-player-action:first-child {
+    border-radius: 0 0 0 12px;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.team-player-actions-row .team-player-action:last-child {
+    border-radius: 0 0 12px 0;
+}
+
+/* Release button */
+.team-player-action--release {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(251, 191, 36, 0.06));
+    color: #fbbf24;
+    border-top: 1px solid rgba(251, 191, 36, 0.12);
+}
+
+.team-player-action--release:hover {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(251, 191, 36, 0.12));
+    color: #fde68a;
+}
+
+.team-player-action--release:disabled {
+    opacity: 0.5;
+    cursor: wait;
 }
 
 /* On-sale card state */

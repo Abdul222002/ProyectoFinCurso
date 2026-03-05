@@ -16,6 +16,7 @@ export const teamsAPI = {
   setLineup: (leagueId, cardIds) => api.put('/teams/my/lineup', { lineup_card_ids: cardIds }, { params: { league_id: leagueId } }),
   getActiveGameweek: () => api.get('/teams/active-gameweek'),
   getGameweekLineup: (leagueId, gameweekId) => api.get('/teams/my/gameweek-lineup', { params: { league_id: leagueId, gameweek_id: gameweekId } }),
+  releasePlayer: (leagueId, cardId) => api.post(`/teams/my/release/${cardId}`, {}, { params: { league_id: leagueId } }),
 };
 
 // ==========================================
@@ -133,4 +134,6 @@ export const adminAPI = {
   getPlayers: (params = {}) => api.get('/admin/players', { params }),
   updatePlayer: (playerId, data) => api.put(`/admin/players/${playerId}`, data),
   getTeams: (search) => api.get('/admin/teams', { params: search ? { search } : {} }),
+  getUserLeagueCoins: (userId) => api.get(`/admin/users/${userId}/league-coins`),
+  updateUserLeagueCoins: (userId, data) => api.put(`/admin/users/${userId}/league-coins`, data),
 };
