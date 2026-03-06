@@ -69,6 +69,7 @@ export const leaguesAPI = {
   acceptInvitation: (id) => api.post(`/leagues/invitations/${id}/accept`),
   rejectInvitation: (id) => api.post(`/leagues/invitations/${id}/reject`),
   leave: (leagueId) => api.delete(`/leagues/${leagueId}/leave`),
+  kickMember: (leagueId, userId) => api.delete(`/leagues/${leagueId}/kick/${userId}`),
 };
 
 // ==========================================

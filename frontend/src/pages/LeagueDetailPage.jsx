@@ -213,6 +213,17 @@ export default function LeagueDetailPage() {
     }
   };
 
+  const handleKick = async (memberId, memberUsername) => {
+    if (!window.confirm(`¿Seguro que quieres expulsar a @${memberUsername} de la liga?`)) return;
+    try {
+      await leaguesAPI.kickMember(leagueId, memberId);
+      setMessage(`✅ @${memberUsername} ha sido expulsado.`);
+      loadLeague();
+    } catch (err) {
+      setMessage(`❌ ${err.response?.data?.detail || 'Error al expulsar jugador'}`);
+    }
+  };
+
   const formatPrice = (price) => {
     if (price >= 1000000000) return (price / 1000000000).toFixed(1) + 'B';
     if (price >= 1000000) return (price / 1000000).toFixed(1) + 'M';
@@ -320,18 +331,34 @@ export default function LeagueDetailPage() {
       {activeTab === 'standings' && (
         <div className="ld-content">
           <div className="ld-standings">
-            {league.members?.sort((a, b) => b.league_points - a.league_points).map((member, idx) => (
-              <div key={member.id} className={`ld-member-row ${member.user_id === user?.id ? 'me' : ''}`}>
-                <span className="ld-rank">{idx + 1}</span>
-                <div className="ld-member-info">
-                  <span className="ld-member-name">
-                    @{member.username}
-                    {member.is_admin && ' 👑'}
-                  </span>
-                  <span className="ld-member-pts">{member.league_points} pts</span>
+            {league.members?.sort((a, b) => b.league_points - a.league_points).map((member, idx) => {
+              const isAdmin = myMembership?.is_admin || league.owner_id === user?.id;
+              const isOwner = league.owner_id === member.user_id;
+              const isSelf = member.user_id === user?.id;
+
+              return (
+                <div key={member.id} className={`ld-member-row ${isSelf ? 'me' : ''}`}>
+                  <span className="ld-rank">{idx + 1}</span>
+                  <div className="ld-member-info">
+                    <span className="ld-member-name">
+                      @{member.username}
+                      {member.is_admin && ' 👑'}
+                    </span>
+                    <span className="ld-member-pts">{member.league_points} pts</span>
+                  </div>
+                  {isAdmin && !isOwner && !isSelf && (
+                    <button
+                      className="ld-leave-btn"
+                      style={{ padding: '4px 12px', fontSize: '0.8rem', marginLeft: '10px', marginTop: '0', width: 'auto' }}
+                      onClick={(e) => { e.stopPropagation(); handleKick(member.user_id, member.username); }}
+                      title="Expulsar jugador"
+                    >
+                      🥾 Expulsar
+                    </button>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -631,7 +658,7 @@ export default function LeagueDetailPage() {
 
             {/* Pack info */}
             <div className="ld-pack-info-area">
-              <p className="ld-pack-info-desc">Contiene <strong>3 cartas legendarias</strong> aleatorias</p>
+              <p className="ld-pack-info-desc">Contiene <strong>1 carta legendaria</strong> aleatoria</p>
               <div className="ld-pack-price-tag">🪙 150.000.000</div>
             </div>
 
@@ -653,7 +680,10 @@ export default function LeagueDetailPage() {
             <PackOpeningModal
               cards={packResult.cards}
               remainingCoins={packResult.remaining_coins}
-              onClose={() => setPackResult(null)}
+              onClose={() => {
+                setPackResult(null);
+                loadLeague();
+              }}
             />
           )}
 

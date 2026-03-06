@@ -13,7 +13,9 @@ import random
 from app.core.database import get_db
 from app.models.models import (
     User, League, LeagueMember, LeagueInvitation, InvitationStatus,
-    Team, Player, UserCard, Position
+    Team, Player, UserCard, Position,
+    SystemOffer, MarketListing, MarketAuction, AuctionSlot, AuctionBid,
+    PackOpening, GameweekLineup
 )
 from app.schemas.league import (
     LeagueCreate, LeagueUpdate, LeagueResponse, LeagueListResponse,
@@ -428,8 +430,89 @@ async def invite_to_league(
 
 
 # ==========================================
-# SALIR DE LIGA
+# SALIR DE LIGA / EXPULSAR MIEMBRO
 # ==========================================
+
+def _remove_user_from_league(user_id: int, league_id: int, db: Session):
+    """Lógica compartida para limpiar un usuario de una liga (salir o ser expulsado)"""
+    membership = db.query(LeagueMember).filter(
+        LeagueMember.league_id == league_id,
+        LeagueMember.user_id == user_id
+    ).first()
+    
+    if not membership:
+        raise HTTPException(status_code=404, detail="El usuario no es miembro de esta liga")
+
+    # 1. Eliminar ofertas del sistema dirigidas al usuario en esta liga
+    db.query(SystemOffer).filter(
+        SystemOffer.user_id == user_id,
+        SystemOffer.league_id == league_id
+    ).delete()
+
+    # 2. Eliminar jugadores que el usuario tenía en venta en esta liga
+    db.query(MarketListing).filter(
+        MarketListing.seller_id == user_id,
+        MarketListing.league_id == league_id
+    ).delete()
+
+    # 3. Eliminar equipo asociado
+    team = db.query(Team).filter(
+        Team.user_id == user_id,
+        Team.league_id == league_id
+    ).first()
+    
+    if team:
+        db.delete(team)
+
+    # 4. Eliminar TODAS las cartas del usuario que pertenecen a esta liga
+    # Ya sea que estuvieran en el equipo o en el inventario/mercado
+    db.query(UserCard).filter(
+        UserCard.user_id == user_id,
+        UserCard.league_id == league_id
+    ).delete()
+
+    # 5. Eliminar la membresía
+    db.delete(membership)
+    db.commit()
+
+
+def _delete_league_completely(league: League, db: Session):
+    """Elimina una liga completamente junto con todos sus datos asociados."""
+    league_id = league.id
+    
+    # 1. SystemOffers
+    db.query(SystemOffer).filter(SystemOffer.league_id == league_id).delete()
+    
+    # 2. MarketListings
+    db.query(MarketListing).filter(MarketListing.league_id == league_id).delete()
+    
+    # 3. Auctions
+    auctions = db.query(MarketAuction).filter(MarketAuction.league_id == league_id).all()
+    for auction in auctions:
+        slot_ids = [s.id for s in db.query(AuctionSlot).filter(AuctionSlot.auction_id == auction.id).all()]
+        if slot_ids:
+            db.query(AuctionBid).filter(AuctionBid.slot_id.in_(slot_ids)).delete(synchronize_session=False)
+            db.query(AuctionSlot).filter(AuctionSlot.auction_id == auction.id).delete()
+        db.delete(auction)
+        
+    # 4. Pack Openings
+    db.query(PackOpening).filter(PackOpening.league_id == league_id).delete()
+    
+    # 5. GameweekLineups
+    team_ids = [t.id for t in db.query(Team).filter(Team.league_id == league_id).all()]
+    if team_ids:
+        db.query(GameweekLineup).filter(GameweekLineup.team_id.in_(team_ids)).delete(synchronize_session=False)
+        
+    # 6. UserCards (eliminar las cartas procedentes de la liga para limpiar BD)
+    db.query(UserCard).filter(UserCard.league_id == league_id).delete()
+    
+    # 7. Teams
+    db.query(Team).filter(Team.league_id == league_id).delete()
+    
+    # 8. League (cascade borra members e invitations)
+    db.delete(league)
+    db.commit()
+
 
 @router.delete("/{league_id}/leave")
 async def leave_league(
@@ -437,28 +520,66 @@ async def leave_league(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Salir de una liga"""
-    membership = db.query(LeagueMember).filter(
+    """Salir de una liga (voluntario)"""
+    league = db.query(League).filter(League.id == league_id).first()
+    if not league:
+        raise HTTPException(status_code=404, detail="Liga no encontrada")
+
+    # Contar miembros
+    member_count = db.query(func.count(LeagueMember.id)).filter(LeagueMember.league_id == league_id).scalar()
+
+    if member_count <= 1:
+        # Es el último miembro, eliminar la liga por completo
+        _delete_league_completely(league, db)
+        return {"message": "Has salido de la liga y, al quedar vacía, ha sido eliminada."}
+
+    if league.owner_id == current_user.id:
+        # El que sale es el dueño. Traspasar poderes.
+        new_owner = db.query(LeagueMember).filter(
+            LeagueMember.league_id == league_id,
+            LeagueMember.user_id != current_user.id
+        ).order_by(LeagueMember.is_admin.desc(), LeagueMember.joined_at.asc()).first()
+        
+        if new_owner:
+            league.owner_id = new_owner.user_id
+            new_owner.is_admin = True
+            db.commit()
+
+    # Si llegamos aquí, eliminamos al usuario normalmente
+    _remove_user_from_league(current_user.id, league_id, db)
+    
+    return {"message": "Has salido de la liga exitosamente"}
+
+
+@router.delete("/{league_id}/kick/{target_user_id}")
+async def kick_member(
+    league_id: int,
+    target_user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Expulsar a un usuario de la liga (Solo Admin/Owner)"""
+    league = db.query(League).filter(League.id == league_id).first()
+    if not league:
+        raise HTTPException(status_code=404, detail="Liga no encontrada")
+
+    # Verificar permisos de quien ejecuta la acción
+    current_membership = db.query(LeagueMember).filter(
         LeagueMember.league_id == league_id,
         LeagueMember.user_id == current_user.id
     ).first()
-    if not membership:
-        raise HTTPException(status_code=404, detail="No eres miembro de esta liga")
 
-    league = db.query(League).filter(League.id == league_id).first()
+    if not current_membership or not current_membership.is_admin:
+        if league.owner_id != current_user.id:
+            raise HTTPException(status_code=403, detail="No tienes permisos para expulsar jugadores")
 
-    if league.owner_id == current_user.id:
-        raise HTTPException(status_code=400, detail="El creador no puede abandonar la liga.")
+    # Verificar a quién se expulsa
+    if target_user_id == league.owner_id:
+        raise HTTPException(status_code=400, detail="No puedes expulsar al creador de la liga")
+        
+    if target_user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="No puedes expulsarte a ti mismo, usa la opción Salir")
 
-    # Eliminar equipo y cartas de esta liga
-    team = db.query(Team).filter(
-        Team.user_id == current_user.id,
-        Team.league_id == league_id
-    ).first()
-    if team:
-        db.query(UserCard).filter(UserCard.team_id == team.id).delete()
-        db.delete(team)
-
-    db.delete(membership)
-    db.commit()
-    return {"message": "Has salido de la liga"}
+    _remove_user_from_league(target_user_id, league_id, db)
+    
+    return {"message": "Jugador expulsado de la liga"}

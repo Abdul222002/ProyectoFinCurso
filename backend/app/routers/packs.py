@@ -31,7 +31,7 @@ async def open_icon_pack(
     - Cuesta 150.000.000 monedas
     - Solo salen jugadores con is_legend=True
     - El usuario debe pertenecer a la liga
-    - Se obtienen 3 cartas legendarias aleatorias
+    - Se obtiene 1 carta legendaria ponderada por OVR (más media = más difícil)
     """
     # Verificar que el usuario pertenece a la liga
     membership = db.query(LeagueMember).filter(
@@ -52,9 +52,18 @@ async def open_icon_pack(
             detail=f"No tienes suficientes monedas en esta liga. Necesitas {ICON_PACK_COST:,}, tienes {membership.coins:,}"
         )
 
+    # Obtener los IDs de las leyendas que ya tienen dueño en esta liga
+    owned_cards = db.query(UserCard.player_id).filter(
+        UserCard.league_id == league_id
+    ).all()
+    owned_player_ids = {c[0] for c in owned_cards}
+
+    # Filtrar leyendas disponibles
     legends = db.query(Player).filter(
         Player.is_legend == True
     ).all()
+    
+    available_legends = [p for p in legends if p.id not in owned_player_ids]
 
     # Find User's Team in this League (to auto-assign the card)
     from app.models.models import Team
@@ -63,15 +72,34 @@ async def open_icon_pack(
         Team.league_id == league_id
     ).first()
 
-    if len(legends) < ICON_PACK_CARDS:
+    if not available_legends:
         raise HTTPException(
-            status_code=500,
-            detail="No hay suficientes jugadores legendarios en la base de datos"
+            status_code=400,
+            detail="No hay jugadores legendarios disponibles en esta liga."
         )
 
-    # Seleccionar cartas aleatorias (pueden repetirse entre sobres, pero no dentro del mismo)
+    # Lógica de probabilidad ponderada (Weighted randomness)
+    # A mayor OVR, menor es el peso (probabilidad).
+    # Hacemos una curva exponencial para que +95 sea súper raro.
     import random
-    selected_players = random.sample(legends, min(ICON_PACK_CARDS, len(legends)))
+    
+    weights = []
+    for p in available_legends:
+        ovr = p.overall_rating
+        if ovr >= 95:
+            weight = 1      # Super raro (Tier S+)
+        elif ovr >= 90:
+            weight = 5      # Raro (Tier S)
+        elif ovr >= 85:
+            weight = 20     # Épico (Tier A)
+        elif ovr >= 80:
+            weight = 100    # Poco común (Tier B)
+        else:
+            weight = 300    # Común (Tier C)
+        weights.append(weight)
+        
+    # Seleccionar 1 carta usando los pesos calculados
+    [selected_player] = random.choices(available_legends, weights=weights, k=1)
 
     # Crear el registro del pack
     pack = PackOpening(
@@ -79,7 +107,7 @@ async def open_icon_pack(
         league_id=league_id,
         pack_type="icon",
         cost=ICON_PACK_COST,
-        cards_obtained=len(selected_players)
+        cards_obtained=1
     )
     db.add(pack)
 
@@ -89,37 +117,35 @@ async def open_icon_pack(
     # Dar XP por abrir sobre (al usuario global)
     current_user.experience += 100
 
-    # Crear las cartas para el usuario (Vinculadas a la liga)
-    result_cards = []
-    for player in selected_players:
-        card = UserCard(
-            user_id=current_user.id,
-            player_id=player.id,
-            league_id=league_id,  # Importante: carta de esta liga
-            team_id=team.id if team else None,  # Adding to the team if exists
-            current_overall=player.overall_rating,
-            is_tradeable=False  # Las cartas de sobre no son vendibles
-        )
-        db.add(card)
-        db.flush()  # Para obtener el ID
+    # Crear la carta para el usuario (Vinculada a la liga)
+    card = UserCard(
+        user_id=current_user.id,
+        player_id=selected_player.id,
+        league_id=league_id,  # Importante: carta de esta liga
+        team_id=team.id if team else None,  # Adding to the team if exists
+        current_overall=selected_player.overall_rating,
+        is_tradeable=False  # Las cartas de sobre no son vendibles
+    )
+    db.add(card)
+    db.flush()  # Para obtener el ID
 
-        result_cards.append(PackCardResult(
-            card_id=card.id,
-            player_id=player.id,
-            player_name=player.name,
-            position=player.position.value,
-            overall_rating=player.overall_rating,
-            base_rarity=player.base_rarity.value,
-            is_legend=player.is_legend,
-            image_url=player.image_url
-        ))
+    result_card = PackCardResult(
+        card_id=card.id,
+        player_id=selected_player.id,
+        player_name=selected_player.name,
+        position=selected_player.position.value,
+        overall_rating=selected_player.overall_rating,
+        base_rarity=selected_player.base_rarity.value,
+        is_legend=selected_player.is_legend,
+        image_url=selected_player.image_url
+    )
 
     db.commit()
 
     return PackOpenResponse(
-        message=f"¡Has abierto un Sobre de Iconos! Has obtenido un jugador Leyenda que se ha añadido directamente a tu equipo.",
+        message=f"¡Has abierto un Sobre de Iconos! Has obtenido a {selected_player.name} (OVR {selected_player.overall_rating}).",
         pack_type="icon",
-        cards=result_cards,
+        cards=[result_card], # Devuelve un array de 1
         cost=ICON_PACK_COST,
         remaining_coins=membership.coins
     )

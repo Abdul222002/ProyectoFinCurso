@@ -176,41 +176,8 @@ async def admin_delete_league(
 
     name = league.name
 
-    # 1. Delete system_offers referencing this league
-    db.query(SystemOffer).filter(SystemOffer.league_id == league_id).delete()
-
-    # 2. Delete market_listings referencing this league
-    db.query(MarketListing).filter(MarketListing.league_id == league_id).delete()
-
-    # 3. Delete auction bids → slots → auctions
-    auctions = db.query(MarketAuction).filter(MarketAuction.league_id == league_id).all()
-    for auction in auctions:
-        slot_ids = [s.id for s in db.query(AuctionSlot).filter(AuctionSlot.auction_id == auction.id).all()]
-        if slot_ids:
-            db.query(AuctionBid).filter(AuctionBid.slot_id.in_(slot_ids)).delete(synchronize_session=False)
-            db.query(AuctionSlot).filter(AuctionSlot.auction_id == auction.id).delete()
-        db.delete(auction)
-
-    # 4. Delete pack openings
-    db.query(PackOpening).filter(PackOpening.league_id == league_id).delete()
-
-    # 5. Delete gameweek lineups for teams in this league
-    team_ids = [t.id for t in db.query(Team).filter(Team.league_id == league_id).all()]
-    if team_ids:
-        db.query(GameweekLineup).filter(GameweekLineup.team_id.in_(team_ids)).delete(synchronize_session=False)
-
-    # 6. Unlink user_cards from the league (set league_id to NULL instead of deleting the cards)
-    db.query(UserCard).filter(UserCard.league_id == league_id).update(
-        {UserCard.league_id: None, UserCard.team_id: None, UserCard.is_in_lineup: False},
-        synchronize_session=False
-    )
-
-    # 7. Delete teams
-    db.query(Team).filter(Team.league_id == league_id).delete()
-
-    # 8. Now delete the league itself (cascade handles members + invitations)
-    db.delete(league)
-    db.commit()
+    from app.routers.leagues import _delete_league_completely
+    _delete_league_completely(league, db)
 
     return {"message": f"Liga '{name}' y todos sus datos eliminados correctamente."}
 

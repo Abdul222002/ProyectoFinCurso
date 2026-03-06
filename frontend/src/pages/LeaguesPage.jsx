@@ -112,13 +112,14 @@ export default function LeaguesPage() {
     setInviting(false);
   };
 
-  const handleLeave = async (leagueId) => {
+  const handleLeave = async (league) => {
+    if (!window.confirm(`¿Seguro que quieres abandonar ${league.name}?`)) return;
     try {
-      await leaguesAPI.leave(leagueId);
-      setMessage('Has salido de la liga');
+      await leaguesAPI.leave(league.id);
+      setMessage(`✅ Has abandonado ${league.name}`);
       await loadData();
     } catch (err) {
-      setMessage(`❌ ${err.response?.data?.detail || 'Error'}`);
+      setMessage(`❌ ${err.response?.data?.detail || 'Error al abandonar la liga'}`);
     }
   };
 
@@ -193,6 +194,16 @@ export default function LeaguesPage() {
                     >
                       Invitar
                     </button>
+                    {league.owner_username !== user?.username && (
+                      <button
+                        className="lg-card-btn reject"
+                        onClick={() => handleLeave(league)}
+                        style={{ marginLeft: '8px' }}
+                        title="Abandonar liga"
+                      >
+                        Abandonar
+                      </button>
+                    )}
                   </div>
 
                   {/* Inline invite form */}
