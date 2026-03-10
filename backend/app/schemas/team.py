@@ -36,6 +36,15 @@ class CardInLineup(BaseModel):
     position: str
     current_overall: int
     is_in_lineup: bool
+    protected_value: int = 0
+    current_team: Optional[str] = None
+    nationality: Optional[str] = None
+    pace: int = 50
+    shooting: int = 50
+    passing: int = 50
+    dribbling: int = 50
+    defending: int = 50
+    physical: int = 50
 
     class Config:
         from_attributes = True
@@ -44,19 +53,21 @@ class CardInLineup(BaseModel):
 class TeamResponse(BaseModel):
     """Respuesta completa de equipo"""
     id: int
-    name: str
-    user_id: int
+    name: Optional[str] = "Equipo"
+    user_id: Optional[int] = None
     overall_rating: float
-    total_fantasy_points: int
-    arena_wins: int
-    arena_losses: int
-    arena_draws: int
-    arena_rating: int
-    active_formation: str
-    kit_color_primary: str
-    kit_color_secondary: str
+    total_fantasy_points: Optional[int] = 0
+    arena_wins: Optional[int] = 0
+    arena_losses: Optional[int] = 0
+    arena_draws: Optional[int] = 0
+    arena_rating: Optional[int] = 0
+    active_formation: Optional[str] = "4-4-2"
+    kit_color_primary: Optional[str] = "#FF0000"
+    kit_color_secondary: Optional[str] = "#FFFFFF"
+    league_id: int
+    team_value: int = 0
     players: List[CardInLineup] = []
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

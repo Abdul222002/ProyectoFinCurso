@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { adminAPI } from '../services/endpoints';
+import { toast } from 'sonner';
 import './AdminDashboard.css';
 
 export default function AdminDashboard() {
@@ -100,16 +101,30 @@ export default function AdminDashboard() {
     }, [filterPos, filterRarity, filterTeam, filterLegend]);
 
     const handleDeleteUser = async (id, name) => {
-        if (!window.confirm(`¿Eliminar @${name}?`)) return;
-        try { const r = await adminAPI.deleteUser(id); setMessage(`✅ ${r.data.message}`); loadUsers(); }
-        catch (e) { setMessage(`❌ ${e.response?.data?.detail || 'Error'}`); }
-        setTimeout(() => setMessage(''), 4000);
+        toast.error(`¿Eliminar @${name}?`, {
+            cancel: { label: 'Cancelar' },
+            action: {
+                label: 'Eliminar',
+                onClick: async () => {
+                    try { const r = await adminAPI.deleteUser(id); setMessage(`✅ ${r.data.message}`); loadUsers(); }
+                    catch (e) { setMessage(`❌ ${e.response?.data?.detail || 'Error'}`); }
+                    setTimeout(() => setMessage(''), 4000);
+                }
+            }
+        });
     };
     const handleDeleteLeague = async (id, name) => {
-        if (!window.confirm(`¿Eliminar liga "${name}"?`)) return;
-        try { const r = await adminAPI.deleteLeague(id); setMessage(`✅ ${r.data.message}`); loadLeagues(); }
-        catch (e) { setMessage(`❌ ${e.response?.data?.detail || 'Error'}`); }
-        setTimeout(() => setMessage(''), 4000);
+        toast.error(`¿Eliminar liga "${name}"?`, {
+            cancel: { label: 'Cancelar' },
+            action: {
+                label: 'Eliminar',
+                onClick: async () => {
+                    try { const r = await adminAPI.deleteLeague(id); setMessage(`✅ ${r.data.message}`); loadLeagues(); }
+                    catch (e) { setMessage(`❌ ${e.response?.data?.detail || 'Error'}`); }
+                    setTimeout(() => setMessage(''), 4000);
+                }
+            }
+        });
     };
 
     const openEditPlayer = (p) => {
@@ -154,18 +169,6 @@ export default function AdminDashboard() {
             await adminAPI.updateUserLeagueCoins(coinUser.id, { league_id: leagueId, coins: newCoins });
             setMessage(`✅ Monedas actualizadas para @${coinUser.username}`);
             // Refresh
-            const r = await adminAPI.getUserLeagueCoins(coinUser.id);
-            setCoinData(r.data);
-            loadUsers();
-        } catch (e) { setMessage(`❌ ${e.response?.data?.detail || 'Error'}`); }
-        setTimeout(() => setMessage(''), 4000);
-    };
-
-    const handleSaveGlobalCoins = async (newCoins) => {
-        if (!coinUser) return;
-        try {
-            await adminAPI.updateUserLeagueCoins(coinUser.id, { global_coins: newCoins });
-            setMessage(`✅ Monedas globales actualizadas para @${coinUser.username}`);
             const r = await adminAPI.getUserLeagueCoins(coinUser.id);
             setCoinData(r.data);
             loadUsers();
@@ -229,9 +232,7 @@ export default function AdminDashboard() {
                             { icon: '👥', val: stats.total_users, lbl: 'Usuarios' },
                             { icon: '🏆', val: stats.total_leagues, lbl: 'Ligas' },
                             { icon: '⚽', val: stats.total_players, lbl: 'Jugadores' },
-                            { icon: '🃏', val: stats.total_cards, lbl: 'Cartas' },
-                            { icon: '👕', val: stats.total_teams, lbl: 'Equipos' },
-                            { icon: '🪙', val: fmt(stats.total_coins_global), lbl: 'Monedas' },
+                            { icon: '👕', val: stats.total_teams, lbl: 'Equipos' }
                         ].map((s, i) => (
                             <div key={i} className="adm-stat-card">
                                 <span className="adm-stat-icon">{s.icon}</span>
@@ -253,7 +254,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="adm-table-wrap">
                             <table className="adm-table">
-                                <thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Rol</th><th>Monedas</th><th>Ligas</th><th>Creado</th><th></th></tr></thead>
+                                <thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Rol</th><th>Ligas</th><th>Creado</th><th></th></tr></thead>
                                 <tbody>
                                     {users.map(u => (
                                         <tr key={u.id} className={u.role === 'admin' ? 'admin-row' : ''}>
@@ -261,7 +262,6 @@ export default function AdminDashboard() {
                                             <td className="adm-user-cell"><strong>@{u.username}</strong></td>
                                             <td>{u.email}</td>
                                             <td><span className={`adm-role-badge role-${u.role}`}>{u.role}</span></td>
-                                            <td>{fmt(u.coins)}</td>
                                             <td>{u.league_count > 0 ? <span className="adm-league-count">{u.league_count}</span> : '0'}</td>
                                             <td className="adm-date">{u.created_at ? new Date(u.created_at).toLocaleDateString() : '-'}</td>
                                             <td style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>

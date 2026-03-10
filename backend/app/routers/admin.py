@@ -47,7 +47,7 @@ async def admin_stats(
     total_players = db.query(func.count(Player.id)).scalar()
     total_cards = db.query(func.count(UserCard.id)).scalar()
     total_teams = db.query(func.count(Team.id)).scalar()
-    total_coins = db.query(func.coalesce(func.sum(User.coins), 0)).scalar()
+    total_coins = db.query(func.coalesce(func.sum(LeagueMember.coins), 0)).scalar()
 
     return {
         "total_users": total_users,

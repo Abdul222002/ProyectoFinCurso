@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { leaguesAPI } from '../services/endpoints';
+import { toast } from 'sonner';
 import './LeaguesPage.css';
 
 export default function LeaguesPage() {
@@ -113,14 +114,21 @@ export default function LeaguesPage() {
   };
 
   const handleLeave = async (league) => {
-    if (!window.confirm(`¿Seguro que quieres abandonar ${league.name}?`)) return;
-    try {
-      await leaguesAPI.leave(league.id);
-      setMessage(`✅ Has abandonado ${league.name}`);
-      await loadData();
-    } catch (err) {
-      setMessage(`❌ ${err.response?.data?.detail || 'Error al abandonar la liga'}`);
-    }
+    toast.error(`¿Seguro que quieres abandonar ${league.name}?`, {
+      cancel: { label: 'Cancelar' },
+      action: {
+        label: 'Abandonar',
+        onClick: async () => {
+          try {
+            await leaguesAPI.leave(league.id);
+            setMessage(`✅ Has abandonado ${league.name}`);
+            await loadData();
+          } catch (err) {
+            setMessage(`❌ ${err.response?.data?.detail || 'Error al abandonar la liga'}`);
+          }
+        }
+      }
+    });
   };
 
   return (

@@ -16,9 +16,10 @@ router = APIRouter()
 
 
 def _team_to_response(team: Team) -> dict:
-    """Convierte un Team a dict de respuesta"""
     players_data = []
+    team_value = 0
     for card in team.players:
+        team_value += card.current_market_value
         players_data.append({
             "id": card.id,
             "player_id": card.player_id,
@@ -28,7 +29,8 @@ def _team_to_response(team: Team) -> dict:
             "base_rarity": card.player.base_rarity.value,
             "is_in_lineup": card.is_in_lineup,
             "is_tradeable": card.is_tradeable,
-            "current_market_value": card.player.current_price,
+            "current_market_value": card.current_market_value,
+            "protected_value": card.protected_value or 0,
             "image_url": card.player.image_url,
             "current_team": card.player.current_team or "Sin equipo",
             "nationality": card.player.nationality,
@@ -54,6 +56,10 @@ def _team_to_response(team: Team) -> dict:
         "arena_losses": team.arena_losses,
         "arena_draws": team.arena_draws,
         "arena_rating": team.arena_rating,
+        "team_value": int(team_value),
+        "total_fantasy_points": team.total_fantasy_points,
+        "created_at": team.created_at,
+        "league_id": team.league_id,
         "players": players_data
     }
 
@@ -80,6 +86,35 @@ async def get_my_team(
         # Devolver todos los equipos del usuario
         teams = db.query(Team).filter(Team.user_id == current_user.id).all()
         return [_team_to_response(t) for t in teams]
+
+
+@router.get("/{league_id}/user/{target_user_id}")
+async def get_user_team(
+    league_id: int,
+    target_user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Obtener el equipo de cualquier usuario dentro de una liga (vista de solo lectura).
+    El current_user debe pertenecer a la misma liga.
+    """
+    # Verify current user is in the league
+    membership = db.query(LeagueMember).filter(
+        LeagueMember.league_id == league_id,
+        LeagueMember.user_id == current_user.id
+    ).first()
+    if not membership:
+        raise HTTPException(status_code=403, detail="No perteneces a esta liga")
+
+    team = db.query(Team).filter(
+        Team.user_id == target_user_id,
+        Team.league_id == league_id
+    ).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="El usuario no tiene equipo en esta liga")
+        
+    return _team_to_response(team)
 
 
 @router.put("/my")

@@ -4,12 +4,15 @@ import { teamsAPI, leaguesAPI, auctionAPI, marketAPI } from '../services/endpoin
 import TeamCustomizerModal from '../components/TeamCustomizerModal';
 import PlayerDetailModal from '../components/PlayerDetailModal';
 import FormationPitch, { getFormationSlots } from '../components/FormationPitch';
+import { toast } from 'sonner';
 import './TeamManagementPage.css';
 
 export default function TeamManagementPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const leagueIdParam = searchParams.get('league_id');
+  const userIdParam = searchParams.get('user_id');
+  const isReadOnly = !!userIdParam;
 
   const [teams, setTeams] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState(null);
@@ -36,10 +39,20 @@ export default function TeamManagementPage() {
 
   const FORMATIONS = ['4-4-2', '4-3-3', '3-5-2', '4-2-3-1', '3-4-3', '5-3-2', '5-4-1'];
 
+  const formatPrice = (price) => {
+    if (price >= 1000000) return `€${(price / 1000000).toFixed(1)}M`;
+    if (price >= 1000) return `€${(price / 1000).toFixed(0)}K`;
+    return `€${price}`;
+  };
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      if (leagueIdParam) {
+      if (leagueIdParam && userIdParam) {
+        const res = await teamsAPI.getUserTeam(leagueIdParam, userIdParam);
+        setSelectedTeam(res.data);
+        setTeams([res.data]);
+      } else if (leagueIdParam) {
         const res = await teamsAPI.getMy(leagueIdParam);
         setSelectedTeam(res.data);
         setTeams([res.data]);
@@ -60,7 +73,7 @@ export default function TeamManagementPage() {
       setGameweek(null);
     }
     setLoading(false);
-  }, [leagueIdParam]);
+  }, [leagueIdParam, userIdParam]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -91,12 +104,31 @@ export default function TeamManagementPage() {
   // ── Add player to lineup ──
   const handleAddToLineup = async (cardId) => {
     if (!selectedTeam || !selectedTeam.players) return;
+
+    // Find the chosen card from the bench to know its position
+    const cardToAdd = selectedTeam.players.find(p => p.id === cardId);
+    if (!cardToAdd) return;
+
     const currentLineup = selectedTeam.players.filter(p => p.is_in_lineup);
     if (currentLineup.length >= 11) {
       setError('Ya tienes 11 titulares. Quita uno primero.');
       setTimeout(() => setError(''), 3000);
       return;
     }
+
+    // Bugfix: ensure we don't exceed the chosen formation slots for this position
+    const slotsLimit = getFormationSlots(selectedTeam.active_formation || '4-4-2');
+    const pos = cardToAdd.position;
+    const samePosInLineup = currentLineup.filter(p => p.position === pos).length;
+
+    const maxAllowed = pos === 'GK' ? 1 : (slotsLimit[pos] || 0);
+
+    if (samePosInLineup >= maxAllowed) {
+      setError(`Tu formación ya tiene el máximo de jugadores en la posición ${pos}.`);
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
     const currentIds = currentLineup.map(p => p.id);
     try {
       await teamsAPI.setLineup(selectedTeam.league_id, [...currentIds, cardId]);
@@ -178,8 +210,10 @@ export default function TeamManagementPage() {
     try {
       const currentLineup = selectedTeam.players.filter(p => p.is_in_lineup);
       const currentIds = currentLineup.map(p => p.id);
+      // Garantizar que la formación activa actual se guarde forzosamente
+      await teamsAPI.update(selectedTeam.league_id, { formation: selectedTeam.active_formation });
       await teamsAPI.setLineup(selectedTeam.league_id, currentIds);
-      setSuccess('✅ Alineación guardada para la próxima jornada.');
+      setSuccess('✅ Alineación y formación guardadas para la próxima jornada.');
       setTimeout(() => setSuccess(''), 4000);
       if (gameweek && new Date() < new Date(gameweek.start_date)) setGwLineup(true);
     } catch (err) {
@@ -202,6 +236,52 @@ export default function TeamManagementPage() {
       setError(err.response?.data?.detail || 'Error');
       setTimeout(() => setError(''), 3000);
     }
+  };
+
+  const handleClausulazo = async (playerObj) => {
+    toast.error(`¿Pagar la cláusula de ${playerObj.player_name}? Se descontarán ${formatPrice(playerObj.current_market_value)} y pasará a tu equipo.`, {
+      cancel: { label: 'Cancelar' },
+      action: {
+        label: 'Comprar',
+        onClick: async () => {
+          try {
+            await auctionAPI.payClause(leagueIdParam, playerObj.id);
+            toast.success(`✅ Has fichado a ${playerObj.player_name}`);
+            setSelectedPlayerForDetail(null);
+            loadData();
+          } catch (err) {
+            toast.error(err.response?.data?.detail || 'Error al pagar cláusula');
+          }
+        }
+      }
+    });
+  };
+
+  const handleBlindar = async (playerObj) => {
+    const amountStr = window.prompt(`¿Cuántas monedas quieres quemar para subir la cláusula de ${playerObj.player_name}?`);
+    if (!amountStr) return;
+    const amount = parseInt(amountStr, 10);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Cantidad inválida');
+      return;
+    }
+
+    toast.warning(`¿Seguro que quieres quemar ${formatPrice(amount)} para blindar a ${playerObj.player_name}?`, {
+      cancel: { label: 'Cancelar' },
+      action: {
+        label: 'Blindar',
+        onClick: async () => {
+          try {
+            await auctionAPI.protectPlayer(selectedTeam.league_id, playerObj.id, amount);
+            toast.success(`✅ Cláusula aumentada en ${formatPrice(amount)}`);
+            setSelectedPlayerForDetail(null);
+            loadData();
+          } catch (err) {
+            toast.error(err.response?.data?.detail || 'Error al blindar jugador');
+          }
+        }
+      }
+    });
   };
 
   // ── Loading state ──
@@ -247,6 +327,9 @@ export default function TeamManagementPage() {
         <PlayerDetailModal
           playerId={selectedPlayerForDetail.player_id}
           playerObj={selectedPlayerForDetail}
+          isReadOnly={isReadOnly}
+          onClausulazo={handleClausulazo}
+          onBlindar={handleBlindar}
           onClose={() => setSelectedPlayerForDetail(null)}
         />
       )}
@@ -302,8 +385,13 @@ export default function TeamManagementPage() {
           <h1 className="team-title">{selectedTeam?.name || 'Mi Equipo'}</h1>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div className="team-value-badge" style={{ backgroundColor: '#fbbf24', color: '#0f172a', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.9rem' }}>
+            Valor: {formatPrice(selectedTeam?.team_value || 0)}
+          </div>
           <div className="team-ovr">OVR {selectedTeam?.overall_rating?.toFixed(1) || '--'}</div>
-          <button className="team-customize-btn" onClick={() => setShowCustomizer(true)} title="Personalizar equipo">✏️</button>
+          {!isReadOnly && (
+            <button className="team-customize-btn" onClick={() => setShowCustomizer(true)} title="Personalizar equipo">✏️</button>
+          )}
         </div>
       </header>
 
@@ -362,9 +450,11 @@ export default function TeamManagementPage() {
             ))}
           </div>
         </div>
-        <button className="tm-save-lineup-btn" onClick={handleSaveLineup}>
-          💾 Guardar Alineación
-        </button>
+        {!isReadOnly && (
+          <button className="tm-save-lineup-btn" onClick={handleSaveLineup}>
+            💾 Guardar Alineación
+          </button>
+        )}
       </div>
 
       {/* ── PITCH ── */}
@@ -374,8 +464,8 @@ export default function TeamManagementPage() {
           lineup={lineup}
           formation={selectedTeam?.active_formation || '4-3-3'}
           onPlayerClick={(player) => setSelectedPlayerForDetail({ ...player, name: player.player_name })}
-          onRemovePlayer={handleRemoveFromLineup}
-          onSlotClick={(pos) => setPickerPos(pos)}
+          onRemovePlayer={isReadOnly ? undefined : handleRemoveFromLineup}
+          onSlotClick={isReadOnly ? undefined : (pos) => setPickerPos(pos)}
         />
       </section>
 
@@ -524,12 +614,12 @@ export default function TeamManagementPage() {
                 <div className="team-player-info">
                   <span className="team-player-name">{card.player_name}</span>
                 </div>
-                {isListed ? (
+                {isListed && !isReadOnly ? (
                   <button
                     className="team-player-action team-player-action--cancel"
                     onClick={(e) => { e.stopPropagation(); handleCancelListing(card.id); }}
                   >❌ Retirar</button>
-                ) : card.is_tradeable ? (
+                ) : card.is_tradeable && !isReadOnly ? (
                   <div className="team-player-actions-row" onClick={(e) => e.stopPropagation()}>
                     <button
                       className="team-player-action team-player-action--sell"

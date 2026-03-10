@@ -2,8 +2,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { leaguesAPI, auctionAPI, packsAPI } from '../services/endpoints';
-import PlayerDetailModal from '../components/PlayerDetailModal';
 import PackOpeningModal from '../components/PackOpeningModal';
+import { toast } from 'sonner';
 import './LeagueDetailPage.css';
 
 export default function LeagueDetailPage() {
@@ -164,6 +164,26 @@ export default function LeagueDetailPage() {
     setBidding(null);
   };
 
+  const handleWithdrawBid = async (slotId) => {
+    toast.warning('¿Seguro que quieres retirar tu puja?', {
+      cancel: { label: 'Cancelar' },
+      action: {
+        label: 'Sí, retirar',
+        onClick: async () => {
+          setBidding(slotId);
+          try {
+            const res = await auctionAPI.withdrawBid(leagueId, slotId);
+            setMessage(`✅ ${res.data.message}`);
+            loadAuction();
+          } catch (err) {
+            setMessage(`❌ ${err.response?.data?.detail || 'Error al retirar puja'}`);
+          }
+          setBidding(null);
+        }
+      }
+    });
+  };
+
   const handleOpenPack = async () => {
     if (opening) return;
 
@@ -204,24 +224,38 @@ export default function LeagueDetailPage() {
   };
 
   const handleLeave = async () => {
-    if (!window.confirm('¿Seguro que quieres salir de esta liga?')) return;
-    try {
-      await leaguesAPI.leave(leagueId);
-      navigate('/leagues');
-    } catch (err) {
-      setMessage(`❌ ${err.response?.data?.detail || 'Error'}`);
-    }
+    toast.error('¿Seguro que quieres salir de esta liga?', {
+      cancel: { label: 'Cancelar' },
+      action: {
+        label: 'Sí, salir',
+        onClick: async () => {
+          try {
+            await leaguesAPI.leave(leagueId);
+            navigate('/leagues');
+          } catch (err) {
+            setMessage(`❌ ${err.response?.data?.detail || 'Error'}`);
+          }
+        }
+      }
+    });
   };
 
   const handleKick = async (memberId, memberUsername) => {
-    if (!window.confirm(`¿Seguro que quieres expulsar a @${memberUsername} de la liga?`)) return;
-    try {
-      await leaguesAPI.kickMember(leagueId, memberId);
-      setMessage(`✅ @${memberUsername} ha sido expulsado.`);
-      loadLeague();
-    } catch (err) {
-      setMessage(`❌ ${err.response?.data?.detail || 'Error al expulsar jugador'}`);
-    }
+    toast.error(`¿Seguro que quieres expulsar a @${memberUsername} de la liga?`, {
+      cancel: { label: 'Cancelar' },
+      action: {
+        label: 'Expulsar',
+        onClick: async () => {
+          try {
+            await leaguesAPI.kickMember(leagueId, memberId);
+            setMessage(`✅ @${memberUsername} ha sido expulsado.`);
+            loadLeague();
+          } catch (err) {
+            setMessage(`❌ ${err.response?.data?.detail || 'Error al expulsar jugador'}`);
+          }
+        }
+      }
+    });
   };
 
   const formatPrice = (price) => {
@@ -337,7 +371,13 @@ export default function LeagueDetailPage() {
               const isSelf = member.user_id === user?.id;
 
               return (
-                <div key={member.id} className={`ld-member-row ${isSelf ? 'me' : ''}`}>
+                <div
+                  key={member.id}
+                  className={`ld-member-row ${isSelf ? 'me' : ''}`}
+                  onClick={() => navigate(`/team?league_id=${leagueId}&user_id=${member.user_id}`)}
+                  style={{ cursor: 'pointer' }}
+                  title={`Ver equipo de @${member.username}`}
+                >
                   <span className="ld-rank">{idx + 1}</span>
                   <div className="ld-member-info">
                     <span className="ld-member-name">
@@ -390,7 +430,7 @@ export default function LeagueDetailPage() {
                 </div>
                 {auction.slots.map(slot => {
                   const minBid = slot.current_bid > 0 ? slot.current_bid + 1 : slot.base_price;
-                  const isWinning = slot.highest_bidder_id === user?.id;
+                  const hasBid = slot.user_has_bid;
 
                   return (
                     <div
@@ -399,7 +439,7 @@ export default function LeagueDetailPage() {
                       onClick={() => setSelectedPlayerForDetail({ ...slot, name: slot.player_name, current_price: slot.base_price })}
                       style={{ cursor: 'pointer' }}
                     >
-                      <div className={`ld-market-row-accent ${isWinning ? 'winning' : 'neutral'}`}></div>
+                      <div className={`ld-market-row-accent ${hasBid ? 'winning' : 'neutral'}`}></div>
 
                       {/* Player Info Col */}
                       <div className="ld-market-row-info-col">
@@ -417,7 +457,9 @@ export default function LeagueDetailPage() {
                           <div className="ld-market-row-team">
                             <span style={{ color: getRarityColor(slot.base_rarity) }}>OVR {slot.overall_rating}</span>
                             <span>•</span>
-                            <span>{isWinning ? '¡Vas ganando!' : slot.highest_bidder_id ? 'Pujado' : 'Sin pujas'}</span>
+                            <span>{hasBid ? 'Has pujado' : 'No has pujado'}</span>
+                            <span>•</span>
+                            <span style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '1.05rem', textShadow: '0 0 5px rgba(251, 191, 36, 0.3)' }}>{slot.bid_count} {slot.bid_count === 1 ? 'puja' : 'pujas'}</span>
                           </div>
                         </div>
                       </div>
@@ -437,7 +479,7 @@ export default function LeagueDetailPage() {
                         <div className="ld-market-row-bid-wrap">
                           <input
                             type="number"
-                            placeholder={`Mín: ${formatPrice(minBid)}`}
+                            placeholder={hasBid ? 'Subir a...' : `Mín: ${formatPrice(minBid)}`}
                             value={bidAmounts[slot.id] || ''}
                             onChange={(e) => setBidAmounts({ ...bidAmounts, [slot.id]: e.target.value })}
                             className="ld-market-row-input"
@@ -446,9 +488,20 @@ export default function LeagueDetailPage() {
                             className="ld-market-row-btn primary"
                             onClick={() => handleBid(slot.id, slot.current_bid, slot.base_price)}
                             disabled={bidding === slot.id}
+                            title={hasBid ? 'Pujar de nuevo si crees que alguien ha superado tu puja.' : ''}
                           >
-                            {bidding === slot.id ? '...' : 'Pujar'}
+                            {bidding === slot.id ? '...' : (hasBid ? 'Pujar' : 'Pujar')}
                           </button>
+                          {hasBid && (
+                            <button
+                              className="ld-market-row-btn danger"
+                              onClick={() => handleWithdrawBid(slot.id)}
+                              disabled={bidding === slot.id}
+                              style={{ marginLeft: '4px' }}
+                            >
+                              Retirar
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>

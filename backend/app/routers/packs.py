@@ -86,16 +86,18 @@ async def open_icon_pack(
     weights = []
     for p in available_legends:
         ovr = p.overall_rating
-        if ovr >= 95:
-            weight = 1      # Super raro (Tier S+)
+        if ovr >= 98:
+            weight = 1      # Tier S++ (98-99): Míticos (Extremadamente raro)
+        elif ovr >= 96:
+            weight = 5      # Tier S+ (96-97): Súper leyendas (Muy raro)
+        elif ovr >= 94:
+            weight = 15     # Tier S (94-95): Leyendas top (Raro)
+        elif ovr >= 92:
+            weight = 40     # Tier A (92-93): Épico (Poco común)
         elif ovr >= 90:
-            weight = 5      # Raro (Tier S)
-        elif ovr >= 85:
-            weight = 20     # Épico (Tier A)
-        elif ovr >= 80:
-            weight = 100    # Poco común (Tier B)
+            weight = 100    # Tier B (90-91): Destacado (Común)
         else:
-            weight = 300    # Común (Tier C)
+            weight = 250    # Tier C (87-89): Base (Muy común)
         weights.append(weight)
         
     # Seleccionar 1 carta usando los pesos calculados

@@ -526,7 +526,6 @@
 /* Image area */
 .card-image-area {
     flex: 1;
-    min-height: 0;
     position: relative;
     display: flex;
     align-items: flex-end;
@@ -535,9 +534,6 @@
 }
 
 .card-image-area img {
-    position: absolute;
-    inset: 0;
-    margin: auto;
     width: 90%;
     height: 90%;
     object-fit: contain;

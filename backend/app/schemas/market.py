@@ -30,11 +30,21 @@ class AuctionSlotResponse(BaseModel):
     overall_rating: int
     base_rarity: str
     image_url: Optional[str]
+    current_team: Optional[str] = None
+    nationality: Optional[str] = None
+    pace: int = 50
+    shooting: int = 50
+    passing: int = 50
+    dribbling: int = 50
+    defending: int = 50
+    physical: int = 50
     
     base_price: int
     current_bid: int
     highest_bidder_id: Optional[int]
     highest_bidder_username: Optional[str]  # Para mostrar quién va ganando
+    bid_count: int = 0
+    user_has_bid: bool = False
     
     class Config:
         from_attributes = True
@@ -57,6 +67,10 @@ class AuctionResponse(BaseModel):
 # ==========================================
 
 class BidRequest(BaseModel):
+    amount: int
+
+
+class ProtectCardRequest(BaseModel):
     amount: int
 
 
@@ -89,6 +103,14 @@ class UserCardResponse(BaseModel):
     is_tradeable: bool
     is_in_lineup: bool
     image_url: Optional[str]
+    current_team: Optional[str] = None
+    nationality: Optional[str] = None
+    pace: int = 50
+    shooting: int = 50
+    passing: int = 50
+    dribbling: int = 50
+    defending: int = 50
+    physical: int = 50
     acquired_at: datetime
     league_id: Optional[int]
 
@@ -112,6 +134,14 @@ class ListingResponse(BaseModel):
     overall_rating: int
     base_rarity: str
     image_url: Optional[str]
+    current_team: Optional[str] = None
+    nationality: Optional[str] = None
+    pace: int = 50
+    shooting: int = 50
+    passing: int = 50
+    dribbling: int = 50
+    defending: int = 50
+    physical: int = 50
     asking_price: int
     seller_username: str
     is_mine: bool = False

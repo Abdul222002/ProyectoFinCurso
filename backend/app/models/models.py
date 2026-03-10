@@ -216,13 +216,17 @@ class UserCard(Base):
     is_tradeable = Column(Boolean, default=True)
     is_in_lineup = Column(Boolean, default=False)
     
+    # Clausulazos: valor extra añadido por el usuario (Blindaje)
+    protected_value = Column(Integer, default=0)
+    
     # Metadatos
     acquired_at = Column(DateTime, default=datetime.utcnow)
     
     @property
     def current_market_value(self) -> float:
-        """Obtiene el precio actual del jugador desde la tabla Player"""
-        return self.player.current_price if self.player else 0.0
+        """Obtiene el precio actual del jugador (base + blindaje)"""
+        base_price = self.player.current_price if self.player else 0.0
+        return base_price + (self.protected_value or 0)
     
     def __repr__(self):
         return f"<UserCard User:{self.user_id} Player:{self.player_id} OVR:{self.current_overall}>"

@@ -12,6 +12,7 @@ export const teamsAPI = {
     if (leagueId) return api.get('/teams/my', { params: { league_id: leagueId } });
     return api.get('/teams/my');
   },
+  getUserTeam: (leagueId, userId) => api.get(`/teams/${leagueId}/user/${userId}`),
   update: (leagueId, data) => api.put('/teams/my', data, { params: { league_id: leagueId } }),
   setLineup: (leagueId, cardIds) => api.put('/teams/my/lineup', { lineup_card_ids: cardIds }, { params: { league_id: leagueId } }),
   getActiveGameweek: () => api.get('/teams/active-gameweek'),
@@ -83,6 +84,9 @@ export const auctionAPI = {
   placeBid: (leagueId, slotId, amount) => api.post(`/market/${leagueId}/bid/${slotId}`, { amount }, {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
   }),
+  withdrawBid: (leagueId, slotId) => api.delete(`/market/${leagueId}/bid/${slotId}`, {
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }),
   sellCard: (leagueId, cardId) => api.post(`/market/${leagueId}/sell/${cardId}`, {}, {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
   }),
@@ -103,6 +107,12 @@ export const auctionAPI = {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
   }),
   acceptOffer: (leagueId, offerId) => api.post(`/market/${leagueId}/accept-offer/${offerId}`, {}, {
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }),
+  payClause: (leagueId, cardId) => api.post(`/market/${leagueId}/clause/${cardId}`, {}, {
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }),
+  protectPlayer: (leagueId, cardId, amount) => api.post(`/market/${leagueId}/protect/${cardId}`, { amount }, {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
   }),
 };

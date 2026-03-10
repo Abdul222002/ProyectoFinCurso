@@ -136,6 +136,14 @@ async def my_cards(
             is_tradeable=c.is_tradeable,
             is_in_lineup=c.is_in_lineup,
             image_url=c.player.image_url,
+            current_team=c.player.current_team,
+            nationality=c.player.nationality,
+            pace=c.player.pace,
+            shooting=c.player.shooting,
+            passing=c.player.passing,
+            dribbling=c.player.dribbling,
+            defending=c.player.defending,
+            physical=c.player.physical,
             acquired_at=c.acquired_at
         )
         for c in cards

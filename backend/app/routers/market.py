@@ -15,7 +15,7 @@ from typing import List, Optional
 
 from app.core.database import get_db
 from app.models.models import (
-    User, Player, UserCard, LeagueMember, 
+    User, Player, UserCard, LeagueMember, League,
     MarketAuction, AuctionSlot, AuctionBid,
     MarketListing, SystemOffer
 )
@@ -67,7 +67,17 @@ def _create_new_auction(league_id: int, db: Session) -> MarketAuction:
     
     # 1. Crear la subasta
     now = datetime.utcnow()
-    ends_at = now + timedelta(hours=AUCTION_DURATION_HOURS)
+    
+    league = db.query(League).filter(League.id == league_id).first()
+    if league and league.created_at:
+        elapsed = now - league.created_at
+        cycles = int(elapsed.total_seconds() // (AUCTION_DURATION_HOURS * 3600))
+        ends_at = league.created_at + timedelta(hours=AUCTION_DURATION_HOURS * (cycles + 1))
+        # Salvaguarda por si acaso
+        while ends_at <= now:
+            ends_at += timedelta(hours=AUCTION_DURATION_HOURS)
+    else:
+        ends_at = now + timedelta(hours=AUCTION_DURATION_HOURS)
     
     auction = MarketAuction(
         league_id=league_id,
@@ -138,6 +148,12 @@ async def get_auction(
     # Construir respuesta
     slots_resp = []
     for slot in auction.slots:
+        bid_count = db.query(func.count(AuctionBid.id)).filter(AuctionBid.slot_id == slot.id).scalar()
+        user_has_bid = db.query(AuctionBid).filter(
+            AuctionBid.slot_id == slot.id,
+            AuctionBid.user_id == current_user.id
+        ).first() is not None
+        
         slots_resp.append(AuctionSlotResponse(
             id=slot.id,
             player_id=slot.player_id,
@@ -146,10 +162,20 @@ async def get_auction(
             overall_rating=slot.player.overall_rating,
             base_rarity=slot.player.base_rarity.value,
             image_url=slot.player.image_url,
+            current_team=slot.player.current_team,
+            nationality=slot.player.nationality,
+            pace=slot.player.pace,
+            shooting=slot.player.shooting,
+            passing=slot.player.passing,
+            dribbling=slot.player.dribbling,
+            defending=slot.player.defending,
+            physical=slot.player.physical,
             base_price=slot.base_price,
             current_bid=slot.current_bid,
-            highest_bidder_id=slot.highest_bidder_id,
-            highest_bidder_username=None
+            highest_bidder_id=None, # Ocultar quién va ganando para subastas ciegas
+            highest_bidder_username=None,
+            bid_count=bid_count,
+            user_has_bid=user_has_bid
         ))
         
     return AuctionResponse(
@@ -248,6 +274,80 @@ async def place_bid(
         new_bid=amount,
         remaining_coins=member.coins
     )
+
+@router.delete("/{league_id}/bid/{slot_id}")
+async def withdraw_bid(
+    league_id: int,
+    slot_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Retirar una puja y buscar al postor anterior, si lo hay"""
+    member = db.query(LeagueMember).filter(
+        LeagueMember.league_id == league_id,
+        LeagueMember.user_id == current_user.id
+    ).first()
+    if not member:
+        raise HTTPException(status_code=403, detail="No perteneces a esta liga")
+        
+    slot = db.query(AuctionSlot).join(MarketAuction).filter(
+        AuctionSlot.id == slot_id,
+        MarketAuction.league_id == league_id,
+        MarketAuction.is_active == True
+    ).first()
+    
+    if not slot:
+        raise HTTPException(status_code=404, detail="Subasta no encontrada o finalizada")
+        
+    if slot.auction.ends_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="La subasta ha finalizado")
+
+    user_bids = db.query(AuctionBid).filter(
+        AuctionBid.slot_id == slot_id,
+        AuctionBid.user_id == current_user.id
+    ).all()
+
+    if not user_bids:
+        raise HTTPException(status_code=400, detail="No has pujado por este jugador.")
+
+    # Si va ganando, le devolvemos el dinero de la puja actual (que es lo que pagó)
+    if slot.highest_bidder_id == current_user.id:
+        member.coins += slot.current_bid
+
+        # Borrar las pujas de este usuario en este slot
+        for b in user_bids:
+            db.delete(b)
+
+        # Buscar el siguiente máximo postor
+        next_bid = db.query(AuctionBid).filter(
+            AuctionBid.slot_id == slot_id
+        ).order_by(AuctionBid.amount.desc()).first()
+
+        if next_bid:
+            slot.current_bid = next_bid.amount
+            slot.highest_bidder_id = next_bid.user_id
+            # Volver a cobrarle al nuevo ganador
+            next_member = db.query(LeagueMember).filter(
+                LeagueMember.league_id == league_id,
+                LeagueMember.user_id == next_bid.user_id
+            ).first()
+            if next_member:
+                next_member.coins -= next_bid.amount
+        else:
+            slot.current_bid = 0
+            slot.highest_bidder_id = None
+            
+        message = "Puja retirada. Monedas devueltas."
+    else:
+        # Si no iba ganando, su dinero ya fue devuelto en el momento que alguien lo superó.
+        # Simplemente borramos sus pujas para que no pueda ser el "siguiente" si el ganador se retira.
+        for b in user_bids:
+            db.delete(b)
+        message = "Puja retirada del historial."
+
+    db.commit()
+    return {"message": message, "remaining_coins": member.coins}
+
 
 
 @router.post("/{league_id}/sell/{card_id}", response_model=SellResponse)
@@ -433,6 +533,14 @@ async def get_listings(
             "overall_rating": player.overall_rating,
             "base_rarity": player.base_rarity.value,
             "image_url": player.image_url,
+            "current_team": player.current_team,
+            "nationality": player.nationality,
+            "pace": player.pace,
+            "shooting": player.shooting,
+            "passing": player.passing,
+            "dribbling": player.dribbling,
+            "defending": player.defending,
+            "physical": player.physical,
             "asking_price": l.asking_price,
             "seller_username": seller.username,
             "is_mine": l.seller_id == current_user.id,
@@ -578,4 +686,108 @@ async def accept_offer(
         "player_name": player_name,
         "price_received": offer.offer_price,
         "remaining_coins": member.coins
+    }
+
+
+# ==========================================
+# CLAUSULAZOS Y BLINDAJES
+# ==========================================
+
+@router.post("/{league_id}/clause/{card_id}")
+async def pay_release_clause(
+    league_id: int,
+    card_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Pagar la cláusula de rescisión de un jugador de otro usuario.
+    El precio es el valor de mercado actual + el valor protegido (blindaje).
+    """
+    card = db.query(UserCard).filter(UserCard.id == card_id, UserCard.league_id == league_id).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Carta no encontrada en esta liga")
+
+    if card.user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="No puedes pagar la cláusula de tu propio jugador")
+
+    seller_membership = db.query(LeagueMember).filter(LeagueMember.league_id == league_id, LeagueMember.user_id == card.user_id).first()
+    buyer_membership = db.query(LeagueMember).filter(LeagueMember.league_id == league_id, LeagueMember.user_id == current_user.id).first()
+
+    if not buyer_membership:
+        raise HTTPException(status_code=403, detail="No perteneces a esta liga")
+
+    clause_price = int(card.current_market_value)
+    if buyer_membership.coins < clause_price:
+        raise HTTPException(status_code=400, detail=f"No tienes suficientes monedas ({clause_price:,})")
+
+    # Transfer money
+    buyer_membership.coins -= clause_price
+    if seller_membership:
+        seller_membership.coins += clause_price
+
+    # Remove actively listed card if any
+    active_listing = db.query(MarketListing).filter(MarketListing.card_id == card.id, MarketListing.is_active == True).first()
+    if active_listing:
+        active_listing.is_active = False
+        active_listing.sold_at = datetime.utcnow()
+        active_listing.buyer_id = current_user.id
+
+    # Find buyer team
+    buyer_team = db.query(Team).filter(Team.league_id == league_id, Team.user_id == current_user.id).first()
+
+    # Transfer Card
+    card.user_id = current_user.id
+    card.team_id = buyer_team.id if buyer_team else None
+    card.is_in_lineup = False
+    card.protected_value = 0 # Reset blindaje
+
+    db.commit()
+
+    return {
+        "message": f"Has fichado a {card.player.name} pagando su cláusula por {clause_price:,}"
+    }
+
+
+from app.schemas.market import ProtectCardRequest
+
+@router.post("/{league_id}/protect/{card_id}")
+async def protect_player(
+    league_id: int,
+    card_id: int,
+    data: ProtectCardRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Blindar a un jugador: "quemar" monedas para subir su cláusula de rescisión permanentemente.
+    """
+    if data.amount <= 0:
+        raise HTTPException(status_code=400, detail="La cantidad a blindar debe ser mayor que cero")
+
+    card = db.query(UserCard).filter(UserCard.id == card_id, UserCard.league_id == league_id).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Carta no encontrada en esta liga")
+
+    if card.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Solo puedes blindar a tus propios jugadores")
+
+    my_membership = db.query(LeagueMember).filter(LeagueMember.league_id == league_id, LeagueMember.user_id == current_user.id).first()
+    if not my_membership:
+        raise HTTPException(status_code=403, detail="No perteneces a esta liga")
+
+    if my_membership.coins < data.amount:
+        raise HTTPException(status_code=400, detail="No tienes suficientes monedas para este blindaje")
+
+    # Burn money
+    my_membership.coins -= data.amount
+
+    # Increase protected value
+    card.protected_value = (card.protected_value or 0) + data.amount
+
+    db.commit()
+
+    return {
+        "message": f"Has aumentado la cláusula de {card.player.name} en {data.amount:,} monedas",
+        "new_value": card.current_market_value
     }

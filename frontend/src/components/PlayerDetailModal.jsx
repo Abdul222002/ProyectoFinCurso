@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { playersAPI } from '../services/endpoints';
 import './PlayerDetailModal.css';
 
-export default function PlayerDetailModal({ playerId, playerObj, onClose }) {
+export default function PlayerDetailModal({ playerId, playerObj, onClose, isReadOnly, onClausulazo, onBlindar }) {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -30,15 +30,35 @@ export default function PlayerDetailModal({ playerId, playerObj, onClose }) {
     const value = playerObj?.current_market_value || playerObj?.current_price || 0;
     const team = playerObj?.current_team || 'Equipo Desconocido';
 
-    // Use real stats from backend, fallback to OVR-based estimate
-    const stats = [
-        { label: 'PAC', value: playerObj?.pace || Math.min(99, ovr - 5 + Math.floor(Math.random() * 10)) },
-        { label: 'SHO', value: playerObj?.shooting || Math.min(99, ovr - 8 + Math.floor(Math.random() * 10)) },
-        { label: 'PAS', value: playerObj?.passing || Math.min(99, ovr - 6 + Math.floor(Math.random() * 10)) },
-        { label: 'DRI', value: playerObj?.dribbling || Math.min(99, ovr - 5 + Math.floor(Math.random() * 10)) },
-        { label: 'DEF', value: playerObj?.defending || (pos === 'DEF' || pos === 'GK' ? Math.min(99, ovr - 3) : Math.min(50, 25 + Math.floor(Math.random() * 15))) },
-        { label: 'PHY', value: playerObj?.physical || Math.min(99, ovr - 7 + Math.floor(Math.random() * 10)) },
-    ];
+    // Use real stats from backend, fallback to seeded OVR-based estimate
+    const getStat = (base, variation, seedOffset) => {
+        const seed = parseInt(playerId) || 123;
+        let x = Math.sin(seed + seedOffset) * 10000;
+        const randomFraction = x - Math.floor(x);
+        return Math.min(99, Math.max(1, base + Math.floor(randomFraction * variation)));
+    };
+
+    let stats = [];
+
+    if (pos === 'GK') {
+        stats = [
+            { label: 'DIV', value: playerObj?.diving || getStat(ovr - 2, 8, 1) },
+            { label: 'HAN', value: playerObj?.handling || getStat(ovr - 5, 8, 2) },
+            { label: 'KIC', value: playerObj?.kicking || getStat(ovr - 8, 15, 3) },
+            { label: 'REF', value: playerObj?.reflexes || getStat(ovr, 8, 4) },
+            { label: 'SPD', value: playerObj?.speed || getStat(35, 15, 5) },
+            { label: 'POS', value: playerObj?.positioning || getStat(ovr - 3, 8, 6) }
+        ];
+    } else {
+        stats = [
+            { label: 'PAC', value: playerObj?.pace || getStat(ovr - 5, 10, 1) },
+            { label: 'SHO', value: playerObj?.shooting || getStat(ovr - 8, 10, 2) },
+            { label: 'PAS', value: playerObj?.passing || getStat(ovr - 6, 10, 3) },
+            { label: 'DRI', value: playerObj?.dribbling || getStat(ovr - 5, 10, 4) },
+            { label: 'DEF', value: playerObj?.defending || (pos === 'DEF' ? getStat(ovr - 3, 8, 5) : getStat(25, 20, 5)) },
+            { label: 'PHY', value: playerObj?.physical || getStat(ovr - 7, 10, 6) },
+        ];
+    }
 
     const formatValue = (v) => {
         if (v >= 1000000000) return (v / 1000000000).toFixed(1) + 'B';
@@ -184,6 +204,28 @@ export default function PlayerDetailModal({ playerId, playerObj, onClose }) {
                         </div>
                     )}
                 </div>
+
+                {/* Actions Row */}
+                {(onClausulazo || onBlindar) && playerObj?.id && (
+                    <div className="pdm-actions-bar" style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                        {isReadOnly && onClausulazo && (
+                            <button
+                                onClick={() => onClausulazo(playerObj)}
+                                style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
+                            >
+                                💎 Pagar Cláusula ({formatValue(value)})
+                            </button>
+                        )}
+                        {!isReadOnly && onBlindar && (
+                            <button
+                                onClick={() => onBlindar(playerObj)}
+                                style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
+                            >
+                                🛡️ Blindar Jugador
+                            </button>
+                        )}
+                    </div>
+                )}
 
             </div>
         </div>
