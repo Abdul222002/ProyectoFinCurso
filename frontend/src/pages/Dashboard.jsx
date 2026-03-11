@@ -179,6 +179,14 @@ export default function Dashboard() {
               </div>
             </button>
 
+            <button className="dash-action-card action-profile" onClick={() => navigate('/profile')}>
+              <div className="dash-action-icon">👤</div>
+              <div className="dash-action-info">
+                <h3>Mi Perfil</h3>
+                <p>Mensajes</p>
+              </div>
+            </button>
+
             {user?.role === 'admin' && (
               <button className="dash-action-card action-admin" onClick={() => navigate('/admin')}>
                 <div className="dash-action-icon">🛡️</div>

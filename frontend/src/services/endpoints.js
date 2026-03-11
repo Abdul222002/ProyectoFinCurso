@@ -62,7 +62,7 @@ export const leaguesAPI = {
   list: (leagueId) => api.get(`/leagues/${leagueId}/members`, {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
   }),
-  invite: (leagueId, email) => api.post(`/leagues/${leagueId}/invite`, { email }, {
+  invite: (leagueId, data) => api.post(`/leagues/${leagueId}/invite`, data, {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
   }),
   joinByCode: (code) => api.post(`/leagues/join/${code}`),

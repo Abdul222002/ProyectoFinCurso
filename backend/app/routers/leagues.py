@@ -455,13 +455,15 @@ def _remove_user_from_league(user_id: int, league_id: int, db: Session):
         MarketListing.league_id == league_id
     ).delete()
 
-    # 3. Eliminar equipo asociado
+    # 3. Eliminar equipo asociado y sus alineaciones (FK constraint)
     team = db.query(Team).filter(
         Team.user_id == user_id,
         Team.league_id == league_id
     ).first()
     
     if team:
+        # Primero eliminar alineaciones que referencian a este equipo
+        db.query(GameweekLineup).filter(GameweekLineup.team_id == team.id).delete(synchronize_session=False)
         db.delete(team)
 
     # 4. Eliminar TODAS las cartas del usuario que pertenecen a esta liga

@@ -13,6 +13,7 @@ import PriceAnalysisPage from './pages/PriceAnalysisPage';
 import LeaguesPage from './pages/LeaguesPage';
 import LeagueDetailPage from './pages/LeagueDetailPage';
 import AdminDashboard from './pages/AdminDashboard';
+import ProfilePage from './pages/ProfilePage';
 
 function App() {
   return (
@@ -86,6 +87,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <LeagueDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
               </ProtectedRoute>
             }
           />

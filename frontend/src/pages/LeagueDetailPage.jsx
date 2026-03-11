@@ -211,14 +211,21 @@ export default function LeagueDetailPage() {
   };
 
   const handleInvite = async () => {
-    if (!inviteUsername.trim()) return;
+    const input = inviteUsername.trim();
+    if (!input) return;
+    
     setInviting(true);
+    
+    // Determine if input is an email or username
+    const isEmail = input.includes('@') && input.includes('.');
+    const payload = isEmail ? { email: input } : { username: input };
+    
     try {
-      await leaguesAPI.invite(leagueId, { username: inviteUsername });
-      setMessage(`✅ Invitación enviada a @${inviteUsername}`);
+      await leaguesAPI.invite(leagueId, payload);
+      setMessage(`✅ Invitación enviada a ${input}`);
       setInviteUsername('');
     } catch (err) {
-      setMessage(`❌ ${err.response?.data?.detail || 'Error'}`);
+      setMessage(`❌ ${err.response?.data?.detail || 'Error al invitar'}`);
     }
     setInviting(false);
   };

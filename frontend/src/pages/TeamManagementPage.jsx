@@ -41,8 +41,7 @@ export default function TeamManagementPage() {
 
   const formatPrice = (price) => {
     if (price >= 1000000) return `€${(price / 1000000).toFixed(1)}M`;
-    if (price >= 1000) return `€${(price / 1000).toFixed(0)}K`;
-    return `€${price}`;
+    return `€${price.toLocaleString('es-ES')}`;
   };
 
   const loadData = useCallback(async () => {
@@ -314,6 +313,20 @@ export default function TeamManagementPage() {
 
   return (
     <div className="team-page">
+      {/* ── Rival Banner ── */}
+      {isReadOnly && (
+        <div className="rival-banner">
+          <div className="rival-banner-content">
+            <span className="rival-banner-icon">👁️</span>
+            <span className="rival-banner-text">
+              Estás viendo el equipo de <strong>{selectedTeam?.name || 'otro usuario'}</strong>
+            </span>
+          </div>
+          <button className="rival-banner-back" onClick={() => navigate(leagueIdParam ? `/leagues/${leagueIdParam}` : '/dashboard')}>
+            ← Volver a la liga
+          </button>
+        </div>
+      )}
       {/* ── Modals ── */}
       {showCustomizer && selectedTeam && (
         <TeamCustomizerModal
@@ -385,8 +398,9 @@ export default function TeamManagementPage() {
           <h1 className="team-title">{selectedTeam?.name || 'Mi Equipo'}</h1>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <div className="team-value-badge" style={{ backgroundColor: '#fbbf24', color: '#0f172a', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.9rem' }}>
-            Valor: {formatPrice(selectedTeam?.team_value || 0)}
+          <div className="team-value-badge">
+            <span className="team-value-icon">💰</span>
+            <span className="team-value-amount">{formatPrice(selectedTeam?.team_value || 0)}</span>
           </div>
           <div className="team-ovr">OVR {selectedTeam?.overall_rating?.toFixed(1) || '--'}</div>
           {!isReadOnly && (

@@ -900,7 +900,6 @@
     box-shadow: 0 0 20px rgba(251, 191, 36, 0.15), inset 0 0 15px rgba(251, 191, 36, 0.1);
 }
 
-/* Sale badge */
 .team-player-sale-badge {
     position: absolute;
     top: 0;
@@ -917,3 +916,88 @@
     border-radius: 12px 12px 0 0;
     box-shadow: 0 2px 10px rgba(245, 158, 11, 0.4);
 }
+
+/* ==========================================
+   RIVAL TEAM BANNER
+   ========================================== */
+.rival-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.15));
+    border-bottom: 2px solid rgba(245, 158, 11, 0.4);
+    animation: rivalBannerSlide 0.3s ease;
+    z-index: 30;
+}
+
+@keyframes rivalBannerSlide {
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.rival-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.rival-banner-icon {
+    font-size: 1.4rem;
+    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.5));
+}
+
+.rival-banner-text {
+    font-size: 0.95rem;
+    color: #fbbf24;
+    font-weight: 500;
+}
+
+.rival-banner-text strong {
+    color: #fff;
+    font-weight: 800;
+}
+
+.rival-banner-back {
+    padding: 6px 14px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 8px;
+    color: #fbbf24;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.rival-banner-back:hover {
+    background: rgba(251, 191, 36, 0.15);
+    border-color: rgba(251, 191, 36, 0.5);
+    transform: translateX(-2px);
+}
+
+/* ==========================================
+   TEAM VALUE BADGE (improved)
+   ========================================== */
+.team-value-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #0f172a;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    box-shadow: 0 2px 10px rgba(251, 191, 36, 0.25);
+    letter-spacing: -0.02em;
+}
+
+.team-value-icon {
+    font-size: 1rem;
+}
+
+.team-value-amount {
+    font-variant-numeric: tabular-nums;
+}
