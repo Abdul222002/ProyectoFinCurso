@@ -1,6 +1,22 @@
 version: '3.8'
 
 services:
+  db:
+    image: mysql:8.0
+    container_name: football-fantasy-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-fantasyleague2026}
+      MYSQL_DATABASE: ultimate_fantasy_legends
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./ultimate_fantasy_legends.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
@@ -9,10 +25,15 @@ services:
     ports:
       - "8000:8000"
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
-      - MYSQL_HOST=host.docker.internal
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - MYSQL_HOST=db
+      - MYSQL_PORT=3306
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-fantasyleague2026}
+      - MYSQL_DATABASE=ultimate_fantasy_legends
 
   frontend:
     build:
@@ -24,3 +45,6 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+
+volumes:
+  mysql_data:

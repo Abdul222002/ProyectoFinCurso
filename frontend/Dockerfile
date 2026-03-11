@@ -15,6 +15,10 @@ RUN npm install
 # Copiar el resto del código
 COPY . .
 
+# Variable de entorno para la URL del backend (se inyecta en build)
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 # Construir la aplicación para producción
 RUN npm run build
 
