@@ -4,11 +4,14 @@ Router de Autenticación - Login, Register, Me
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 import bcrypt
 from fastapi.security import OAuth2PasswordBearer
+from typing import List
 
+from pydantic import BaseModel, Field
 from app.core.database import get_db
 from app.core.config import settings
 from app.models.models import User
@@ -164,3 +167,55 @@ async def get_me(current_user: User = Depends(get_current_user)):
     Devuelve los datos del usuario autenticado
     """
     return UserResponse.model_validate(current_user)
+
+class UserProfileUpdate(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+
+@router.put("/profile", response_model=UserResponse)
+async def update_profile(
+    profile_data: UserProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Actualiza el perfil del usuario (nombre de usuario)
+    """
+    # Verificar si el username ya está en uso por otro usuario
+    existing_user = db.query(User).filter(
+        User.username == profile_data.username,
+        User.id != current_user.id
+    ).first()
+    
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El nombre de usuario ya está en uso"
+        )
+        
+    current_user.username = profile_data.username
+    db.commit()
+    db.refresh(current_user)
+    
+    return UserResponse.model_validate(current_user)
+
+@router.get("/search", response_model=List[UserResponse])
+async def search_users(
+    q: str,
+    limit: int = 5,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Busca usuarios por nombre de usuario o email
+    """
+    if not q or len(q) < 2:
+        return []
+        
+    users = db.query(User).filter(
+        or_(
+            User.username.ilike(f"%{q}%"),
+            User.email.ilike(f"%{q}%")
+        )
+    ).limit(limit).all()
+    
+    return [UserResponse.model_validate(u) for u in users]

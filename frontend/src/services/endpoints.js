@@ -4,6 +4,16 @@
 import api from './api';
 
 // ==========================================
+// AUTH
+// ==========================================
+export const authAPI = {
+  searchUsers: (q) => api.get('/auth/search', { params: { q, limit: 5 } }),
+  updateProfile: (data) => api.put('/auth/profile', data, {
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }),
+};
+
+// ==========================================
 // TEAMS
 // ==========================================
 
@@ -46,7 +56,8 @@ export const marketAPI = {
 // ==========================================
 
 export const arenaAPI = {
-  simulate: () => api.post('/arena/simulate'),
+  getStatus: () => api.get('/arena/status'),
+  simulate: (teamId) => api.post('/arena/simulate', { team_id: teamId }),
   history: (limit = 20) => api.get('/arena/history', { params: { limit } }),
   leaderboard: (limit = 50) => api.get('/arena/leaderboard', { params: { limit } }),
 };

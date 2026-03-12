@@ -41,6 +41,7 @@ class LeagueMemberResponse(BaseModel):
     username: str
     league_points: int
     coins: int
+    locked_coins: int
     is_admin: bool
     joined_at: datetime
 

@@ -43,7 +43,14 @@ def _resolve_auction(auction: MarketAuction, db: Session):
     for slot in auction.slots:
         if slot.highest_bidder_id:
             # Crear la carta para el ganador
-            # (El dinero ya se descontó al pujar)
+            # Restar definitivamente el dinero garantizado (locked_coins y coins)
+            member = db.query(LeagueMember).filter(
+                LeagueMember.league_id == auction.league_id,
+                LeagueMember.user_id == slot.highest_bidder_id
+            ).first()
+            if member:
+                member.locked_coins -= slot.current_bid
+                member.coins -= slot.current_bid
             
             # Obtener overall actual del jugador
             player = slot.player
@@ -237,22 +244,22 @@ async def place_bid(
     if amount < required_bid:
         raise HTTPException(status_code=400, detail=f"La puja debe ser al menos {required_bid:,}")
         
-    if member.coins < amount:
-        raise HTTPException(status_code=400, detail=f"No tienes suficientes monedas ({member.coins:,})")
+    if (member.coins - member.locked_coins) < amount:
+        raise HTTPException(status_code=400, detail=f"Solo dispones de {(member.coins - member.locked_coins):,} monedas libres")
 
     # 2. Gestión de economía
     
-    # Devolver monedas al anterior ganador (si existe y no es el mismo usuario)
+    # Devolver monedas (liberar retención) al anterior ganador (si existe y no es el mismo usuario)
     if slot.highest_bidder_id:
         prev_bidder_member = db.query(LeagueMember).filter(
             LeagueMember.league_id == league_id,
             LeagueMember.user_id == slot.highest_bidder_id
         ).first()
         if prev_bidder_member:
-            prev_bidder_member.coins += slot.current_bid
+            prev_bidder_member.locked_coins -= slot.current_bid
     
-    # Restar monedas al nuevo pujador
-    member.coins -= amount
+    # Retener monedas al nuevo pujador
+    member.locked_coins += amount
     
     # 3. Actualizar Slot
     slot.current_bid = amount
@@ -272,7 +279,7 @@ async def place_bid(
         message="Puja realizada con éxito",
         slot_id=slot.id,
         new_bid=amount,
-        remaining_coins=member.coins
+        remaining_coins=member.coins - member.locked_coins
     )
 
 @router.delete("/{league_id}/bid/{slot_id}")
@@ -310,9 +317,9 @@ async def withdraw_bid(
     if not user_bids:
         raise HTTPException(status_code=400, detail="No has pujado por este jugador.")
 
-    # Si va ganando, le devolvemos el dinero de la puja actual (que es lo que pagó)
+    # Si va ganando, le devolvemos el dinero de la puja actual (liberar retención)
     if slot.highest_bidder_id == current_user.id:
-        member.coins += slot.current_bid
+        member.locked_coins -= slot.current_bid
 
         # Borrar las pujas de este usuario en este slot
         for b in user_bids:
@@ -326,18 +333,18 @@ async def withdraw_bid(
         if next_bid:
             slot.current_bid = next_bid.amount
             slot.highest_bidder_id = next_bid.user_id
-            # Volver a cobrarle al nuevo ganador
+            # Volver a retenerle al nuevo ganador
             next_member = db.query(LeagueMember).filter(
                 LeagueMember.league_id == league_id,
                 LeagueMember.user_id == next_bid.user_id
             ).first()
             if next_member:
-                next_member.coins -= next_bid.amount
+                next_member.locked_coins += next_bid.amount
         else:
             slot.current_bid = 0
             slot.highest_bidder_id = None
             
-        message = "Puja retirada. Monedas devueltas."
+        message = "Puja retirada. Monedas liberadas."
     else:
         # Si no iba ganando, su dinero ya fue devuelto en el momento que alguien lo superó.
         # Simplemente borramos sus pujas para que no pueda ser el "siguiente" si el ganador se retira.
@@ -346,7 +353,7 @@ async def withdraw_bid(
         message = "Puja retirada del historial."
 
     db.commit()
-    return {"message": message, "remaining_coins": member.coins}
+    return {"message": message, "remaining_coins": member.coins - member.locked_coins}
 
 
 

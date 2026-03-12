@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { teamsAPI, leaguesAPI, auctionAPI, marketAPI } from '../services/endpoints';
 import TeamCustomizerModal from '../components/TeamCustomizerModal';
 import PlayerDetailModal from '../components/PlayerDetailModal';
@@ -10,9 +11,10 @@ import './TeamManagementPage.css';
 export default function TeamManagementPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const leagueIdParam = searchParams.get('league_id');
   const userIdParam = searchParams.get('user_id');
-  const isReadOnly = !!userIdParam;
+  const isReadOnly = !!userIdParam && userIdParam !== String(user?.id);
 
   const [teams, setTeams] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState(null);
@@ -116,7 +118,7 @@ export default function TeamManagementPage() {
     }
 
     // Bugfix: ensure we don't exceed the chosen formation slots for this position
-    const slotsLimit = getFormationSlots(selectedTeam.active_formation || '4-4-2');
+    const slotsLimit = getFormationSlots(selectedTeam.active_formation || '4-3-3');
     const pos = cardToAdd.position;
     const samePosInLineup = currentLineup.filter(p => p.position === pos).length;
 

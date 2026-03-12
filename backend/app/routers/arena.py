@@ -9,9 +9,10 @@ from typing import List
 import random
 
 from app.core.database import get_db
-from app.models.models import User, Team, ArenaBattle
-from app.schemas.arena import ArenaMatchResponse, LeaderboardEntry, BattleHistoryResponse
+from app.models.models import User, Team, ArenaBattle, LeagueMember
+from app.schemas.arena import ArenaMatchResponse, LeaderboardEntry, BattleHistoryResponse, ArenaStatusResponse
 from app.routers.auth import get_current_user
+from datetime import datetime, timedelta
 
 router = APIRouter()
 
@@ -57,36 +58,92 @@ def _calculate_rating_change(my_rating: int, opp_rating: int, won: bool, draw: b
     return int(k * (actual - expected))
 
 
-@router.post("/simulate", response_model=ArenaMatchResponse)
-async def simulate_pvp(
+def _reset_tickets_if_needed(user: User, db: Session):
+    """Resetea los tickets diarios si es un nuevo día"""
+    now = datetime.utcnow()
+    # Si last_tickets_reset no tiene valor o es de otro día natural
+    if not user.last_tickets_reset or user.last_tickets_reset.date() < now.date():
+        user.arena_tickets = 5
+        user.last_tickets_reset = now
+        db.commit()
+
+
+@router.get("/status", response_model=ArenaStatusResponse)
+async def get_arena_status(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Simular un partido PvP contra un oponente aleatorio"""
-    my_team = db.query(Team).filter(Team.user_id == current_user.id).first()
+    """Devuelve el estado mensual (ELO, tickets) del jugador"""
+    _reset_tickets_if_needed(current_user, db)
+    return ArenaStatusResponse(
+        global_elo=current_user.global_elo,
+        arena_tickets=current_user.arena_tickets,
+        last_tickets_reset=current_user.last_tickets_reset
+    )
+
+
+class SimulateRequest(__import__('pydantic').BaseModel):
+    team_id: int
+
+
+@router.post("/simulate", response_model=ArenaMatchResponse)
+async def simulate_pvp(
+    req: SimulateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Simular un partido PvP contra un oponente de ELO similar"""
+    _reset_tickets_if_needed(current_user, db)
+    
+    if current_user.arena_tickets <= 0:
+        raise HTTPException(status_code=400, detail="No te quedan tickets de arena hoy")
+
+    my_team = db.query(Team).filter(Team.id == req.team_id, Team.user_id == current_user.id).first()
     if not my_team:
         raise HTTPException(status_code=400, detail="Necesitas crear un equipo primero")
 
     # Buscar oponente aleatorio (excluir al usuario actual)
     opponents = db.query(Team).filter(Team.user_id != current_user.id).all()
 
+    # Multiplicador del sistema global
+    global_k = 32
+
+    # Consumir ticket
+    current_user.arena_tickets -= 1
+
     if not opponents:
         # Si no hay oponentes, crear uno fantasma
         opp_team_name = "CPU FC"
         opp_ovr = random.uniform(60, 90)
         opp_rating = 1000
+        opp_global_elo = 1000
 
         team1_goals, team2_goals = _simulate_match(my_team.overall_rating, opp_ovr)
 
         won = team1_goals > team2_goals
         draw = team1_goals == team2_goals
+        
+        # ELO changes
         rating_change = _calculate_rating_change(my_team.arena_rating, opp_rating, won, draw)
+        global_change = _calculate_rating_change(current_user.global_elo, opp_global_elo, won, draw)
 
         # Actualizar stats
         my_team.arena_rating += rating_change
+        current_user.global_elo += global_change
+        
+        coins_rewarded = 0
         if won:
             my_team.arena_wins += 1
             result = "victory"
+            # Recompensa
+            coins_rewarded = 5000000
+            league_member = db.query(LeagueMember).filter(
+                LeagueMember.league_id == my_team.league_id,
+                LeagueMember.user_id == current_user.id
+            ).first()
+            if league_member:
+                league_member.coins += coins_rewarded
+
         elif draw:
             my_team.arena_draws += 1
             result = "draw"
@@ -107,11 +164,19 @@ async def simulate_pvp(
             winner_name=my_team.name if won else (opp_team_name if not draw else None),
             result=result,
             rating_change=rating_change,
-            simulated_at=__import__('datetime').datetime.utcnow()
+            global_rating_change=global_change,
+            coins_rewarded=coins_rewarded,
+            simulated_at=datetime.utcnow()
         )
 
-    # Matchmaking: elegir oponente cercano en rating
-    opponents.sort(key=lambda t: abs(t.arena_rating - my_team.arena_rating))
+    # Matchmaking: elegir oponente cercano en global_elo y overall_rating combinados (aprox)
+    # Por simplicidad ahora, combinamos diferencia de ELO global y diferencia de team OVR
+    def match_score(t: Team):
+        elo_diff = abs(t.user.global_elo - current_user.global_elo)
+        ovr_diff = abs(t.overall_rating - my_team.overall_rating) * 10  # Peso al OVR
+        return elo_diff + ovr_diff
+
+    opponents.sort(key=match_score)
     opp_team = opponents[0] if len(opponents) <= 3 else random.choice(opponents[:5])
 
     team1_goals, team2_goals = _simulate_match(my_team.overall_rating, opp_team.overall_rating)
@@ -139,14 +204,28 @@ async def simulate_pvp(
     # Rating changes
     my_change = _calculate_rating_change(my_team.arena_rating, opp_team.arena_rating, won, draw)
     opp_change = _calculate_rating_change(opp_team.arena_rating, my_team.arena_rating, lost, draw)
+    
+    my_global_change = _calculate_rating_change(current_user.global_elo, opp_team.user.global_elo, won, draw)
+    opp_global_change = _calculate_rating_change(opp_team.user.global_elo, current_user.global_elo, lost, draw)
 
     my_team.arena_rating += my_change
     opp_team.arena_rating += opp_change
+    
+    current_user.global_elo += my_global_change
+    opp_team.user.global_elo += opp_global_change
 
+    coins_rewarded = 0
     if won:
         my_team.arena_wins += 1
         opp_team.arena_losses += 1
         result = "victory"
+        coins_rewarded = 5000000
+        league_member = db.query(LeagueMember).filter(
+            LeagueMember.league_id == my_team.league_id,
+            LeagueMember.user_id == current_user.id
+        ).first()
+        if league_member:
+            league_member.coins += coins_rewarded
     elif draw:
         my_team.arena_draws += 1
         opp_team.arena_draws += 1
@@ -170,6 +249,8 @@ async def simulate_pvp(
         winner_name=my_team.name if won else (opp_team.name if lost else None),
         result=result,
         rating_change=my_change,
+        global_rating_change=my_global_change,
+        coins_rewarded=coins_rewarded,
         simulated_at=battle.simulated_at
     )
 

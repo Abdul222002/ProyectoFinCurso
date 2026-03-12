@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { leaguesAPI, auctionAPI, packsAPI } from '../services/endpoints';
+import { leaguesAPI, auctionAPI, packsAPI, authAPI } from '../services/endpoints';
 import PackOpeningModal from '../components/PackOpeningModal';
 import { toast } from 'sonner';
 import './LeagueDetailPage.css';
@@ -39,6 +39,30 @@ export default function LeagueDetailPage() {
   // Invite state
   const [inviteUsername, setInviteUsername] = useState('');
   const [inviting, setInviting] = useState(false);
+  
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+
+  // Debounced user search
+  useEffect(() => {
+    if (searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    const delayFn = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await authAPI.searchUsers(searchQuery);
+        setSearchResults(res.data || []);
+      } catch (err) {
+        setSearchResults([]);
+      }
+      setSearching(false);
+    }, 300);
+    return () => clearTimeout(delayFn);
+  }, [searchQuery]);
 
   const loadLeague = useCallback(async () => {
     setLoading(true);
@@ -175,6 +199,7 @@ export default function LeagueDetailPage() {
             const res = await auctionAPI.withdrawBid(leagueId, slotId);
             setMessage(`✅ ${res.data.message}`);
             loadAuction();
+            loadLeague(); // Update coins visually
           } catch (err) {
             setMessage(`❌ ${err.response?.data?.detail || 'Error al retirar puja'}`);
           }
@@ -191,7 +216,7 @@ export default function LeagueDetailPage() {
     const myMembership = league?.members?.find(m => m.user_id === user?.id);
     const leagueCoins = myMembership ? myMembership.coins : 0;
 
-    if (leagueCoins < 150000000) {
+    if (freeCoins < 150000000) {
       setMessage('❌ Necesitas 150.000.000 monedas en esta liga para abrir un sobre de iconos');
       setTimeout(() => setMessage(''), 4000);
       return;
@@ -210,24 +235,28 @@ export default function LeagueDetailPage() {
     setOpening(false);
   };
 
-  const handleInvite = async () => {
-    const input = inviteUsername.trim();
+  const handleInvite = async (targetUser = null) => {
+    let input = (targetUser || inviteUsername).trim();
     if (!input) return;
     
     setInviting(true);
     
     // Determine if input is an email or username
     const isEmail = input.includes('@') && input.includes('.');
+    input = input.startsWith('@') ? input.slice(1) : input;
     const payload = isEmail ? { email: input } : { username: input };
     
     try {
       await leaguesAPI.invite(leagueId, payload);
       setMessage(`✅ Invitación enviada a ${input}`);
       setInviteUsername('');
+      setSearchQuery('');
+      setSearchResults([]);
     } catch (err) {
       setMessage(`❌ ${err.response?.data?.detail || 'Error al invitar'}`);
+    } finally {
+      setInviting(false);
     }
-    setInviting(false);
   };
 
   const handleLeave = async () => {
@@ -302,16 +331,20 @@ export default function LeagueDetailPage() {
 
   // Find user's league membership to get specific league coins
   const myMembership = league?.members?.find(m => m.user_id === user?.id);
-  const leagueCoins = myMembership ? myMembership.coins : 0;
+  const myCoins = myMembership?.coins || 0;
+  const myLockedCoins = myMembership?.locked_coins || 0;
+  const freeCoins = myCoins - myLockedCoins;
 
   // Calculate coins locked in active winning bids so user can see real available balance
-  const lockedCoins = auction?.slots?.reduce((total, slot) => {
+  const activeBidCoins = auction?.slots?.reduce((total, slot) => {
     if (slot.highest_bidder_id === user?.id && slot.current_bid > 0) {
       return total + slot.current_bid;
     }
     return total;
   }, 0) || 0;
-  const availableCoins = leagueCoins - lockedCoins;
+  
+  // En backend `locked_coins` ya tiene sumado el activeBidCoins, usamos el del backend para ser 100% precisos
+  const displayAvailable = freeCoins;
 
   return (
     <div className="ld-page">
@@ -325,9 +358,9 @@ export default function LeagueDetailPage() {
           </span>
         </div>
         <div className="ld-coins-wrap">
-          <div className="ld-coins">🪙 {formatPrice(availableCoins)}</div>
-          {lockedCoins > 0 && (
-            <div className="ld-coins-locked" title="Monedas bloqueadas en pujas activas">🔒 {formatPrice(lockedCoins)}</div>
+          <div className="ld-coins">🪙 {formatPrice(displayAvailable)}</div>
+          {myLockedCoins > 0 && (
+            <div className="ld-coins-locked" title="Monedas bloqueadas en pujas activas">🔒 {formatPrice(myLockedCoins)} Retenidas</div>
           )}
         </div>
       </header>
@@ -443,7 +476,7 @@ export default function LeagueDetailPage() {
                     <div
                       key={slot.id}
                       className="ld-market-row"
-                      onClick={() => setSelectedPlayerForDetail({ ...slot, name: slot.player_name, current_price: slot.base_price })}
+                      onClick={() => setSelectedPlayerForDetail({ ...slot, player_id: slot.player_id, name: slot.player_name, current_price: slot.base_price })}
                       style={{ cursor: 'pointer' }}
                     >
                       <div className={`ld-market-row-accent ${hasBid ? 'winning' : 'neutral'}`}></div>
@@ -494,10 +527,10 @@ export default function LeagueDetailPage() {
                           <button
                             className="ld-market-row-btn primary"
                             onClick={() => handleBid(slot.id, slot.current_bid, slot.base_price)}
-                            disabled={bidding === slot.id}
-                            title={hasBid ? 'Pujar de nuevo si crees que alguien ha superado tu puja.' : ''}
+                            disabled={bidding === slot.id || (slot.highest_bidder_id === user?.id)}
+                            title={(slot.highest_bidder_id === user?.id) ? "Ya vas ganando este jugador" : ""}
                           >
-                            {bidding === slot.id ? '...' : (hasBid ? 'Pujar' : 'Pujar')}
+                            {bidding === slot.id ? '...' : (slot.highest_bidder_id === user?.id ? 'VENDIDO' : 'Pujar')}
                           </button>
                           {hasBid && (
                             <button
@@ -595,6 +628,7 @@ export default function LeagueDetailPage() {
                     style={{ cursor: 'pointer' }}
                     onClick={() => setSelectedPlayerForDetail({
                       ...listing,
+                      player_id: listing.player_id || listing.card?.player_id,
                       name: listing.player_name,
                       current_price: listing.asking_price,
                       current_market_value: listing.asking_price
@@ -799,19 +833,73 @@ export default function LeagueDetailPage() {
               </div>
 
               {/* Invite */}
-              <div className="ld-info-card">
+              <div className="ld-info-card" style={{ overflow: 'visible' }}>
                 <h3>📩 Invitar amigo</h3>
-                <div className="ld-invite-form">
-                  <input
-                    type="text"
-                    value={inviteUsername}
-                    onChange={(e) => setInviteUsername(e.target.value)}
-                    placeholder="Username del amigo"
-                    className="ld-input"
-                  />
-                  <button className="ld-invite-btn" onClick={handleInvite} disabled={inviting}>
-                    {inviting ? '...' : 'Enviar'}
-                  </button>
+                <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '12px' }}>Busca un usuario por su nombre o email para invitarle a la liga.</p>
+                <div className="ld-invite-search-container" style={{ position: 'relative' }}>
+                  <div className="ld-invite-form" style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="text"
+                      className="ld-input"
+                      placeholder="Buscar nombre o correo..."
+                      value={searchQuery}
+                      onChange={e => {
+                        setSearchQuery(e.target.value);
+                        setInviteUsername(e.target.value); // fallback
+                      }}
+                      style={{ flex: 1 }}
+                    />
+                    <button className="ld-invite-btn" onClick={() => handleInvite()} disabled={inviting}>
+                      {inviting ? '...' : 'Enviar'}
+                    </button>
+                  </div>
+                  {/* Search Results Dropdown */}
+                  {(searchResults.length > 0 || searching) && searchQuery.length >= 2 && (
+                    <div className="ld-search-dropdown" style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, 
+                      backgroundColor: '#1e293b', border: '1px solid #334155', 
+                      borderRadius: '8px', zIndex: 50, marginTop: '4px',
+                      boxShadow: '0 4px 6px rgba(0,0,0,0.3)', maxHeight: '200px', overflowY: 'auto'
+                    }}>
+                      {searching ? (
+                        <div style={{ padding: '12px', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>Buscando...</div>
+                      ) : searchResults.length > 0 ? (
+                        searchResults.map(u => (
+                          <div key={u.id} style={{
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            padding: '10px 12px', borderBottom: '1px solid #334155', cursor: 'pointer',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#334155'}
+                          onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                          onClick={() => {
+                            setInviteUsername(u.username);
+                            setSearchQuery(u.username);
+                            setSearchResults([]);
+                          }}
+                          >
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: 'bold', color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.username}</div>
+                              <div style={{ fontSize: '0.8rem', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.email}</div>
+                            </div>
+                            <button 
+                              className="ld-invite-btn"
+                              style={{ padding: '6px 12px', marginLeft: '8px', fontSize: '0.85rem' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleInvite(u.username);
+                              }}
+                              disabled={inviting}
+                            >
+                              Invitar
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <div style={{ padding: '12px', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>No se encontraron usuarios</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 

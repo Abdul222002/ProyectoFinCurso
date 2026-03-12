@@ -19,10 +19,19 @@ class ArenaMatchResponse(BaseModel):
     winner_name: Optional[str]
     result: str  # "victory", "defeat", "draw"
     rating_change: int
+    global_rating_change: int
+    coins_rewarded: int
     simulated_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class ArenaStatusResponse(BaseModel):
+    """Estado del jugador en la Arena"""
+    global_elo: int
+    arena_tickets: int
+    last_tickets_reset: datetime
 
 
 class LeaderboardEntry(BaseModel):

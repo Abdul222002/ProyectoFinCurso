@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { leaguesAPI } from '../services/endpoints';
+import { leaguesAPI, authAPI } from '../services/endpoints';
 import { toast } from 'sonner';
 import './LeaguesPage.css';
 
@@ -28,6 +28,28 @@ export default function LeaguesPage() {
   const [inviteLeagueId, setInviteLeagueId] = useState(null);
   const [inviteUsername, setInviteUsername] = useState('');
   const [inviting, setInviting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+
+  // Debounced user search
+  useEffect(() => {
+    if (searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    const delayFn = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await authAPI.searchUsers(searchQuery);
+        setSearchResults(res.data || []);
+      } catch (err) {
+        setSearchResults([]);
+      }
+      setSearching(false);
+    }, 300);
+    return () => clearTimeout(delayFn);
+  }, [searchQuery]);
 
   useEffect(() => { loadData(); }, []);
 
@@ -99,13 +121,22 @@ export default function LeaguesPage() {
     } catch { }
   };
 
-  const handleInvite = async (leagueId) => {
-    if (!inviteUsername.trim()) return;
+  const handleInvite = async (leagueId, targetUser = null) => {
+    let input = (targetUser || inviteUsername || searchQuery).trim();
+    if (!input) return;
     setInviting(true);
+    
+    // Determine if input is an email or username
+    const isEmail = input.includes('@') && input.includes('.');
+    input = input.startsWith('@') ? input.slice(1) : input;
+    const payload = isEmail ? { email: input } : { username: input };
+    
     try {
-      await leaguesAPI.invite(leagueId, { username: inviteUsername });
-      setMessage(`✅ Invitación enviada a @${inviteUsername}`);
+      await leaguesAPI.invite(leagueId, payload);
+      setMessage(`✅ Invitación enviada a ${input}`);
       setInviteUsername('');
+      setSearchQuery('');
+      setSearchResults([]);
       setInviteLeagueId(null);
     } catch (err) {
       setMessage(`❌ ${err.response?.data?.detail || 'Error'}`);
@@ -216,12 +247,15 @@ export default function LeaguesPage() {
 
                   {/* Inline invite form */}
                   {inviteLeagueId === league.id && (
-                    <div className="lg-invite-inline">
+                    <div className="lg-invite-inline" style={{ position: 'relative' }}>
                       <input
                         type="text"
-                        value={inviteUsername}
-                        onChange={(e) => setInviteUsername(e.target.value)}
-                        placeholder="Username del amigo"
+                        value={searchQuery || inviteUsername}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          setInviteUsername(e.target.value);
+                        }}
+                        placeholder="Nombre de usuario o correo..."
                         className="lg-input"
                       />
                       <button
@@ -229,8 +263,42 @@ export default function LeaguesPage() {
                         onClick={() => handleInvite(league.id)}
                         disabled={inviting}
                       >
-                        {inviting ? '...' : 'Enviar'}
+                        {inviting || searching ? '...' : 'Enviar'}
                       </button>
+
+                      {/* Search Results Dropdown */}
+                      {searchResults.length > 0 && searchQuery.length >= 2 && (
+                        <div className="ld-search-results" style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          width: 'calc(100% - 90px)',
+                          background: '#1e293b',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '8px',
+                          marginTop: '4px',
+                          maxHeight: '200px',
+                          overflowY: 'auto',
+                          zIndex: 10
+                        }}>
+                          {searchResults.map(u => (
+                            <div
+                              key={u.id}
+                              className="ld-search-item"
+                              style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                              onClick={() => {
+                                setInviteUsername(u.username);
+                                setSearchQuery('');
+                                setSearchResults([]);
+                                handleInvite(league.id, u.username);
+                              }}
+                            >
+                              <div style={{ fontWeight: 'bold' }}>@{u.username}</div>
+                              {u.email && <div style={{ fontSize: '0.8em', color: '#94a3b8' }}>{u.email}</div>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

@@ -126,6 +126,7 @@ def _member_to_response(member: LeagueMember) -> LeagueMemberResponse:
         username=member.user.username,
         league_points=member.league_points,
         coins=member.coins,
+        locked_coins=member.locked_coins,
         is_admin=member.is_admin,
         joined_at=member.joined_at
     )

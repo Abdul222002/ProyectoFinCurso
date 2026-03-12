@@ -12,6 +12,9 @@ export default function ProfilePage() {
   const [invitations, setInvitations] = useState([]);
   const [activeTab, setActiveTab] = useState('info');
   const [loading, setLoading] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -61,6 +64,26 @@ export default function ProfilePage() {
     navigate('/login');
   };
 
+  const handleSaveProfile = async () => {
+    if (!newUsername.trim() || newUsername === user?.username) {
+      setEditMode(false);
+      return;
+    }
+    
+    setSaving(true);
+    try {
+      const { authAPI } = await import('../services/endpoints');
+      const res = await authAPI.updateProfile({ username: newUsername });
+      
+      // Update local storage and context if possible, or just force reload
+      toast.success('Perfil actualizado correctamente');
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Error al actualizar perfil');
+      setSaving(false);
+    }
+  };
+
   const formatDate = (dateStr) => {
     if (!dateStr) return '—';
     return new Date(dateStr).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -98,7 +121,50 @@ export default function ProfilePage() {
           </span>
         </div>
         <div className="profile-user-info">
-          <h2 className="profile-username">{user?.username || 'Manager'}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {editMode ? (
+              <input 
+                type="text" 
+                value={newUsername} 
+                onChange={e => setNewUsername(e.target.value)}
+                className="profile-edit-input"
+                autoFocus
+                disabled={saving}
+              />
+            ) : (
+              <h2 className="profile-username">{user?.username || 'Manager'}</h2>
+            )}
+            
+            {editMode ? (
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  className="profile-save-btn" 
+                  onClick={handleSaveProfile}
+                  disabled={saving}
+                >
+                  {saving ? '...' : 'Guardar'}
+                </button>
+                <button 
+                  className="profile-cancel-btn"
+                  onClick={() => setEditMode(false)}
+                  disabled={saving}
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <button 
+                className="profile-edit-toggle"
+                onClick={() => {
+                  setNewUsername(user?.username || '');
+                  setEditMode(true);
+                }}
+                title="Editar Nombre"
+              >
+                ✏️
+              </button>
+            )}
+          </div>
           <p className="profile-email">{user?.email || ''}</p>
           <div className="profile-meta">
             <span className="profile-meta-item">

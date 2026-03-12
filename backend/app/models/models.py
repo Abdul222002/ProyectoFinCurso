@@ -63,6 +63,11 @@ class User(Base):
     # Rol y permisos
     role = Column(Enum(UserRole), default=UserRole.FREE)
     
+    # Arena PvP Global
+    global_elo = Column(Integer, default=1000)
+    arena_tickets = Column(Integer, default=5)
+    last_tickets_reset = Column(DateTime, default=datetime.utcnow)
+    
     # Economía
     coins = Column(Integer, default=10000)  # Monedas del juego
     
@@ -602,6 +607,7 @@ class LeagueMember(Base):
     
     # Economía de la liga (cada usuario empieza con 100M)
     coins = Column(Integer, default=100000000)
+    locked_coins = Column(Integer, default=0)
 
     # Rol dentro de la liga
     is_admin = Column(Boolean, default=False)

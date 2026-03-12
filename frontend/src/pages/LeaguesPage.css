@@ -192,6 +192,16 @@
 
 .lg-card-btn:hover { filter: brightness(1.2); }
 
+.lg-card-btn.reject {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.lg-card-btn.reject:hover {
+  background: rgba(248, 113, 113, 0.3);
+}
+
 /* Inline Invite */
 .lg-invite-inline {
   display: flex;

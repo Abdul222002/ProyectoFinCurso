@@ -7,7 +7,7 @@ import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import TeamManagementPage from './pages/TeamManagementPage';
 import MarketPage from './pages/MarketPage';
-import PvPArenaPage from './pages/PvPArenaPage';
+import ArenaPage from './pages/ArenaPage';
 import CardDetailPage from './pages/CardDetailPage';
 import PriceAnalysisPage from './pages/PriceAnalysisPage';
 import LeaguesPage from './pages/LeaguesPage';
@@ -54,7 +54,7 @@ function App() {
             path="/arena"
             element={
               <ProtectedRoute>
-                <PvPArenaPage />
+                <ArenaPage />
               </ProtectedRoute>
             }
           />
