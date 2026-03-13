@@ -35,10 +35,17 @@ app = FastAPI(
     redoc_url="/redoc"  # ReDoc
 )
 
-# Configuración de CORS (para que React pueda conectarse)
+# Configuración de CORS
+origins = [
+    settings.FRONTEND_URL,
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Permitir cualquier origen para despliegue
+    allow_origins=origins if settings.ENVIRONMENT == "production" else ["*"],
+    allow_origin_regex="https?://.*\.railway\.app" if settings.ENVIRONMENT == "production" else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
