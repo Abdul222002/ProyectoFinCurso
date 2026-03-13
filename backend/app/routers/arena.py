@@ -46,7 +46,7 @@ def _simulate_match(team1_ovr: float, team2_ovr: float) -> tuple:
 
 
 def _calculate_rating_change(my_rating: int, opp_rating: int, won: bool, draw: bool) -> int:
-    """ELO simplificado"""
+    """ELO dinámico con K escalable según diferencia de nivel"""
     expected = 1 / (1 + 10 ** ((opp_rating - my_rating) / 400))
     if won:
         actual = 1
@@ -54,7 +54,17 @@ def _calculate_rating_change(my_rating: int, opp_rating: int, won: bool, draw: b
         actual = 0.5
     else:
         actual = 0
-    k = 32
+        
+    # K base más alta para más movimiento
+    k = 40
+    
+    # Aumentar K si el jugador de menor ELO gana al de mayor ELO
+    if won and my_rating < opp_rating:
+        k += 15
+    # Reducir K si el jugador de alto ELO pierde o gana contra uno muy inferior
+    elif won and my_rating > (opp_rating + 100):
+        k -= 10
+        
     return int(k * (actual - expected))
 
 
@@ -112,11 +122,12 @@ async def simulate_pvp(
     current_user.arena_tickets -= 1
 
     if not opponents:
-        # Si no hay oponentes, crear uno fantasma
+        # Si no hay oponentes, crear uno fantasma adaptativo
         opp_team_name = "CPU FC"
-        opp_ovr = random.uniform(60, 90)
-        opp_rating = 1000
-        opp_global_elo = 1000
+        # Escalar con el nivel del jugador
+        opp_ovr = max(60.0, min(95.0, my_team.overall_rating + random.uniform(-5, 5)))
+        opp_rating = max(500, my_team.arena_rating + random.randint(-40, 40))
+        opp_global_elo = max(500, current_user.global_elo + random.randint(-40, 40))
 
         team1_goals, team2_goals = _simulate_match(my_team.overall_rating, opp_ovr)
 

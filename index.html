@@ -1,0 +1,2012 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Centro de Formación Las Canteras | Ayuntamiento de Monachil</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --blue:        #1a5fa8;
+      --blue-mid:    #1976d2;
+      --blue-dark:   #0d3a6b;
+      --blue-bg:     #eaf2fb;
+      --blue-bg2:    #f4f8fd;
+      --gold:        #d4a039;
+      --gold-light:  #f0c060;
+      --dark:        #0e1c2e;
+      --dark2:       #1a2d45;
+      --gray:        #566878;
+      --border:      #d6e6f5;
+      --white:       #ffffff;
+      --shadow-sm:   0 2px 16px rgba(26,95,168,0.08);
+      --shadow-md:   0 8px 40px rgba(26,95,168,0.13);
+      --shadow-lg:   0 24px 70px rgba(26,95,168,0.18);
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; color: var(--dark); background: #fff; overflow-x: hidden; }
+
+    /* ══════════════ NAV ══════════════ */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      background: rgba(14,28,46,0.97);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .nav-inner {
+      max-width: 1220px; margin: 0 auto; padding: 0 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 78px; gap: 16px;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 12px;
+      text-decoration: none; flex-shrink: 0;
+    }
+    .nav-logo-img {
+      height: 58px; width: auto; max-width: 180px; border-radius: 10px;
+      object-fit: contain;
+    }
+    .nav-logo-text { display: flex; flex-direction: column; }
+    .nav-logo-main { font-size: 13px; font-weight: 700; color: white; line-height: 1.2; }
+    .nav-logo-sub { font-size: 10px; color: rgba(255,255,255,0.4); letter-spacing: 1px; text-transform: uppercase; }
+
+    .nav-center {
+      display: flex; align-items: center; gap: 2px; flex: 1; justify-content: center;
+    }
+    .nav-links {
+      display: flex; align-items: center; gap: 4px; list-style: none;
+    }
+    .nav-links a {
+      font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.7);
+      text-decoration: none; padding: 7px 12px; border-radius: 7px;
+      transition: all 0.2s; white-space: nowrap;
+    }
+    .nav-links a:hover { color: white; background: rgba(255,255,255,0.08); }
+    .nav-cta {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 18px;
+      background: var(--gold); color: var(--dark) !important;
+      border-radius: 8px; font-weight: 700 !important;
+      transition: all 0.25s !important; white-space: nowrap;
+    }
+    .nav-cta:hover { background: var(--gold-light) !important; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(212,160,57,0.4); }
+
+    .nav-right {
+      display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+    }
+    .nav-social {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .nav-social-link {
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none; transition: all 0.2s;
+      overflow: hidden; position: relative;
+    }
+    .nav-social-link.fb {
+      background: #1877f2;
+      box-shadow: 0 2px 10px rgba(24,119,242,0.35);
+    }
+    .nav-social-link.fb:hover { background: #0e65d9; transform: translateY(-2px); box-shadow: 0 6px 18px rgba(24,119,242,0.5); }
+    .nav-social-link.ig {
+      background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+      box-shadow: 0 2px 10px rgba(220,39,67,0.35);
+    }
+    .nav-social-link.ig:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(220,39,67,0.5); }
+    .nav-social-link svg { width: 18px; height: 18px; fill: white; }
+
+    .nav-toggle {
+      display: none; flex-direction: column; gap: 5px; cursor: pointer;
+      padding: 4px; background: none; border: none;
+    }
+    .nav-toggle span { display: block; width: 22px; height: 2px; background: white; border-radius: 2px; }
+
+    /* ══════════════ PARTNER STRIP ══════════════ */
+    .partners-strip {
+      background: linear-gradient(135deg, #f0f6ff 0%, #e8f0fe 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 24px;
+      margin-top: 78px;
+    }
+    .partners-header {
+      text-align: center; margin-bottom: 18px;
+    }
+    .partners-header-text {
+      font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--blue); opacity: 0.7;
+    }
+    .partners-inner {
+      max-width: 1220px; margin: 0 auto;
+      display: flex; align-items: stretch; justify-content: center;
+      gap: 16px; flex-wrap: wrap;
+    }
+    .partner-item {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 18px 32px; min-width: 180px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(26,95,168,0.07);
+      transition: all 0.25s;
+      text-decoration: none; gap: 10px;
+    }
+    .partner-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 28px rgba(26,95,168,0.14);
+      border-color: var(--blue);
+    }
+    .partner-item img {
+      height: 54px; width: auto; max-width: 180px;
+      object-fit: contain;
+      transition: transform 0.2s;
+    }
+    .partner-item:hover img { transform: scale(1.05); }
+    .partner-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+      color: var(--gray); text-align: center; line-height: 1.3;
+    }
+    .partner-col { display: flex; flex-direction: column; align-items: center; }
+
+    /* Styled institution logos */
+    .partner-logo-text {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 0;
+    }
+    .ministerio { flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+    .ministerio-escudo { font-size: 22px; }
+    .ministerio-name {
+      font-size: 10.5px; font-weight: 800; line-height: 1.3; text-align: center;
+      color: #c8340a; /* color oficial ministerio */
+      text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .camara { flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+    .camara-icon { font-size: 22px; }
+    .camara-name {
+      font-size: 10.5px; font-weight: 800; line-height: 1.3; text-align: center;
+      color: #003087; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .dipgra { flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+    .dipgra-icon { font-size: 22px; }
+    .dipgra-name {
+      font-size: 10.5px; font-weight: 800; line-height: 1.3; text-align: center;
+      color: #1a5fa8; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .ada { flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+    .ada-icon { font-size: 22px; }
+    .ada-name {
+      font-size: 10.5px; font-weight: 800; line-height: 1.3; text-align: center;
+      color: #007f5f; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+
+    /* ══════════════ HERO ══════════════ */
+    .hero {
+      min-height: calc(100vh - 78px);
+      background: var(--dark);
+      position: relative; overflow: hidden;
+      display: flex; align-items: center;
+      padding: 60px 24px 60px;
+    }
+    .hero-bg-grid {
+      position: absolute; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(26,95,168,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(26,95,168,0.08) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-bg-glow {
+      position: absolute; top: -20%; left: -10%; z-index: 0;
+      width: 700px; height: 700px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(26,95,168,0.25) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-bg-glow2 {
+      position: absolute; bottom: -10%; right: -5%; z-index: 0;
+      width: 500px; height: 500px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(212,160,57,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-inner {
+      max-width: 1220px; margin: 0 auto; width: 100%;
+      position: relative; z-index: 1;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(212,160,57,0.12); border: 1px solid rgba(212,160,57,0.3);
+      color: var(--gold-light); border-radius: 40px;
+      padding: 6px 16px; font-size: 12px; font-weight: 600;
+      letter-spacing: 0.5px; margin-bottom: 22px;
+    }
+    .hero-badge span { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); display: inline-block; }
+    .hero-title {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(2.4rem, 5vw, 3.8rem);
+      font-weight: 900; line-height: 1.05;
+      color: white; margin-bottom: 20px;
+    }
+    .hero-title em { font-style: italic; color: var(--gold-light); }
+    .hero-desc {
+      font-size: 16px; color: rgba(255,255,255,0.65);
+      line-height: 1.75; margin-bottom: 32px; max-width: 500px;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 28px; background: var(--gold); color: var(--dark);
+      border-radius: 10px; font-weight: 700; font-size: 14px;
+      text-decoration: none; transition: all 0.25s; border: none; cursor: pointer;
+    }
+    .btn-primary:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(212,160,57,0.4); }
+    .btn-outline {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 28px; background: transparent; color: rgba(255,255,255,0.85);
+      border: 1.5px solid rgba(255,255,255,0.2);
+      border-radius: 10px; font-weight: 600; font-size: 14px;
+      text-decoration: none; transition: all 0.25s;
+    }
+    .btn-outline:hover { border-color: rgba(255,255,255,0.5); color: white; background: rgba(255,255,255,0.05); }
+    .hero-stats {
+      display: flex; gap: 28px; margin-top: 40px;
+      padding-top: 32px; border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .hero-stat-num {
+      font-family: 'Fraunces', serif;
+      font-size: 2.2rem; font-weight: 900; color: white; line-height: 1;
+    }
+    .hero-stat-num span { color: var(--gold-light); }
+    .hero-stat-label { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 4px; line-height: 1.3; }
+    .hero-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 22px; padding: 36px;
+      backdrop-filter: blur(6px);
+    }
+    .hero-card-logo-wrap {
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 4px;
+    }
+    .hero-card-logo {
+      width: 100%; max-width: 260px; height: auto;
+      object-fit: contain; border-radius: 12px;
+      filter: drop-shadow(0 4px 16px rgba(0,0,0,0.4));
+    }
+    .hero-card-divider {
+      height: 1px; background: rgba(255,255,255,0.08);
+      margin: 20px 0;
+    }
+    .hero-card-title {
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--gold-light); margin-bottom: 24px;
+    }
+    .hero-info-item { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 20px; }
+    .hero-info-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: rgba(26,95,168,0.2); border: 1px solid rgba(26,95,168,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+    .hero-info-label { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 3px; }
+    .hero-info-val { font-size: 14px; color: rgba(255,255,255,0.9); font-weight: 500; line-height: 1.4; }
+    .hero-info-val a { color: var(--gold-light); text-decoration: none; }
+    .hero-info-val a:hover { text-decoration: underline; }
+    .hero-seals { display: flex; gap: 10px; margin-top: 28px; flex-wrap: wrap; }
+    .hero-seal {
+      display: flex; align-items: center; gap: 7px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; padding: 8px 12px;
+      font-size: 11px; color: rgba(255,255,255,0.6); font-weight: 500;
+    }
+    .hero-seal-dot { width: 6px; height: 6px; border-radius: 50%; background: #4caf50; flex-shrink: 0; }
+
+    /* ══════════════ SECTION SHARED ══════════════ */
+    .section { padding: 90px 24px; }
+    .section-dark { background: var(--dark2); }
+    .section-light { background: var(--blue-bg2); }
+    .section-white { background: white; }
+    .section-eyebrow {
+      display: inline-block;
+      font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--blue); margin-bottom: 12px;
+    }
+    .section-eyebrow.light { color: var(--gold-light); }
+    .section-title-lg {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(1.9rem, 3.5vw, 2.9rem);
+      font-weight: 900; line-height: 1.12; margin-bottom: 14px; color: var(--dark);
+    }
+    .section-title-lg.light { color: white; }
+    .section-title-lg strong { color: var(--blue); }
+    .section-title-lg.light strong { color: var(--gold-light); }
+    .section-sub { font-size: 15px; color: var(--gray); line-height: 1.7; max-width: 560px; margin: 0 auto 16px; }
+    .section-sub.light { color: rgba(255,255,255,0.55); }
+    .section-line { width: 44px; height: 3px; border-radius: 2px; margin: 0 auto; background: linear-gradient(90deg, var(--blue), #64b5f6); }
+    .section-line.gold { background: linear-gradient(90deg, var(--gold), var(--gold-light)); }
+    .section-header { text-align: center; margin-bottom: 56px; }
+    .container { max-width: 1220px; margin: 0 auto; }
+
+    /* ══════════════ ABOUT ══════════════ */
+    .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+    .about-text .section-eyebrow { display: block; margin-bottom: 10px; }
+    .about-text .section-title-lg { text-align: left; }
+    .about-body { font-size: 15px; color: var(--gray); line-height: 1.8; margin-bottom: 28px; }
+    .about-checks { display: flex; flex-direction: column; gap: 12px; }
+    .about-check { display: flex; gap: 12px; align-items: flex-start; }
+    .about-check-icon {
+      width: 24px; height: 24px; border-radius: 6px;
+      background: var(--blue-bg); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; flex-shrink: 0; margin-top: 1px;
+    }
+    .about-check-text { font-size: 14px; color: var(--dark); font-weight: 500; }
+    .about-right { display: flex; flex-direction: column; gap: 16px; }
+    .about-logo-card {
+      background: linear-gradient(135deg, var(--blue-bg) 0%, #ddeaff 100%);
+      border: 1px solid #c5d9f7; border-radius: 20px;
+      padding: 28px 24px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 12px;
+      box-shadow: 0 4px 20px rgba(26,95,168,0.10);
+    }
+    .about-logo-img {
+      width: 100%; max-width: 260px; height: auto;
+      object-fit: contain; border-radius: 10px;
+      filter: drop-shadow(0 4px 12px rgba(26,95,168,0.15));
+    }
+    .about-logo-tagline {
+      font-size: 11px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--blue); opacity: 0.75;
+    }
+    .about-feature-card {
+      background: white; border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px 26px;
+      box-shadow: var(--shadow-sm);
+      display: flex; gap: 16px; align-items: flex-start;
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+    .about-feature-card:hover { transform: translateX(5px); box-shadow: var(--shadow-md); }
+    .about-feature-icon {
+      width: 46px; height: 46px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--blue), var(--blue-mid));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .about-feature-title { font-weight: 700; font-size: 15px; margin-bottom: 5px; }
+    .about-feature-desc { font-size: 13px; color: var(--gray); line-height: 1.55; }
+
+    /* ══════════════ CURSOS ACTIVOS ══════════════ */
+    .cur-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px;
+    }
+    .cur-card {
+      border-radius: 18px; overflow: hidden;
+      border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+      background: white;
+      display: flex; flex-direction: column;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .cur-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
+    .cur-img-wrap {
+      position: relative; height: 400px;
+      overflow: hidden; background: #0a1628; flex-shrink: 0;
+    }
+    .cur-img-bg {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; filter: blur(14px) brightness(0.5);
+      transform: scale(1.12); z-index: 0;
+    }
+    .cur-img-main {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: contain; object-position: center; z-index: 1;
+      transition: transform 0.5s ease;
+    }
+    .cur-card:hover .cur-img-main { transform: scale(1.04); }
+    .cur-badge {
+      position: absolute; bottom: 12px; right: 12px;
+      background: rgba(26,95,168,0.9); color: white;
+      font-size: 11px; font-weight: 600;
+      padding: 5px 13px; border-radius: 20px; z-index: 3;
+      backdrop-filter: blur(4px);
+    }
+    .cur-body { display: flex; flex-direction: column; flex: 1; padding: 0; }
+    .cur-tag { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--blue); padding: 14px 20px 0; }
+    .cur-name { font-size: 16px; font-weight: 800; color: var(--dark); line-height: 1.25; padding: 5px 20px 0; }
+    .cur-desc { font-size: 12px; color: var(--gray); line-height: 1.45; padding: 5px 20px 0; flex: 1; }
+    .cur-pills { display: flex; flex-wrap: wrap; gap: 5px; padding: 8px 20px 0; }
+    .cur-pill {
+      background: var(--blue-bg); color: var(--blue);
+      font-size: 10px; font-weight: 600; padding: 3px 9px;
+      border-radius: 20px; border: 1px solid #c5d9f7; white-space: nowrap;
+    }
+    .cur-actions { padding: 12px 20px 20px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .cur-btn {
+      flex: 1; min-width: 120px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      height: 42px; padding: 0 14px; background: var(--blue); color: white;
+      border-radius: 8px; text-decoration: none; font-size: 12px; font-weight: 700;
+      transition: all 0.25s; border: none; cursor: pointer; white-space: normal;
+      text-align: center; line-height: 1.3;
+    }
+    .cur-btn:hover { background: var(--blue-dark); transform: translateY(-1px); }
+    .cur-btn.outline { background: transparent; color: var(--blue); border: 1.5px solid var(--blue); }
+    .cur-btn.outline:hover { background: var(--blue-bg); }
+
+    /* ══════════════ MODAL ══════════════ */
+    .cur-modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(10,22,40,0.75); z-index: 9999;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(8px); padding: 20px;
+    }
+    .cur-modal.open { display: flex; }
+    .cur-modal-box {
+      background: white; border-radius: 22px;
+      width: 100%; max-width: 620px;
+      max-height: 92vh; overflow-y: auto;
+      box-shadow: 0 40px 100px rgba(13,71,161,0.3);
+      position: relative;
+    }
+    .cur-modal-img-wrap {
+      position: relative; height: 380px;
+      overflow: hidden; border-radius: 22px 22px 0 0; background: #0a1628;
+    }
+    .cur-modal-img-bg {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; filter: blur(14px) brightness(0.4);
+      transform: scale(1.12); z-index: 0;
+    }
+    .cur-modal-img-main {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: contain; object-position: center; z-index: 1;
+    }
+    .cur-modal-img-wrap::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(10,22,40,0.5) 0%, transparent 60%);
+      z-index: 2; pointer-events: none;
+    }
+    .cur-modal-close {
+      position: absolute; top: 14px; right: 14px;
+      background: white; border: none; width: 42px; height: 42px;
+      border-radius: 50%; font-size: 18px; cursor: pointer; color: var(--dark);
+      display: flex; align-items: center; justify-content: center; z-index: 10;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25); transition: all 0.2s; font-weight: 800;
+    }
+    .cur-modal-close:hover { background: var(--dark); color: white; transform: scale(1.08); }
+    .cur-modal-content { padding: 28px 32px 32px; }
+    .cur-modal-tag { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--blue); margin-bottom: 8px; }
+    .cur-modal-title { font-size: 22px; font-weight: 800; color: var(--dark); line-height: 1.2; margin-bottom: 12px; }
+    .cur-modal-desc { font-size: 14px; color: var(--gray); line-height: 1.7; margin-bottom: 20px; }
+    .cur-modal-pills { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 20px; }
+    .cur-modal-pill { background: var(--blue-bg); color: var(--blue); font-size: 12px; font-weight: 600; padding: 5px 13px; border-radius: 20px; border: 1px solid #c5d9f7; }
+    .cur-modal-section { background: var(--blue-bg2); border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; border: 1px solid var(--border); }
+    .cur-modal-section-title { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--blue); margin-bottom: 10px; }
+    .cur-modal-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .cur-modal-list li { font-size: 13px; color: var(--dark); line-height: 1.5; display: flex; align-items: flex-start; gap: 8px; }
+    .cur-modal-list li::before { content: '✓'; color: var(--blue); font-weight: 800; flex-shrink: 0; margin-top: 1px; }
+    .cur-modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+    .cur-modal-btn {
+      flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      height: 46px; padding: 0 20px; background: var(--blue); color: white;
+      border-radius: 10px; text-decoration: none; font-size: 14px; font-weight: 700;
+      transition: all 0.25s; border: none; cursor: pointer;
+    }
+    .cur-modal-btn:hover { background: var(--blue-dark); transform: translateY(-1px); }
+    .cur-modal-btn.outline { background: transparent; color: var(--blue); border: 1.5px solid var(--blue); }
+    .cur-modal-btn.outline:hover { background: var(--blue-bg); }
+    .cur-modal-nota { font-size: 11px; color: #aaa; line-height: 1.5; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); text-align: center; }
+
+    /* ══════════════ CERTIFICADO ══════════════ */
+    .cert-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+    .cert-explain { background: var(--dark2); color: white; border-radius: 22px; padding: 40px; }
+    .cert-explain-title { font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 900; color: white; margin-bottom: 16px; line-height: 1.2; }
+    .cert-explain-title em { font-style: italic; color: var(--gold-light); }
+    .cert-explain-body { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.8; margin-bottom: 22px; }
+    .cert-levels { display: flex; flex-direction: column; gap: 10px; }
+    .cert-level { display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 18px; }
+    .cert-level-num { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--blue), var(--blue-mid)); display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', serif; font-weight: 900; font-size: 16px; color: white; flex-shrink: 0; }
+    .cert-level-title { font-weight: 700; font-size: 13px; color: white; margin-bottom: 2px; }
+    .cert-level-sub { font-size: 12px; color: rgba(255,255,255,0.45); }
+    .cert-benefits { display: flex; flex-direction: column; gap: 14px; }
+    .cert-benefit { background: white; border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; box-shadow: var(--shadow-sm); display: flex; gap: 14px; align-items: flex-start; }
+    .cert-benefit-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+    .cert-benefit-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+    .cert-benefit-desc { font-size: 13px; color: var(--gray); line-height: 1.5; }
+
+    /* ══════════════ FAMILIAS ACREDITADAS ══════════════ */
+    .families-grid-v2 {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px;
+      margin-bottom: 32px;
+    }
+    .fam-card {
+      background: white; border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.25s, border-color 0.25s;
+    }
+    .fam-card[open] {
+      border-color: var(--blue);
+      box-shadow: 0 4px 24px rgba(26,95,168,0.13);
+    }
+    .fam-card summary {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 18px; cursor: pointer;
+      list-style: none; user-select: none;
+      transition: background 0.2s;
+    }
+    .fam-card summary::-webkit-details-marker { display: none; }
+    .fam-card summary:hover { background: var(--blue-bg2); }
+    .fam-card[open] summary { background: var(--blue-bg); border-bottom: 1px solid var(--border); }
+    .fam-emoji { font-size: 26px; flex-shrink: 0; }
+    .fam-info { display: flex; flex-direction: column; flex: 1; gap: 3px; }
+    .fam-name { font-size: 14px; font-weight: 700; color: var(--dark); line-height: 1.3; }
+    .fam-badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      color: var(--blue); background: var(--blue-bg);
+      border: 1px solid #c5d9f7; border-radius: 20px;
+      padding: 2px 9px; width: fit-content;
+    }
+    .fam-arrow {
+      font-size: 20px; color: var(--blue); font-weight: 700;
+      transition: transform 0.3s; flex-shrink: 0; line-height: 1;
+    }
+    .fam-card[open] .fam-arrow { transform: rotate(90deg); }
+    .fam-list {
+      list-style: none; padding: 14px 18px 16px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .fam-list li {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 13px; color: var(--dark); line-height: 1.45;
+    }
+    .fam-code {
+      flex-shrink: 0; font-size: 10px; font-weight: 700;
+      color: var(--blue); background: var(--blue-bg);
+      border-radius: 5px; padding: 2px 7px;
+      font-family: monospace; border: 1px solid #c5d9f7;
+      white-space: nowrap; margin-top: 1px;
+    }
+    .families-footer {
+      display: flex; align-items: center; justify-content: center;
+      gap: 16px; padding: 20px; background: white;
+      border: 1px solid var(--border); border-radius: 14px;
+      box-shadow: var(--shadow-sm); flex-wrap: wrap;
+    }
+    .families-footer-text { font-size: 13px; color: var(--gray); }
+    .families-footer-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 22px; background: var(--blue); color: white;
+      border-radius: 8px; text-decoration: none;
+      font-size: 13px; font-weight: 700; transition: all 0.25s;
+    }
+    .families-footer-btn:hover { background: var(--blue-dark); transform: translateY(-1px); }
+
+    /* ══════════════ CARRUSEL ══════════════ */
+    .cf-carousel-wrap { max-width: 1080px; margin: 0 auto; padding: 0 0 16px; }
+    .cf-carousel { position: relative; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 70px rgba(0,0,0,0.5); height: 520px; }
+    .cf-slide { position: absolute; inset: 0; opacity: 0; animation: cfFade 50s infinite; }
+    .cf-slide:nth-child(1)  { animation-delay:  0s; }
+    .cf-slide:nth-child(2)  { animation-delay:  5s; }
+    .cf-slide:nth-child(3)  { animation-delay: 10s; }
+    .cf-slide:nth-child(4)  { animation-delay: 15s; }
+    .cf-slide:nth-child(5)  { animation-delay: 20s; }
+    .cf-slide:nth-child(6)  { animation-delay: 25s; }
+    .cf-slide:nth-child(7)  { animation-delay: 30s; }
+    .cf-slide:nth-child(8)  { animation-delay: 35s; }
+    .cf-slide:nth-child(9)  { animation-delay: 40s; }
+    .cf-slide:nth-child(10) { animation-delay: 45s; }
+    @keyframes cfFade { 0% { opacity: 0; z-index: 1; } 2% { opacity: 1; z-index: 2; } 10% { opacity: 1; z-index: 2; } 12% { opacity: 0; z-index: 1; } 100% { opacity: 0; z-index: 1; } }
+    .cf-slide .cf-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(18px) brightness(0.45); transform: scale(1.1); z-index: 0; }
+    .cf-slide .cf-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; }
+    .cf-slide::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(to top, rgba(13,58,107,0.65) 0%, transparent 55%); }
+    .cf-caption { position: absolute; bottom: 24px; left: 28px; z-index: 4; color: white; font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; text-shadow: 0 1px 8px rgba(0,0,0,0.6); }
+    .cf-note { text-align: center; font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 14px; }
+
+    /* ══════════════ RESEÑAS ══════════════ */
+    .rating-bar { max-width: 1080px; margin: 0 auto 44px; background: white; border-radius: 18px; padding: 28px 36px; display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; box-shadow: var(--shadow-md); border: 1px solid var(--border); }
+    .rating-left { display: flex; align-items: center; gap: 20px; }
+    .rating-num { font-family: 'Fraunces', serif; font-size: 60px; font-weight: 900; color: var(--blue); line-height: 1; }
+    .rating-stars { color: #f59e0b; font-size: 22px; letter-spacing: 3px; }
+    .rating-sub { font-size: 13px; color: var(--gray); margin-top: 4px; }
+    .google-badge { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--gray); font-weight: 600; }
+    .google-g { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border); background: white; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #4285f4; }
+    .btn-review { display: inline-flex; align-items: center; gap: 7px; padding: 12px 24px; background: var(--blue); color: white; border-radius: 10px; text-decoration: none; font-size: 13px; font-weight: 700; transition: all 0.25s; }
+    .btn-review:hover { background: var(--blue-dark); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,95,168,0.35); }
+    .reviews-grid { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .review-card { background: white; border-radius: 16px; padding: 28px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); transition: transform 0.25s, box-shadow 0.25s; }
+    .review-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+    .review-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .review-author { display: flex; align-items: center; gap: 12px; }
+    .review-avatar { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--blue), #64b5f6); color: white; font-weight: 800; font-size: 17px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .review-name { font-weight: 700; font-size: 14px; }
+    .review-date { font-size: 12px; color: var(--gray); margin-top: 2px; }
+    .review-stars { color: #f59e0b; font-size: 15px; }
+    .review-text { font-size: 14px; line-height: 1.7; color: #444; }
+    .review-badge { display: flex; align-items: center; gap: 6px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 11px; color: #bbb; font-weight: 600; }
+
+    /* ══════════════ INSCRIPCIÓN ══════════════ */
+    .insc-card { max-width: 960px; margin: 0 auto; background: white; border-radius: 24px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); overflow: hidden; display: grid; grid-template-columns: 1fr 1fr; }
+    .insc-left { padding: 44px; border-right: 1px solid var(--border); }
+    .insc-steps-label { font-size: 11px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--blue); margin-bottom: 28px; }
+    .insc-step { display: flex; gap: 16px; margin-bottom: 26px; }
+    .insc-step-num { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--blue), var(--blue-mid)); color: white; font-weight: 800; font-size: 15px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .insc-step-h { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .insc-step-p { font-size: 13px; color: var(--gray); line-height: 1.55; }
+    .insc-divider { height: 1px; background: var(--border); margin: 28px 0; }
+    .insc-info { display: flex; flex-direction: column; gap: 12px; }
+    .insc-info-row { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+    .insc-info-icon { font-size: 18px; width: 30px; text-align: center; flex-shrink: 0; }
+    .insc-btn-main { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 50px; margin-top: 28px; background: var(--gold); color: var(--dark); border-radius: 12px; font-weight: 700; font-size: 15px; text-decoration: none; transition: all 0.25s; border: none; cursor: pointer; }
+    .insc-btn-main:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 10px 28px rgba(212,160,57,0.4); }
+    .insc-right { padding: 44px; background: var(--blue-bg2); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+    .insc-qr-label { font-size: 11px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--blue); margin-bottom: 24px; }
+    .insc-qr-box { background: white; border-radius: 20px; padding: 20px; box-shadow: var(--shadow-md); border: 2px solid var(--border); margin-bottom: 22px; }
+    .insc-qr-box img { display: block; width: 190px; height: 190px; }
+    .insc-qr-strong { font-size: 16px; font-weight: 700; color: var(--dark); display: block; margin-bottom: 6px; }
+    .insc-qr-sub { font-size: 13px; color: var(--gray); line-height: 1.65; max-width: 210px; }
+    .insc-phone-row { margin-top: 18px; font-size: 13px; color: var(--gray); }
+    .insc-phone-row a { color: var(--blue); font-weight: 700; text-decoration: none; }
+
+    /* ══════════════ FAQ ══════════════ */
+    .faq-wrap { max-width: 780px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+    .faq-item { border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); overflow: hidden; transition: all 0.3s; }
+    .faq-item[open] { background: rgba(255,255,255,0.08); border-color: rgba(212,160,57,0.4); box-shadow: 0 0 0 1px rgba(212,160,57,0.15), 0 8px 32px rgba(0,0,0,0.25); }
+    .faq-item summary { font-weight: 700; font-size: 15px; cursor: pointer; color: rgba(255,255,255,0.88); list-style: none; padding: 20px 26px; display: flex; align-items: center; justify-content: space-between; gap: 16px; transition: color 0.2s; user-select: none; }
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-item[open] summary { color: var(--gold-light); }
+    .faq-item summary::after { content: ''; width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.13); flex-shrink: 0; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 1v10M1 6h10' stroke='rgba(255,255,255,0.6)' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; transition: transform 0.3s, background-color 0.3s; }
+    .faq-item[open] summary::after { transform: rotate(45deg); background-color: rgba(212,160,57,0.15); border-color: rgba(212,160,57,0.35); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 1v10M1 6h10' stroke='%23d4a039' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E"); }
+    .faq-item p { padding: 0 26px 22px; padding-top: 14px; font-size: 14px; color: rgba(255,255,255,0.58); line-height: 1.8; border-top: 1px solid rgba(255,255,255,0.06); margin-top: -2px; }
+
+    /* ══════════════ PRIVACIDAD ══════════════ */
+    .privacy-card { background: white; border: 1px solid var(--border); border-radius: 20px; padding: 40px; box-shadow: var(--shadow-sm); max-width: 920px; margin: 0 auto; }
+    .privacy-card h3 { font-family: 'Fraunces', serif; font-size: 1.3rem; font-weight: 700; margin-bottom: 16px; color: var(--dark); }
+    .privacy-card p, .privacy-card li { font-size: 13.5px; color: var(--gray); line-height: 1.8; }
+    .privacy-card ul { margin-left: 18px; margin-top: 12px; }
+    .privacy-card strong { color: var(--dark); }
+    .privacy-card a { color: var(--blue); }
+    .privacy-tabs { display: flex; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; }
+    .privacy-tab { padding: 9px 18px; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); background: white; color: var(--gray); transition: all 0.2s; }
+    .privacy-tab.active { background: var(--blue); border-color: var(--blue); color: white; }
+    .privacy-panel { display: none; }
+    .privacy-panel.active { display: block; }
+
+    /* ══════════════ FOOTER ══════════════ */
+    footer { background: #07111e; color: rgba(255,255,255,0.55); padding: 60px 24px 32px; }
+    .footer-inner { max-width: 1220px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; padding-bottom: 44px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 28px; }
+    .footer-brand-name { font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 900; color: white; margin-bottom: 10px; }
+    .footer-brand-desc { font-size: 13px; line-height: 1.7; margin-bottom: 18px; }
+    .footer-contact-item { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; margin-bottom: 9px; }
+    .footer-contact-item a { color: rgba(255,255,255,0.7); text-decoration: none; }
+    .footer-social { display: flex; gap: 10px; margin-top: 20px; }
+    .footer-social-link { width: 38px; height: 38px; border-radius: 10px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; text-decoration: none; color: rgba(255,255,255,0.6); transition: all 0.2s; }
+    .footer-social-link:hover { background: rgba(255,255,255,0.15); color: white; transform: translateY(-2px); }
+    .footer-social-link svg { width: 17px; height: 17px; fill: currentColor; }
+    .footer-col-title { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: white; margin-bottom: 16px; }
+    .footer-col-link { display: block; font-size: 13px; color: rgba(255,255,255,0.5); text-decoration: none; margin-bottom: 10px; transition: color 0.2s; }
+    .footer-col-link:hover { color: rgba(255,255,255,0.9); }
+    .footer-partners { padding: 36px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 28px; max-width: 1220px; margin-left: auto; margin-right: auto; }
+    .footer-partners-label { font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 22px; text-align: center; }
+    .footer-partners-logos { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
+    .footer-partner-logo {
+      display: flex; align-items: center; justify-content: center;
+      background: white; border-radius: 12px; padding: 12px 20px;
+      min-width: 130px; min-height: 68px;
+      opacity: 0.9; transition: opacity 0.2s, transform 0.2s;
+    }
+    .footer-partner-logo:hover { opacity: 1; transform: translateY(-2px); }
+    .footer-partner-logo img { height: 40px; width: auto; max-width: 140px; object-fit: contain; }
+    .footer-bottom { max-width: 1220px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-bottom-text { font-size: 12px; }
+    .footer-bottom-links { display: flex; gap: 16px; }
+    .footer-bottom-links a { font-size: 12px; color: rgba(255,255,255,0.4); text-decoration: none; }
+    .footer-bottom-links a:hover { color: rgba(255,255,255,0.8); }
+
+    /* ══════════════ SCROLL ANIMATION ══════════════ */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
+
+    /* ══════════════ MOBILE NAV DRAWER ══════════════ */
+    .nav-mobile-overlay {
+      display: none; position: fixed; inset: 0; z-index: 998;
+      background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+    }
+    .nav-mobile-overlay.open { display: block; }
+    .nav-mobile-drawer {
+      position: fixed; top: 0; right: -320px; bottom: 0; z-index: 999;
+      width: 300px; max-width: 85vw;
+      background: #0e1c2e; border-left: 1px solid rgba(255,255,255,0.1);
+      display: flex; flex-direction: column;
+      padding: 0; transition: right 0.32s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: -8px 0 40px rgba(0,0,0,0.5);
+    }
+    .nav-mobile-drawer.open { right: 0; }
+    .nav-drawer-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .nav-drawer-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-drawer-logo img { height: 40px; width: auto; border-radius: 6px; object-fit: contain; }
+    .nav-drawer-logo-text { font-size: 13px; font-weight: 700; color: white; line-height: 1.2; }
+    .nav-drawer-close {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      color: white; font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 300; line-height: 1; transition: background 0.2s;
+    }
+    .nav-drawer-close:hover { background: rgba(255,255,255,0.18); }
+    .nav-drawer-links {
+      display: flex; flex-direction: column; flex: 1;
+      padding: 16px 0; overflow-y: auto;
+    }
+    .nav-drawer-links a {
+      font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.75);
+      text-decoration: none; padding: 13px 22px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      transition: all 0.2s; display: flex; align-items: center; gap: 10px;
+    }
+    .nav-drawer-links a:hover { color: white; background: rgba(255,255,255,0.06); padding-left: 28px; }
+    .nav-drawer-links a.cta {
+      margin: 16px 20px 0;
+      background: var(--gold); color: var(--dark) !important;
+      border-radius: 10px; font-weight: 700; border: none;
+      justify-content: center; padding: 14px 20px;
+    }
+    .nav-drawer-links a.cta:hover { background: var(--gold-light); padding-left: 20px; }
+    .nav-drawer-social {
+      display: flex; gap: 12px; padding: 20px 22px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .nav-drawer-social a {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none;
+    }
+    .nav-drawer-social a.fb { background: #1877f2; }
+    .nav-drawer-social a.ig { background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+    .nav-drawer-social a svg { width: 18px; height: 18px; fill: white; }
+
+    /* ══════════════ MAPA ══════════════ */
+    .map-section { background: #f5f8ff; padding: 80px 24px; }
+    .map-wrapper {
+      max-width: 1140px; margin: 0 auto;
+    }
+    .map-card {
+      background: white; border-radius: 24px;
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 48px rgba(26,95,168,0.10);
+      overflow: hidden;
+    }
+    /* Top info bar */
+    .map-topbar {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      border-bottom: 1px solid var(--border);
+    }
+    .map-topbar-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 20px 24px;
+      border-right: 1px solid var(--border);
+    }
+    .map-topbar-item:last-child { border-right: none; }
+    .map-topbar-icon {
+      width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+      background: var(--blue-bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .map-topbar-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--gray); margin-bottom: 3px;
+    }
+    .map-topbar-val {
+      font-size: 13px; font-weight: 600; color: var(--dark); line-height: 1.35;
+    }
+    .map-topbar-val a { color: var(--blue); text-decoration: none; }
+    /* Map + actions bottom */
+    .map-body {
+      display: grid; grid-template-columns: 1fr 280px;
+    }
+    .map-embed {
+      width: 100%; height: 420px; display: block; border: none;
+    }
+    .map-actions {
+      display: flex; flex-direction: column; justify-content: center;
+      gap: 12px; padding: 32px 28px;
+      background: linear-gradient(160deg, var(--blue-bg) 0%, #edf3ff 100%);
+      border-left: 1px solid var(--border);
+    }
+    .map-actions-title {
+      font-family: 'Fraunces', serif; font-size: 1.15rem;
+      font-weight: 900; color: var(--dark); margin-bottom: 4px; line-height: 1.2;
+    }
+    .map-actions-sub { font-size: 12px; color: var(--gray); margin-bottom: 8px; line-height: 1.5; }
+    .map-badge-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .map-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--blue); background: white;
+      border: 1px solid #c5d9f7; border-radius: 20px;
+      padding: 4px 10px;
+    }
+    .map-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      height: 46px; border-radius: 12px; text-decoration: none;
+      font-size: 13px; font-weight: 700; transition: all 0.25s;
+      background: var(--blue); color: white;
+    }
+    .map-btn:hover { background: var(--blue-dark); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,95,168,0.28); }
+    .map-btn-waze {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      height: 46px; border-radius: 12px; text-decoration: none;
+      font-size: 13px; font-weight: 700; transition: all 0.25s;
+      background: white; color: var(--dark);
+      border: 1.5px solid var(--border);
+    }
+    .map-btn-waze:hover { border-color: var(--blue); color: var(--blue); transform: translateY(-2px); }
+    .map-btn-call {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      height: 46px; border-radius: 12px; text-decoration: none;
+      font-size: 13px; font-weight: 700; transition: all 0.25s;
+      background: white; color: var(--dark);
+      border: 1.5px solid var(--border);
+    }
+    .map-btn-call:hover { border-color: var(--blue); color: var(--blue); transform: translateY(-2px); }
+    /* Responsive mapa */
+    @media (max-width: 900px) {
+      .map-topbar { grid-template-columns: repeat(2, 1fr); }
+      .map-topbar-item:nth-child(2) { border-right: none; }
+      .map-body { grid-template-columns: 1fr; }
+      .map-embed { height: 320px; }
+      .map-actions { border-left: none; border-top: 1px solid var(--border); flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+      .map-actions-title, .map-actions-sub, .map-badge-row { flex: 1 1 100%; }
+      .map-btn, .map-btn-waze, .map-btn-call { flex: 1 1 calc(50% - 6px); }
+    }
+    @media (max-width: 600px) {
+      .map-topbar { grid-template-columns: 1fr 1fr; }
+      .map-topbar-item { padding: 14px 16px; gap: 10px; }
+      .map-topbar-icon { width: 36px; height: 36px; font-size: 15px; }
+      .map-topbar-val { font-size: 12px; }
+      .map-embed { height: 260px; }
+      .map-actions { padding: 20px 18px; }
+      .map-btn, .map-btn-waze, .map-btn-call { flex: 1 1 100%; }
+    }
+
+    /* ══════════════ RESPONSIVE ══════════════ */
+    @media (max-width: 1024px) {
+      .nav-center { display: none; }
+      .nav-toggle { display: flex; }
+    }
+    @media (max-width: 900px) {
+      .hero { margin-top: 0; }
+      .partners-strip { margin-top: 78px; }
+      .hero-inner { grid-template-columns: 1fr; }
+      .hero-card { display: none; }
+      .about-grid { grid-template-columns: 1fr; }
+      .cert-grid { grid-template-columns: 1fr; }
+      .insc-card { grid-template-columns: 1fr; }
+      .insc-left { border-right: none; border-bottom: 1px solid var(--border); padding: 28px 24px; }
+      .insc-right { padding: 28px 24px; }
+      .footer-inner { grid-template-columns: 1fr 1fr; }
+      .partners-inner { flex-wrap: wrap; justify-content: center; }
+      .families-grid-v2 { grid-template-columns: 1fr; }
+      .section { padding: 60px 20px; }
+    }
+    @media (max-width: 600px) {
+      .nav-toggle { display: flex; }
+      .nav-social { display: none; }
+      .hero-stats { flex-wrap: wrap; gap: 20px; }
+      .hero-stat-num { font-size: 1.8rem; }
+      .hero-title { font-size: 2rem; }
+      .hero-desc { font-size: 14px; }
+      .hero-actions { flex-direction: column; }
+      .hero-actions a { text-align: center; justify-content: center; }
+      .cf-carousel { height: 260px; }
+      .footer-inner { grid-template-columns: 1fr; }
+      .cur-grid { grid-template-columns: 1fr; }
+      .partners-strip { padding: 16px; }
+      .partners-inner { gap: 10px; }
+      .partner-item { padding: 12px 16px; min-width: 130px; }
+      .partner-item img { height: 36px; }
+      .partner-logo-text { gap: 4px; }
+      .ministerio-name, .camara-name, .dipgra-name, .ada-name { font-size: 9px; }
+      .rating-bar { flex-direction: column; text-align: center; gap: 16px; }
+      .rating-left { justify-content: center; }
+      .cert-grid { gap: 24px; }
+      .privacy-card { padding: 24px 18px; }
+      .section-title-lg { font-size: 1.65rem; }
+      .fam-name { font-size: 13px; }
+      .insc-qr-box { display: none; }
+      .map-info { padding: 24px 20px; }
+      .map-embed { height: 260px; }
+      .footer-partners-logos { gap: 10px; }
+      .footer-partner-logo { padding: 8px 14px; min-width: 100px; }
+      .footer-partner-logo img { height: 30px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ╔══════════════════════╗
+       ║         NAV          ║
+       ╚══════════════════════╝ -->
+  <nav>
+    <div class="nav-inner">
+      <!-- Logo del centro -->
+      <a href="#inicio" class="nav-logo">
+        <img class="nav-logo-img"
+             src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/Logo-Centro-Form-Canteras-.jpg"
+             alt="Centro de Formación Las Canteras"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div style="display:none;width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#1a5fa8,#d4a039);align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:18px;font-weight:900;color:white;">LC</div>
+        <div class="nav-logo-text">
+          <span class="nav-logo-main">Las Canteras</span>
+          <span class="nav-logo-sub">Centro de Formación</span>
+        </div>
+      </a>
+
+      <!-- Links centrales -->
+      <div class="nav-center">
+        <ul class="nav-links">
+          <li><a href="#sobre-nosotros">Sobre nosotros</a></li>
+          <li><a href="#cursos-activos">Cursos activos</a></li>
+          <li><a href="#certificados">Certificados</a></li>
+          <li><a href="#familias">Especialidades</a></li>
+          <li><a href="#instalaciones">Instalaciones</a></li>
+          <li><a href="#ubicacion">📍 Cómo llegar</a></li>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="#inscripcion" class="nav-cta">Inscríbete →</a></li>
+        </ul>
+      </div>
+
+      <!-- Redes sociales + hamburguesa -->
+      <div class="nav-right">
+        <div class="nav-social">
+          <a href="https://www.facebook.com/formacionyempleoMonachil/" target="_blank" rel="noopener" class="nav-social-link fb" aria-label="Facebook">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+          </a>
+          <a href="https://www.instagram.com/centro_formacion_las_canteras/" target="_blank" rel="noopener" class="nav-social-link ig" aria-label="Instagram">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+          </a>
+        </div>
+        <button class="nav-toggle" onclick="openDrawer()" aria-label="Menú">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+
+  <!-- ── Mobile nav overlay + drawer ── -->
+  <div class="nav-mobile-overlay" id="navOverlay" onclick="closeDrawer()"></div>
+  <div class="nav-mobile-drawer" id="navDrawer">
+    <div class="nav-drawer-header">
+      <a href="#inicio" class="nav-drawer-logo" onclick="closeDrawer()">
+        <img src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/Logo-Centro-Form-Canteras-.jpg" alt="Las Canteras" onerror="this.style.display='none'">
+        <span class="nav-drawer-logo-text">Centro de Formación<br>Las Canteras</span>
+      </a>
+      <button class="nav-drawer-close" onclick="closeDrawer()" aria-label="Cerrar menú">✕</button>
+    </div>
+    <div class="nav-drawer-links">
+      <a href="#sobre-nosotros" onclick="closeDrawer()">🏛️ Sobre nosotros</a>
+      <a href="#cursos-activos" onclick="closeDrawer()">📚 Cursos activos</a>
+      <a href="#certificados" onclick="closeDrawer()">🏅 Certificados</a>
+      <a href="#familias" onclick="closeDrawer()">🎓 Especialidades</a>
+      <a href="#instalaciones" onclick="closeDrawer()">🏫 Instalaciones</a>
+      <a href="#ubicacion" onclick="closeDrawer()">📍 Cómo llegar</a>
+      <a href="#opiniones" onclick="closeDrawer()">⭐ Opiniones</a>
+      <a href="#faq" onclick="closeDrawer()">❓ FAQ</a>
+      <a href="#inscripcion" class="cta" onclick="closeDrawer()">✏️ Inscríbete ahora →</a>
+    </div>
+    <div class="nav-drawer-social">
+      <a href="https://www.facebook.com/formacionyempleoMonachil/" target="_blank" rel="noopener" class="fb" aria-label="Facebook">
+        <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+      </a>
+      <a href="https://www.instagram.com/centro_formacion_las_canteras/" target="_blank" rel="noopener" class="ig" aria-label="Instagram">
+        <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <!-- ╔══════════════════════════════════╗
+       ║     BARRA DE ASOCIADOS           ║
+       ╚══════════════════════════════════╝ -->
+  <div class="partners-strip">
+    <div class="partners-header">
+      <span class="partners-header-text">Avalado y colaboramos con</span>
+    </div>
+    <div class="partners-inner">
+      <a href="https://www.monachil.es" target="_blank" rel="noopener" class="partner-item" title="Ayuntamiento de Monachil">
+        <img src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/logo-empleo-y-formacion-horizontal.png"
+             alt="Ayuntamiento de Monachil" loading="lazy">
+        <span class="partner-label">Ayuntamiento<br>de Monachil</span>
+      </a>
+      <a href="https://www.aulamentor.es" target="_blank" rel="noopener" class="partner-item" title="Aulamentor">
+        <img src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/logo-AM-Monachil.jpg"
+             alt="Aulamentor" loading="lazy">
+        <span class="partner-label">Aulamentor</span>
+      </a>
+      <a href="https://www.juntadeandalucia.es/empleo" target="_blank" rel="noopener" class="partner-item" title="Junta de Andalucía - Consejería de Empleo">
+        <img src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/LOGO-CONSEJERIA-EMPLEO.png"
+             alt="Consejería de Empleo - Junta de Andalucía" loading="lazy">
+        <span class="partner-label">Consejería de Empleo<br>Junta de Andalucía</span>
+      </a>
+    </div>
+  </div>
+
+
+  <!-- ╔══════════════════════╗
+       ║        HERO          ║
+       ╚══════════════════════╝ -->
+  <section class="hero" id="inicio">
+    <div class="hero-bg-grid"></div>
+    <div class="hero-bg-glow"></div>
+    <div class="hero-bg-glow2"></div>
+    <div class="hero-inner">
+      <div>
+        <div class="hero-badge">
+          <span></span>
+          Centro de Formación · Ayuntamiento de Monachil
+        </div>
+        <h1 class="hero-title">
+          Formamos<br>
+          <em>profesionales</em><br>
+          para el presente<br>y el futuro
+        </h1>
+        <p class="hero-desc">
+          Ofrecemos una formación integral que combina conocimientos teóricos sólidos con prácticas reales, tanto en el aula como en entornos profesionales dentro de empresas del sector. Todos nuestros programas formativos están acreditados por la administración pública, lo que garantiza la calidad, validez y reconocimiento oficial de la formación impartida.
+        </p>
+        <div class="hero-actions">
+          <a href="#inscripcion" class="btn-primary">Inscríbete ahora →</a>
+          <a href="#cursos-activos" class="btn-outline">Ver cursos activos</a>
+        </div>
+        <div class="hero-stats">
+          <div>
+            <div class="hero-stat-num">20<span>+</span></div>
+            <div class="hero-stat-label">Especialidades<br>homologadas</div>
+          </div>
+          <div>
+            <div class="hero-stat-num">4.9<span>★</span></div>
+            <div class="hero-stat-label">Valoración<br>Google</div>
+          </div>
+          <div>
+            <div class="hero-stat-num">100<span>%</span></div>
+            <div class="hero-stat-label">Gratuito para<br>desempleados</div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-card">
+        <!-- Logo en grande -->
+        <div class="hero-card-logo-wrap">
+          <img src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/Logo-Centro-Form-Canteras-.jpg"
+               alt="Centro de Formación Las Canteras"
+               class="hero-card-logo"
+               onerror="this.parentElement.innerHTML='<div class=\'hero-card-title\'>📍 Información del Centro</div>'">
+        </div>
+        <div class="hero-card-divider"></div>
+        <div class="hero-info-item">
+          <div class="hero-info-icon">🏛️</div>
+          <div>
+            <div class="hero-info-label">Dirección</div>
+            <div class="hero-info-val">C/ Leñadores, 30<br>Polígono Industrial Las Canteras<br>18193 Monachil, Granada</div>
+          </div>
+        </div>
+        <div class="hero-info-item">
+          <div class="hero-info-icon">🕘</div>
+          <div>
+            <div class="hero-info-label">Horario de atención al público</div>
+            <div class="hero-info-val">Lunes a viernes · 9:00 – 14:00 h</div>
+          </div>
+        </div>
+        <div class="hero-info-item">
+          <div class="hero-info-icon">📞</div>
+          <div>
+            <div class="hero-info-label">Teléfono</div>
+            <div class="hero-info-val"><a href="tel:673366009">673 366 009</a></div>
+          </div>
+        </div>
+        <div class="hero-info-item">
+          <div class="hero-info-icon">✉️</div>
+          <div>
+            <div class="hero-info-label">Correo electrónico</div>
+            <div class="hero-info-val"><a href="mailto:tecnicadeempleo@monachil.es">tecnicadeempleo@monachil.es</a></div>
+          </div>
+        </div>
+        <div class="hero-seals">
+          <div class="hero-seal"><span class="hero-seal-dot"></span> Ayuntamiento de Monachil</div>
+          <div class="hero-seal"><span class="hero-seal-dot"></span> Junta de Andalucía</div>
+          <div class="hero-seal"><span class="hero-seal-dot"></span> Aulamentor</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ╔══════════════════════╗
+       ║    SOBRE NOSOTROS    ║
+       ╚══════════════════════╝ -->
+  <section class="section section-white" id="sobre-nosotros">
+    <div class="container">
+      <div class="about-grid">
+        <div class="about-text reveal">
+          <span class="section-eyebrow">Quiénes somos</span>
+          <h2 class="section-title-lg">Tu formación,<br><strong>nuestro compromiso</strong></h2>
+          <p class="about-body">
+            El Centro de Formación Las Canteras es el servicio de formación y empleo del <strong>Ayuntamiento de Monachil</strong> y colaborador certificado de la <strong>Junta de Andalucía</strong>. Nacimos con el objetivo de ofrecer formación práctica, homologada y adaptada a las necesidades reales del mercado laboral.
+          </p>
+          <p class="about-body" style="margin-top: -10px;">
+            Contamos con instalaciones modernas y equipadas —aulas polivalentes, de informática, sociosanitarias y cocina profesional— y un equipo docente especializado que acompaña al alumnado durante todo su proceso formativo.
+          </p>
+          <div class="about-checks">
+            <div class="about-check"><div class="about-check-icon">✓</div><div class="about-check-text">Formación homologada y certificada por la Junta de Andalucía</div></div>
+            <div class="about-check"><div class="about-check-icon">✓</div><div class="about-check-text">Gratuita para personas desempleadas inscritas en el SAE</div></div>
+            <div class="about-check"><div class="about-check-icon">✓</div><div class="about-check-text">Modalidades presencial y online</div></div>
+            <div class="about-check"><div class="about-check-icon">✓</div><div class="about-check-text">Orientación laboral y apoyo en la inserción profesional</div></div>
+          </div>
+        </div>
+        <div class="about-right reveal reveal-delay-2">
+          <div class="about-feature-card">
+            <div class="about-feature-icon">🏆</div>
+            <div>
+              <div class="about-feature-title">Certificados de Profesionalidad</div>
+              <div class="about-feature-desc">Titulaciones oficiales del SEPE con validez en todo el territorio nacional y la Unión Europea.</div>
+            </div>
+          </div>
+          <div class="about-feature-card">
+            <div class="about-feature-icon">🎯</div>
+            <div>
+              <div class="about-feature-title">Formación orientada al empleo</div>
+              <div class="about-feature-desc">Programas diseñados con las empresas del entorno para maximizar tu inserción laboral real.</div>
+            </div>
+          </div>
+          <div class="about-feature-card">
+            <div class="about-feature-icon">🧑‍🏫</div>
+            <div>
+              <div class="about-feature-title">Equipo docente especializado</div>
+              <div class="about-feature-desc">Profesores con experiencia real en cada sector que se implican activamente en tu aprendizaje.</div>
+            </div>
+          </div>
+          <div class="about-feature-card">
+            <div class="about-feature-icon">📍</div>
+            <div>
+              <div class="about-feature-title">Próximos y accesibles</div>
+              <div class="about-feature-desc">Ubicados en Monachil, a tan solo 10 minutos de Granada, con aparcamiento y fácil acceso en transporte público.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ╔══════════════════════════════════╗
+       ║       CURSOS ACTIVOS             ║
+       ╚══════════════════════════════════╝ -->
+  <section class="section section-light" id="cursos-activos">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-eyebrow">Formación disponible ahora</span>
+        <h2 class="section-title-lg">Cursos <strong>Activos</strong></h2>
+        <p class="section-sub">Plazas limitadas y acceso gratuito. ¡No te quedes sin la tuya!</p>
+        <div class="section-line"></div>
+      </div>
+      <div class="cur-grid">
+
+        <article class="cur-card reveal">
+          <div class="cur-img-wrap">
+            <img loading="lazy" class="cur-img-bg" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/CARTEL-MONACHIL-TALENTO-.jpg" alt="">
+            <img loading="lazy" class="cur-img-main" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/CARTEL-MONACHIL-TALENTO-.jpg" alt="Monachil Talento - RRHH">
+            <span class="cur-badge">📦 Monachil Talento</span>
+          </div>
+          <div class="cur-body">
+            <p class="cur-tag">Administración y RRHH</p>
+            <h3 class="cur-name">Programa empleo y formación RRHH</h3>
+            <p class="cur-desc">Curso gratuito para mayores de 45 años desempleados. Formación práctica orientada al mercado laboral.</p>
+            <div class="cur-pills">
+              <span class="cur-pill">🆓 Gratuito</span>
+              <span class="cur-pill">📅 Inicio verano 2026</span>
+              <span class="cur-pill">⏱ 12 meses</span>
+              <span class="cur-pill">🕘 8:00 – 15:00 h</span>
+              <span class="cur-pill">👤 +45 años</span>
+            </div>
+            <div class="cur-actions">
+              <button class="cur-btn outline" onclick="abrirModal('modalTalento')">📋 Ver más info</button>
+              <a href="https://www.juntadeandalucia.es/organismos/sae.html" target="_blank" rel="noopener" class="cur-btn">✏️ Inscribirme</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="cur-card reveal reveal-delay-1">
+          <div class="cur-img-wrap">
+            <img loading="lazy" class="cur-img-bg" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/Programa-de-Empleo-y-Formacion-Especialidades-en-Habilitacion-para-la-Docencia-en-grados-AB-y-C-del-Sistama-de-FPE-SSCE0110-Interpretacion-y-Educacion-Ambiental-SEAG0109.png" alt="">
+            <img loading="lazy" class="cur-img-main" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/Programa-de-Empleo-y-Formacion-Especialidades-en-Habilitacion-para-la-Docencia-en-grados-AB-y-C-del-Sistama-de-FPE-SSCE0110-Interpretacion-y-Educacion-Ambiental-SEAG0109.png" alt="EcoJoven">
+            <span class="cur-badge">🌱 EcoJoven</span>
+          </div>
+          <div class="cur-body">
+            <p class="cur-tag">Medioambiente</p>
+            <h3 class="cur-name">Programa EcoJoven</h3>
+            <p class="cur-desc">Formación medioambiental gratuita para jóvenes. Aprende sobre sostenibilidad con salidas laborales reales.</p>
+            <div class="cur-pills">
+              <span class="cur-pill">🆓 Gratuito</span>
+              <span class="cur-pill">👶 Menores de 30 años</span>
+              <span class="cur-pill">🌿 Sostenibilidad</span>
+              <span class="cur-pill">📅 Inicio verano 2026</span>
+            </div>
+            <div class="cur-actions">
+              <button class="cur-btn outline" onclick="abrirModal('modalEco')">📋 Ver más info</button>
+              <a href="tel:673366009" class="cur-btn">📞 Más información</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="cur-card reveal reveal-delay-2">
+          <div class="cur-img-wrap">
+            <img loading="lazy" class="cur-img-bg" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/ItinerarioModificado.jpg" alt="">
+            <img loading="lazy" class="cur-img-main" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/ItinerarioModificado.jpg" alt="Itinerario Formativo">
+            <span class="cur-badge">📋 Itinerario</span>
+          </div>
+          <div class="cur-body">
+            <p class="cur-tag">Planificación</p>
+            <h3 class="cur-name">Itinerario Formativo</h3>
+            <p class="cur-desc">Consulta el calendario completo de cursos y formaciones disponibles en el centro durante este período.</p>
+            <div class="cur-pills">
+              <span class="cur-pill">📅 Varios cursos</span>
+              <span class="cur-pill">🆓 Gratuito</span>
+            </div>
+            <div class="cur-actions">
+              <a href="tel:673366009" class="cur-btn">📞 Más información</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="cur-card reveal reveal-delay-3">
+          <div class="cur-img-wrap">
+            <img loading="lazy" class="cur-img-bg" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/qrCurso.png" alt="">
+            <img loading="lazy" class="cur-img-main" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/qrCurso.png" alt="Inscripción por QR">
+            <span class="cur-badge">📱 Inscripción rápida</span>
+          </div>
+          <div class="cur-body">
+            <p class="cur-tag">Acceso rápido</p>
+            <h3 class="cur-name">Inscripción directa</h3>
+            <p class="cur-desc">Accede al formulario de inscripción de forma rápida escaneando el QR o pulsando el botón.</p>
+            <div class="cur-pills">
+              <span class="cur-pill">⚡ Acceso inmediato</span>
+              <span class="cur-pill">🆓 Gratuito</span>
+            </div>
+            <div class="cur-actions">
+              <a href="https://docs.google.com/forms/d/e/1FAIpQLSfYDH5G_ZQrLjfrDVqGWTQcZ8liT4T3T1_nKluIwJgbPc8Cpg/viewform" target="_blank" rel="noopener" class="cur-btn">✏️ Abrir formulario</a>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ╔══════════════════════════════════╗
+       ║     QUÉ ES UN CERTIFICADO        ║
+       ╚══════════════════════════════════╝ -->
+  <section class="section section-white" id="certificados">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-eyebrow">Formación oficial</span>
+        <h2 class="section-title-lg">¿Qué es un <strong>Certificado de Profesionalidad</strong>?</h2>
+        <p class="section-sub">Una titulación oficial del Estado español que acredita que tienes las competencias para ejercer una profesión.</p>
+        <div class="section-line"></div>
+      </div>
+      <div class="cert-grid">
+        <div class="cert-explain reveal reveal-delay-1">
+          <h3 class="cert-explain-title">La titulación que te abre <em>puertas de verdad</em></h3>
+          <p class="cert-explain-body">Los Certificados de Profesionalidad son titulaciones oficiales expedidas por el SEPE, con validez en todo el territorio nacional y en la Unión Europea. Certifican que una persona tiene las competencias profesionales necesarias para el desempeño de una actividad laboral concreta.</p>
+          <p class="cert-explain-body">Se organizan en <strong style="color:white;">Módulos de Formación Profesional para el Empleo</strong>, incluyendo siempre un módulo de prácticas en empresa real.</p>
+          <div class="cert-levels">
+            <div class="cert-level"><div class="cert-level-num">1</div><div><div class="cert-level-title">Nivel 1 — Operario/a</div><div class="cert-level-sub">Sin requisitos previos de formación</div></div></div>
+            <div class="cert-level"><div class="cert-level-num">2</div><div><div class="cert-level-title">Nivel 2 — Técnico/a</div><div class="cert-level-sub">Equivalente a Educación Secundaria Obligatoria</div></div></div>
+            <div class="cert-level"><div class="cert-level-num">3</div><div><div class="cert-level-title">Nivel 3 — Técnico/a Superior</div><div class="cert-level-sub">Equivalente a Bachillerato o FP de Grado Superior</div></div></div>
+          </div>
+        </div>
+        <div class="cert-benefits reveal reveal-delay-2">
+          <div class="cert-benefit"><div class="cert-benefit-icon">🏅</div><div><div class="cert-benefit-title">Titulación oficial del Estado</div><div class="cert-benefit-desc">Expedido por el SEPE y reconocido en toda España y la Unión Europea.</div></div></div>
+          <div class="cert-benefit"><div class="cert-benefit-icon">💼</div><div><div class="cert-benefit-title">Mejora tu empleabilidad</div><div class="cert-benefit-desc">Aumenta tus posibilidades de encontrar empleo o ascender en tu puesto actual.</div></div></div>
+          <div class="cert-benefit"><div class="cert-benefit-icon">🏭</div><div><div class="cert-benefit-title">Prácticas en empresa real</div><div class="cert-benefit-desc">Todos los certificados incluyen un módulo de prácticas profesionales no laborales.</div></div></div>
+          <div class="cert-benefit"><div class="cert-benefit-icon">💰</div><div><div class="cert-benefit-title">Gratuito para desempleados</div><div class="cert-benefit-desc">Si estás inscrito/a en el SAE como demandante de empleo, la formación es completamente gratuita.</div></div></div>
+          <div class="cert-benefit"><div class="cert-benefit-icon">🔗</div><div><div class="cert-benefit-title">Acumulable por módulos</div><div class="cert-benefit-desc">Puedes acumular módulos de distintos cursos para obtener el certificado completo a tu ritmo.</div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ╔══════════════════════╗
+       ║  FAMILIAS PROF.      ║
+       ╚══════════════════════╝ -->
+  <section class="section section-light" id="familias">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-eyebrow">Nuestras especialidades</span>
+        <h2 class="section-title-lg">Especialidades <strong>acreditadas</strong> por familia</h2>
+        <p class="section-sub">Todas nuestras especialidades están inscritas y autorizadas en el registro oficial de la Junta de Andalucía. Haz clic en cada familia para ver el detalle.</p>
+        <div class="section-line"></div>
+      </div>
+
+      <div class="families-grid-v2">
+
+        <details class="fam-card reveal">
+          <summary>
+            <span class="fam-emoji">📊</span>
+            <span class="fam-info">
+              <span class="fam-name">Administración y Gestión</span>
+              <span class="fam-badge">5 especialidades</span>
+            </span>
+            <span class="fam-arrow">›</span>
+          </summary>
+          <ul class="fam-list">
+            <li><span class="fam-code">ADGD0208</span> Gestión Integrada de Recursos Humanos</li>
+            <li><span class="fam-code">ADGD0210</span> Creación y Gestión de Microempresas</li>
+            <li><span class="fam-code">ADGD0308</span> Actividades de Gestión Administrativa</li>
+            <li><span class="fam-code">ADGG0408</span> Operaciones Auxiliares de Servicios Administrativos y Generales</li>
+            <li><span class="fam-code">ADGG0508</span> Operaciones de Grabación y Tratamiento de Datos y Documentos</li>
+          </ul>
+        </details>
+
+        <details class="fam-card reveal reveal-delay-1">
+          <summary>
+            <span class="fam-emoji">🏘️</span>
+            <span class="fam-info">
+              <span class="fam-name">Comercio y Marketing</span>
+              <span class="fam-badge">1 especialidad</span>
+            </span>
+            <span class="fam-arrow">›</span>
+          </summary>
+          <ul class="fam-list">
+            <li><span class="fam-code">COMT0111</span> Gestión Comercial Inmobiliaria</li>
+          </ul>
+        </details>
+
+        <details class="fam-card reveal reveal-delay-2">
+          <summary>
+            <span class="fam-emoji">🌱</span>
+            <span class="fam-info">
+              <span class="fam-name">Competencias Transversales</span>
+              <span class="fam-badge">2 especialidades</span>
+            </span>
+            <span class="fam-arrow">›</span>
+          </summary>
+          <ul class="fam-list">
+            <li><span class="fam-code">CTRM0001</span> Competencias Básicas en Sostenibilidad para el Empleo. GreenComp</li>
+            <li><span class="fam-code">CTRR0005</span> Gestión de Prevención de Riesgos Laborales en la Empresa</li>
+          </ul>
+        </details>
+
+        <details class="fam-card reveal reveal-delay-3">
+          <summary>
+            <span class="fam-emoji">🏗️</span>
+            <span class="fam-info">
+              <span class="fam-name">Edificación y Obra Civil</span>
+              <span class="fam-badge">1 especialidad</span>
+            </span>
+            <span class="fam-arrow">›</span>
+          </summary>
+          <ul class="fam-list">
+            <li><span class="fam-code">EOCB0208</span> Operaciones Auxiliares de Albañilería de Fábricas y Cubiertas</li>
+          </ul>
+        </details>
+
+        <details class="fam-card reveal">
+          <summary>
+            <span class="fam-emoji">📚</span>
+            <span class="fam-info">
+              <span class="fam-name">Formación Complementaria</span>
+              <span class="fam-badge">6 especialidades</span>
+            </span>
+            <span class="fam-arrow">›</span>
+          </summary>
+          <ul class="fam-list">
+            <li><span class="fam-code">FCOO03</span> Inserción Laboral, Sensibilización Medioambiental y en la Igualdad de Género</li>
+            <li><span class="fam-code">FCOO08</span> Creación y Gestión de la Marca Personal y Redes Sociales en la Búsqueda de Empleo</li>
+            <li><span class="fam-code">FCOV05</span> Comunicación en Lenguas Extranjeras (Inglés) — Nivel 2</li>
+            <li><span class="fam-code">FCOV06</span> Comunicación en Lenguas Extranjeras (Inglés) — Nivel 3</li>
+            <li><span class="fam-code">FCOV27</span> Competencia Clave Nivel 2 para Certificados de Profesionalidad (sin idiomas)</li>
+            <li><span class="fam-code">FCOV29</span> Competencia Clave Nivel 3 para Certificados de Profesionalidad (sin idiomas)</li>
+          </ul>
+        </details>
+
+        <details class="fam-card reveal reveal-delay-1">
+          <summary>
+            <span class="fam-emoji">🍳</span>
+            <span class="fam-info">
+              <span class="fam-name">Hostelería y Turismo</span>
+              <span class="fam-badge">3 especialidades</span>
+            </span>
+            <span class="fam-arrow">›</span>
+          </summary>
+          <ul class="fam-list">
+            <li><span class="fam-code">HOTG0108</span> Creación y Gestión de Viajes Combinados y Eventos</li>
+            <li><span class="fam-code">HOTG0208</span> Venta de Productos y Servicios Turísticos</li>
+            <li><span class="fam-code">HOTI0108</span> Promoción Turística Local e Información al Visitante</li>
+          </ul>
+        </details>
+
+        <details class="fam-card reveal reveal-delay-2">
+          <summary>
+            <span class="fam-emoji">💻</span>
+            <span class="fam-info">
+              <span class="fam-name">Informática y Comunicaciones</span>
+              <span class="fam-badge">6 especialidades</span>
+            </span>
+            <span class="fam-arrow">›</span>
+          </summary>
+          <ul class="fam-list">
+            <li><span class="fam-code">IFCD0210</span> Desarrollo de Aplicaciones con Tecnologías Web</li>
+            <li><span class="fam-code">IFCT0109</span> Seguridad Informática</li>
+            <li><span class="fam-code">IFCT0310</span> Administración de Bases de Datos</li>
+            <li><span class="fam-code">IFCT0509</span> Administración de Servicios de Internet</li>
+            <li><span class="fam-code">IFCT0609</span> Programación de Sistemas Informáticos</li>
+            <li><span class="fam-code">IFCT0610</span> Administración y Programación en Sistemas de Planificación de Recursos Empresariales</li>
+          </ul>
+        </details>
+
+        <details class="fam-card reveal reveal-delay-3">
+          <summary>
+            <span class="fam-emoji">🍱</span>
+            <span class="fam-info">
+              <span class="fam-name">Industrias Alimentarias</span>
+              <span class="fam-badge">3 especialidades</span>
+            </span>
+            <span class="fam-arrow">›</span>
+          </summary>
+          <ul class="fam-list">
+            <li><span class="fam-code">INAD0001</span> Manipulación en Crudo y Conservación de Alimentos</li>
+            <li><span class="fam-code">INAD0002</span> Manipulación de Alimentos de Alto Riesgo</li>
+            <li><span class="fam-code">INAD0006</span> Envasado, Acondicionado y Embalaje de Productos Alimentarios</li>
+          </ul>
+        </details>
+
+        <details class="fam-card reveal">
+          <summary>
+            <span class="fam-emoji">♻️</span>
+            <span class="fam-info">
+              <span class="fam-name">Seguridad y Medioambiente</span>
+              <span class="fam-badge">6 especialidades</span>
+            </span>
+            <span class="fam-arrow">›</span>
+          </summary>
+          <ul class="fam-list">
+            <li><span class="fam-code">SEAD0001</span> Prevención de Riesgos Laborales en Hostelería</li>
+            <li><span class="fam-code">SEAG0001</span> Integración de la Economía Circular en la Gestión Empresarial</li>
+            <li><span class="fam-code">SEAG0109</span> Interpretación y Educación Ambiental</li>
+            <li><span class="fam-code">SEAG0209</span> Limpieza en Espacios Abiertos e Instalaciones Industriales</li>
+            <li><span class="fam-code">SEAG0211</span> Gestión Ambiental</li>
+            <li><span class="fam-code">SEAG05</span> Operaciones Básicas de Recogida y Tratamiento de Residuos Municipales e Industriales</li>
+          </ul>
+        </details>
+
+        <details class="fam-card reveal reveal-delay-1">
+          <summary>
+            <span class="fam-emoji">🤝</span>
+            <span class="fam-info">
+              <span class="fam-name">Servicios Socioculturales y a la Comunidad</span>
+              <span class="fam-badge">8 especialidades</span>
+            </span>
+            <span class="fam-arrow">›</span>
+          </summary>
+          <ul class="fam-list">
+            <li><span class="fam-code">SSCB0109</span> Dinamización Comunitaria</li>
+            <li><span class="fam-code">SSCB0211</span> Dirección y Coordinación de Actividades de Tiempo Libre Educativo Infantil y Juvenil</li>
+            <li><span class="fam-code">SSCE0003</span> Acompañante de Transporte Escolar</li>
+            <li><span class="fam-code">SSCE0110</span> Habilitación para la Docencia de los Grados A, B y C</li>
+            <li><span class="fam-code">SSCE0112</span> Atención al Alumnado con Necesidades Educativas Especiales (ACNEE)</li>
+            <li><span class="fam-code">SSCG0111</span> Gestión de Llamadas de Teleasistencia</li>
+            <li><span class="fam-code">SSCG0209</span> Mediación Comunitaria</li>
+            <li><span class="fam-code">SSCS0208</span> Atención Sociosanitaria a Personas Dependientes en Instituciones Sociales</li>
+          </ul>
+        </details>
+
+      </div>
+
+      <div class="families-footer reveal">
+        <p class="families-footer-text">Listado oficial en el registro de la Junta de Andalucía</p>
+        <a href="https://www.juntadeandalucia.es/empleoformacionytrabajoautonomo/formacion/web/buscador-de-centros-y-entidades/1800056520" target="_blank" rel="noopener" class="families-footer-btn">
+          Ver ficha oficial →
+        </a>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ╔══════════════════════╗
+       ║   INSTALACIONES      ║
+       ╚══════════════════════╝ -->
+  <section class="section section-dark" id="instalaciones">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-eyebrow light">El centro</span>
+        <h2 class="section-title-lg light">Nuestras <strong>Instalaciones</strong></h2>
+        <p class="section-sub light">Espacios modernos y bien equipados, diseñados para ofrecer la mejor experiencia formativa.</p>
+        <div class="section-line gold"></div>
+      </div>
+      <div class="cf-carousel-wrap reveal">
+        <div class="cf-carousel">
+          <div class="cf-slide"><img class="cf-bg" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/02/aula-3-A.jpeg" alt=""><img class="cf-img" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/02/aula-3-A.jpeg" alt="Aula Teórica"><span class="cf-caption">Aula Teórica</span></div>
+          <div class="cf-slide"><img class="cf-bg" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/02/WhatsApp-Image-2023-12-13-at-13.47.33-copia.jpeg" alt=""><img class="cf-img" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/02/WhatsApp-Image-2023-12-13-at-13.47.33-copia.jpeg" alt="Aula Informática"><span class="cf-caption">Aula Informática</span></div>
+          <div class="cf-slide"><img class="cf-bg" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/02/WhatsApp-Image-2023-12-13-at-13.47.312.jpeg" alt=""><img class="cf-img" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/02/WhatsApp-Image-2023-12-13-at-13.47.312.jpeg" alt="Aula Sociosanitaria"><span class="cf-caption">Aula Sociosanitaria</span></div>
+          <div class="cf-slide"><img class="cf-bg" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/02/detalle-aula-sociosanitaria-scaled.jpg" alt=""><img class="cf-img" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/02/detalle-aula-sociosanitaria-scaled.jpg" alt="Equipamiento Sociosanitario"><span class="cf-caption">Equipamiento Sociosanitario</span></div>
+          <div class="cf-slide"><img class="cf-bg" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/02/aula-3-1-1.jpeg" alt=""><img class="cf-img" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/02/aula-3-1-1.jpeg" alt="Aula Teórica"><span class="cf-caption">Aula Teórica</span></div>
+          <div class="cf-slide"><img class="cf-bg" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/02/WhatsApp-Image-2023-12-13-at-13.47.311.jpeg" alt=""><img class="cf-img" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/02/WhatsApp-Image-2023-12-13-at-13.47.311.jpeg" alt="Aula Sociosanitaria"><span class="cf-caption">Aula Sociosanitaria</span></div>
+          <div class="cf-slide"><img class="cf-bg" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/02/COCINA.jpeg" alt=""><img class="cf-img" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/02/COCINA.jpeg" alt="Cocina Profesional"><span class="cf-caption">Cocina Profesional</span></div>
+          <div class="cf-slide"><img class="cf-bg" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/02/COCINA-2-7-copia.jpeg" alt=""><img class="cf-img" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/02/COCINA-2-7-copia.jpeg" alt="Equipamiento Cocina"><span class="cf-caption">Equipamiento de Cocina</span></div>
+          <div class="cf-slide"><img class="cf-bg" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/02/COCINA-3-.jpeg" alt=""><img class="cf-img" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/02/COCINA-3-.jpeg" alt="Cocina Profesional"><span class="cf-caption">Cocina Profesional</span></div>
+          <div class="cf-slide"><img class="cf-bg" src="https://centroformacionlascanteras.org/wp-content/uploads/2025/03/IMG_0018-1-scaled.jpg" alt=""><img class="cf-img" src="https://centroformacionlascanteras.org/wp-content/uploads/2025/03/IMG_0018-1-scaled.jpg" alt="Centro de Formación"><span class="cf-caption">Centro de Formación Las Canteras</span></div>
+        </div>
+        <p class="cf-note">Las fotos cambian automáticamente cada 5 segundos</p>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ╔══════════════════════╗
+       ║      UBICACIÓN       ║
+       ╚══════════════════════╝ -->
+  <section class="section map-section" id="ubicacion">
+    <div class="map-wrapper">
+      <div class="section-header reveal" style="max-width:none;">
+        <span class="section-eyebrow">Dónde estamos</span>
+        <h2 class="section-title-lg">Cómo <strong>llegar</strong></h2>
+        <p class="section-sub">A 10 minutos de Granada, en el Polígono Industrial Las Canteras de Monachil.</p>
+        <div class="section-line"></div>
+      </div>
+
+      <div class="map-card reveal">
+        <!-- Barra superior de info -->
+        <div class="map-topbar">
+          <div class="map-topbar-item">
+            <div class="map-topbar-icon">📍</div>
+            <div>
+              <div class="map-topbar-label">Dirección</div>
+              <div class="map-topbar-val">C/ Leñadores, 30<br>Monachil, Granada</div>
+            </div>
+          </div>
+          <div class="map-topbar-item">
+            <div class="map-topbar-icon">🕘</div>
+            <div>
+              <div class="map-topbar-label">Horario de atención</div>
+              <div class="map-topbar-val">Lunes a viernes<br>9:00 – 14:00 h</div>
+            </div>
+          </div>
+          <div class="map-topbar-item">
+            <div class="map-topbar-icon">📞</div>
+            <div>
+              <div class="map-topbar-label">Teléfono</div>
+              <div class="map-topbar-val"><a href="tel:673366009">673 366 009</a></div>
+            </div>
+          </div>
+          <div class="map-topbar-item">
+            <div class="map-topbar-icon">✉️</div>
+            <div>
+              <div class="map-topbar-label">Correo</div>
+              <div class="map-topbar-val"><a href="mailto:tecnicadeempleo@monachil.es">tecnicadeempleo<br>@monachil.es</a></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mapa + botones -->
+        <div class="map-body">
+          <iframe
+            class="map-embed"
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d792.5!2d-3.5706!3d37.1315!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xd71fcb5d063bd13%3A0x1a4b2e7f8c9d0e5f!2sC%2F%20Le%C3%B1adores%2C%2030%2C%2018193%20Monachil%2C%20Granada!5e0!3m2!1ses!2ses!4v1710000000000!5m2!1ses!2ses"
+            allowfullscreen=""
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            title="Ubicación Centro de Formación Las Canteras"
+          ></iframe>
+          <div class="map-actions">
+            <div class="map-actions-title">Centro de Formación<br>Las Canteras</div>
+            <div class="map-actions-sub">Fácil acceso desde Granada en 10 min. Aparcamiento gratuito en el polígono.</div>
+            <div class="map-badge-row">
+              <span class="map-badge">🚗 Aparcamiento gratis</span>
+              <span class="map-badge">🚌 Bus desde Granada</span>
+              <span class="map-badge">♿ Accesible</span>
+            </div>
+            <a href="https://www.google.com/maps/dir/?api=1&destination=C%2F+Le%C3%B1adores+30+Monachil+Granada" target="_blank" rel="noopener" class="map-btn">
+              🗺️ Abrir en Google Maps
+            </a>
+            <a href="https://waze.com/ul?ll=37.1315,-3.5706&navigate=yes" target="_blank" rel="noopener" class="map-btn-waze">
+              🚗 Navegar con Waze
+            </a>
+            <a href="tel:673366009" class="map-btn-call">
+              📞 Llamar al centro
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ╔══════════════════════╗
+       ║       RESEÑAS        ║
+       ╚══════════════════════╝ -->
+  <section class="section section-light" id="opiniones">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-eyebrow">Lo que dicen nuestros alumnos</span>
+        <h2 class="section-title-lg">Opiniones <strong>reales</strong></h2>
+        <div class="section-line"></div>
+      </div>
+      <div class="rating-bar reveal">
+        <div class="rating-left">
+          <div class="rating-num">4.9</div>
+          <div><div class="rating-stars">★★★★★</div><div class="rating-sub">Puntuación en Google</div></div>
+        </div>
+        <div class="google-badge"><div class="google-g">G</div> Google Reviews</div>
+        <a href="https://www.google.com/search?q=opiniones+centro+formacion+las+canteras+monachil" target="_blank" rel="noopener" class="btn-review">⭐ Déjanos tu valoración</a>
+      </div>
+      <div class="reviews-grid">
+        <div class="review-card reveal">
+          <div class="review-top"><div class="review-author"><div class="review-avatar">J</div><div><div class="review-name">Julia Militello</div><div class="review-date">Hace 2 meses</div></div></div><div class="review-stars">★★★★★</div></div>
+          <p class="review-text">He hecho el último curso de pinche de cocina para desempleados en Las Canteras y ha sido una buena experiencia, con buenos profesores y recursos.</p>
+          <div class="review-badge"><div class="google-g">G</div> Reseña de Google</div>
+        </div>
+        <div class="review-card reveal reveal-delay-1">
+          <div class="review-top"><div class="review-author"><div class="review-avatar">P</div><div><div class="review-name">Pilar Rodriguez</div><div class="review-date">Hace 2 meses</div></div></div><div class="review-stars">★★★★★</div></div>
+          <p class="review-text">He tenido la oportunidad de hacer dos cursos en este centro. Las clases eran muy enriquecedoras y la profesora se involucró mucho en buscarnos donde hacer las prácticas. Las instalaciones muy adecuadas y bien aprovechadas.</p>
+          <div class="review-badge"><div class="google-g">G</div> Reseña de Google</div>
+        </div>
+        <div class="review-card reveal reveal-delay-2">
+          <div class="review-top"><div class="review-author"><div class="review-avatar">N</div><div><div class="review-name">Natalia Sánchez</div><div class="review-date">Hace 2 meses</div></div></div><div class="review-stars">★★★★★</div></div>
+          <p class="review-text">Excelente centro de formación dirigido por una gran profesional llamada Rocío. En este centro se imparten cursos muy útiles que mejorarán tu panorama laboral. ✨</p>
+          <div class="review-badge"><div class="google-g">G</div> Reseña de Google</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ╔══════════════════════╗
+       ║     INSCRIPCIÓN      ║
+       ╚══════════════════════╝ -->
+  <section class="section section-white" id="inscripcion">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-eyebrow">¿Listo para empezar?</span>
+        <h2 class="section-title-lg">Inscríbete en <strong>3 pasos</strong></h2>
+        <div class="section-line"></div>
+      </div>
+      <div class="insc-card reveal">
+        <div class="insc-left">
+          <div class="insc-steps-label">Proceso de inscripción</div>
+          <div class="insc-step"><div class="insc-step-num">1</div><div><div class="insc-step-h">Contacta con el centro</div><div class="insc-step-p">Llámanos, escríbenos o pásate por el centro. Te informaremos sobre los cursos disponibles y requisitos de acceso.</div></div></div>
+          <div class="insc-step"><div class="insc-step-num">2</div><div><div class="insc-step-h">Presenta tu documentación</div><div class="insc-step-p">DNI, tarjeta DARDE (demanda de empleo) y cualquier documentación adicional que requiera el curso específico.</div></div></div>
+          <div class="insc-step"><div class="insc-step-num">3</div><div><div class="insc-step-h">Formaliza tu plaza</div><div class="insc-step-p">Una vez verificada tu solicitud, confirmaremos tu plaza. ¡Ya estás listo/a para empezar!</div></div></div>
+          <div class="insc-divider"></div>
+          <div class="insc-info">
+            <div class="insc-info-row"><span class="insc-info-icon">📍</span> C/ Leñadores, 30 · Pol. Ind. Las Canteras · 18193 Monachil</div>
+            <div class="insc-info-row"><span class="insc-info-icon">🕘</span> Atención al público: lunes a viernes de 9:00 a 14:00 h</div>
+            <div class="insc-info-row"><span class="insc-info-icon">📞</span> <a href="tel:673366009" style="color:var(--blue);font-weight:700;">673 366 009</a></div>
+            <div class="insc-info-row"><span class="insc-info-icon">✉️</span> <a href="mailto:tecnicadeempleo@monachil.es" style="color:var(--blue);font-weight:700;">tecnicadeempleo@monachil.es</a></div>
+          </div>
+          <a href="mailto:tecnicadeempleo@monachil.es" class="insc-btn-main">✉️ Escríbenos para informarte</a>
+        </div>
+        <div class="insc-right">
+          <div class="insc-qr-label">Acceso rápido desde móvil</div>
+          <div class="insc-qr-box">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=190x190&data=mailto:tecnicadeempleo@monachil.es&color=0d3a6b" alt="QR contacto" width="190" height="190" loading="lazy">
+          </div>
+          <div class="insc-qr-strong">Contacta con un escaneo</div>
+          <div class="insc-qr-sub">Escanea el código QR con la cámara de tu móvil y escríbenos directamente.</div>
+          <div class="insc-phone-row">O llámanos al <a href="tel:673366009">673 366 009</a></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ╔══════════════════════╗
+       ║         FAQ          ║
+       ╚══════════════════════╝ -->
+  <section class="section section-dark" id="faq">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-eyebrow light">Resolvemos tus dudas</span>
+        <h2 class="section-title-lg light">Preguntas <strong>frecuentes</strong></h2>
+        <div class="section-line gold"></div>
+      </div>
+      <div class="faq-wrap reveal">
+        <details class="faq-item"><summary>¿Los cursos tienen certificado oficial?</summary><p>Sí. Al finalizar el curso recibirás un Certificado de Profesionalidad expedido por el SEPE, con validez oficial en todo el territorio nacional y la Unión Europea.</p></details>
+        <details class="faq-item"><summary>¿Necesito conocimientos previos para apuntarme?</summary><p>No necesariamente. Muchos de nuestros cursos están diseñados para empezar desde nivel básico. Los de nivel 1 no tienen requisitos académicos, los de nivel 2 pueden requerir la ESO y los de nivel 3, el Bachillerato o un FP de Grado Medio.</p></details>
+        <details class="faq-item"><summary>¿Cuánto duran los cursos?</summary><p>La duración varía según el tipo de formación. Los Programas Mixtos de Empleo y Formación tienen una duración de 12 meses. Los cursos de especialidades formativas oscilan entre unas semanas y varios meses.</p></details>
+        <details class="faq-item"><summary>¿Los cursos son presenciales u online?</summary><p>Ofrecemos diferentes modalidades para adaptarnos a cada estudiante: presencial en nuestro centro de Monachil, online o en modalidad mixta.</p></details>
+        <details class="faq-item"><summary>¿Es gratuito? ¿Quién puede apuntarse?</summary><p>La mayoría de nuestros cursos son completamente gratuitos para personas desempleadas inscritas como demandantes de empleo en el SEPE. Algunos programas también admiten trabajadores ocupados.</p></details>
+        <details class="faq-item"><summary>¿Incluyen prácticas en empresa?</summary><p>Sí. Todos los Certificados de Profesionalidad incluyen un módulo de Prácticas Profesionales No Laborales (PPNL) en empresas del sector. Nuestro equipo se encarga de buscar el lugar de prácticas adecuado.</p></details>
+        <details class="faq-item"><summary>¿Cómo puedo inscribirme?</summary><p>Puedes inscribirte contactando con el centro por teléfono (673 366 009), por correo electrónico (tecnicadeempleo@monachil.es), a través de nuestras redes sociales (@centro_formacion_las_canteras), o presencialmente en C/ Leñadores, 30 de lunes a viernes de 9:00 a 14:00 h.</p></details>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ╔══════════════════════════════════╗
+       ║    PROTECCIÓN DE DATOS           ║
+       ╚══════════════════════════════════╝ -->
+  <section class="section section-light" id="privacidad">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-eyebrow">Transparencia y derechos</span>
+        <h2 class="section-title-lg">Protección de <strong>Datos</strong></h2>
+        <p class="section-sub">Información sobre el tratamiento de tus datos personales de conformidad con el RGPD y la LOPDGDD.</p>
+        <div class="section-line"></div>
+      </div>
+      <div class="privacy-card reveal">
+        <div class="privacy-tabs">
+          <button class="privacy-tab active" onclick="showPrivacy('mailing',this)">Lista de distribución</button>
+          <button class="privacy-tab" onclick="showPrivacy('concurso',this)">Bases de concurso</button>
+          <button class="privacy-tab" onclick="showPrivacy('redes',this)">Redes sociales</button>
+        </div>
+        <div class="privacy-panel active" id="privacy-mailing">
+          <h3>Cláusula informativa — Lista de distribución de correos electrónicos</h3>
+          <p>De conformidad con el RGPD y la LOPDGDD, se informa a la persona interesada de que sus datos personales serán tratados por el <strong>Ayuntamiento de Monachil</strong> con la finalidad de gestionar su inclusión en la lista de distribución de correos electrónicos.</p>
+          <ul>
+            <li><strong>Legitimación:</strong> Consentimiento del interesado, que podrá ser retirado en cualquier momento.</li>
+            <li><strong>Conservación:</strong> Mientras se mantenga vigente el consentimiento.</li>
+            <li><strong>Destinatarios:</strong> No se cederán datos a terceros, salvo obligación legal.</li>
+            <li><strong>Derechos:</strong> Acceso, rectificación, supresión, oposición, limitación y portabilidad. Contacto: <a href="mailto:ayuntamiento@monachil.es">ayuntamiento@monachil.es</a> o DPD: <a href="mailto:delegadodeprotecciondedatos@dataevalua.com">delegadodeprotecciondedatos@dataevalua.com</a>. Reclamaciones: <a href="https://www.aepd.es" target="_blank" rel="noopener">aepd.es</a></li>
+          </ul>
+        </div>
+        <div class="privacy-panel" id="privacy-concurso">
+          <h3>Cláusula de Protección de Datos — Bases de concurso</h3>
+          <p>Conforme al RGPD y LOPDGDD, se informa sobre el tratamiento de datos de las personas participantes en concursos del Ayuntamiento de Monachil (CIF P1813500D, Plaza Baja, 1 — 18193 Monachil).</p>
+          <ul>
+            <li><strong>Finalidad:</strong> Gestionar la participación en el concurso, verificar las bases y publicar ganadores.</li>
+            <li><strong>Legitimación:</strong> Consentimiento del participante e interés público.</li>
+            <li><strong>Destinatarios:</strong> No se cederán datos a terceros, salvo obligación legal.</li>
+            <li><strong>Derechos:</strong> Acceso, rectificación, supresión, oposición, limitación y portabilidad.</li>
+            <li><strong>DPD:</strong> <a href="mailto:delegadodeprotecciondedatos@dataevalua.com">delegadodeprotecciondedatos@dataevalua.com</a></li>
+          </ul>
+        </div>
+        <div class="privacy-panel" id="privacy-redes">
+          <h3>Política de privacidad en redes sociales</h3>
+          <p>El Ayuntamiento de Monachil cuenta con perfiles en Facebook e Instagram con el fin de informar sobre actividades, servicios y noticias del municipio.</p>
+          <ul>
+            <li>No se recabarán datos personales sin consentimiento expreso del usuario.</li>
+            <li>El Ayuntamiento no se hace responsable de la información publicada por terceros en sus perfiles.</li>
+            <li>Derechos ARCO: <a href="mailto:delegadodeprotecciondedatos@dataevalua.com">delegadodeprotecciondedatos@dataevalua.com</a></li>
+            <li>Más información: <a href="https://www.aepd.es" target="_blank" rel="noopener">aepd.es</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ╔══════════════════════╗
+       ║        FOOTER        ║
+       ╚══════════════════════╝ -->
+  <footer>
+    <div class="footer-partners">
+      <div class="footer-partners-label">Colaboramos con</div>
+      <div class="footer-partners-logos">
+        <a href="https://www.monachil.es" target="_blank" rel="noopener" class="footer-partner-logo" title="Ayuntamiento de Monachil">
+          <img src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/logo-empleo-y-formacion-horizontal.png" alt="Ayuntamiento de Monachil" loading="lazy">
+        </a>
+        <a href="https://www.aulamentor.es" target="_blank" rel="noopener" class="footer-partner-logo" title="Aulamentor">
+          <img src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/logo-AM-Monachil.jpg" alt="Aulamentor" loading="lazy">
+        </a>
+        <a href="https://www.juntadeandalucia.es/empleo" target="_blank" rel="noopener" class="footer-partner-logo" title="Junta de Andalucía">
+          <img src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/LOGO-CONSEJERIA-EMPLEO.png" alt="Consejería de Empleo - Junta de Andalucía" loading="lazy">
+        </a>
+      </div>
+    </div>
+
+    <div class="footer-inner">
+      <div>
+        <div class="footer-brand-name">Centro de Formación Las Canteras</div>
+        <p class="footer-brand-desc">Centro de formación del Ayuntamiento de Monachil y colaborador certificado de la Junta de Andalucía. Formamos profesionales para el presente y el futuro.</p>
+        <div class="footer-contact-item">📍 C/ Leñadores, 30 · Pol. Ind. Las Canteras · 18193 Monachil</div>
+        <div class="footer-contact-item">🕘 Atención al público: L–V · 9:00 – 14:00 h</div>
+        <div class="footer-contact-item">📞 <a href="tel:673366009">673 366 009</a></div>
+        <div class="footer-contact-item">✉️ <a href="mailto:tecnicadeempleo@monachil.es">tecnicadeempleo@monachil.es</a></div>
+        <!-- Redes sociales en footer -->
+        <div class="footer-social">
+          <a href="https://www.facebook.com/formacionyempleoMonachil/" target="_blank" rel="noopener" class="footer-social-link" aria-label="Síguenos en Facebook">
+            <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+          </a>
+          <a href="https://www.instagram.com/centro_formacion_las_canteras/" target="_blank" rel="noopener" class="footer-social-link" aria-label="Síguenos en Instagram">
+            <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+          </a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Formación</div>
+        <a href="#cursos-activos" class="footer-col-link">Cursos activos</a>
+        <a href="#certificados" class="footer-col-link">Certificados de Profesionalidad</a>
+        <a href="#familias" class="footer-col-link">Familias profesionales</a>
+        <a href="#inscripcion" class="footer-col-link">Cómo inscribirme</a>
+      </div>
+      <div>
+        <div class="footer-col-title">El centro</div>
+        <a href="#sobre-nosotros" class="footer-col-link">Quiénes somos</a>
+        <a href="#instalaciones" class="footer-col-link">Instalaciones</a>
+        <a href="#opiniones" class="footer-col-link">Opiniones</a>
+        <a href="#faq" class="footer-col-link">Preguntas frecuentes</a>
+      </div>
+      <div>
+        <div class="footer-col-title">Síguenos</div>
+        <a href="https://www.facebook.com/formacionyempleoMonachil/" target="_blank" rel="noopener" class="footer-col-link">📘 Facebook</a>
+        <a href="https://www.instagram.com/centro_formacion_las_canteras/" target="_blank" rel="noopener" class="footer-col-link">📷 Instagram</a>
+        <div class="footer-col-title" style="margin-top:20px;">Legal</div>
+        <a href="#privacidad" class="footer-col-link">Protección de datos</a>
+        <a href="https://www.aepd.es" target="_blank" rel="noopener" class="footer-col-link">AEPD</a>
+        <a href="https://www.monachil.es" target="_blank" rel="noopener" class="footer-col-link">Ayuntamiento de Monachil</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-bottom-text">© 2025 Centro de Formación Las Canteras · Ayuntamiento de Monachil</span>
+      <div class="footer-bottom-links">
+        <a href="#privacidad">Protección de datos</a>
+        <a href="mailto:delegadodeprotecciondedatos@dataevalua.com">DPD</a>
+        <a href="https://www.aepd.es" target="_blank" rel="noopener">AEPD</a>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- ╔══════════════════════════════════╗
+       ║    MODALES CURSOS ACTIVOS        ║
+       ╚══════════════════════════════════╝ -->
+  <div class="cur-modal" id="modalTalento">
+    <div class="cur-modal-box">
+      <button class="cur-modal-close" onclick="cerrarModal('modalTalento')">✕</button>
+      <div class="cur-modal-img-wrap">
+        <img class="cur-modal-img-bg" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/CARTEL-MONACHIL-TALENTO-.jpg" alt="">
+        <img class="cur-modal-img-main" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/CARTEL-MONACHIL-TALENTO-.jpg" alt="Monachil Talento">
+      </div>
+      <div class="cur-modal-content">
+        <p class="cur-modal-tag">Administración y RRHH · 12 meses</p>
+        <h2 class="cur-modal-title">Monachil Talento — Gestión de RRHH</h2>
+        <p class="cur-modal-desc">Nuevo Programa de Empleo y Formación en Monachil. El Ayuntamiento pondrá en marcha próximamente <strong>MONACHIL TALENTO</strong>, un programa pensado para impulsar el futuro profesional especialmente de vecinos/as de Monachil.</p>
+        <div class="cur-modal-pills">
+          <span class="cur-modal-pill">🆓 Gratuito</span><span class="cur-modal-pill">📅 Inicio verano 2026</span><span class="cur-modal-pill">⏱ 12 meses</span><span class="cur-modal-pill">🕘 8:00 – 15:00 h</span><span class="cur-modal-pill">👤 Mayores de 45 años</span>
+        </div>
+        <div class="cur-modal-section">
+          <p class="cur-modal-section-title">🎓 Especialidad</p>
+          <ul class="cur-modal-list"><li>Gestión Integrada de Recursos Humanos (ADGD0208)</li></ul>
+        </div>
+        <div class="cur-modal-section">
+          <p class="cur-modal-section-title">✅ Qué incluye</p>
+          <ul class="cur-modal-list">
+            <li>Certificado Profesional (790 horas de formación acreditada)</li>
+            <li>Formación en inserción laboral, sensibilización ambiental e igualdad de género</li>
+            <li>Contrato de formación en alternancia</li>
+          </ul>
+        </div>
+        <div class="cur-modal-section">
+          <p class="cur-modal-section-title">📋 Requisitos</p>
+          <ul class="cur-modal-list">
+            <li>Bachillerato o titulación equivalente</li>
+            <li>Personas mayores de 45 años</li>
+            <li>Demandante de empleo no ocupado</li>
+          </ul>
+        </div>
+        <div class="cur-modal-section">
+          <p class="cur-modal-section-title">📝 Cómo inscribirse</p>
+          <ul class="cur-modal-list"><li>En el SAE (Código 370)</li></ul>
+        </div>
+        <div class="cur-modal-actions">
+          <a href="https://www.juntadeandalucia.es/organismos/sae.html" target="_blank" class="cur-modal-btn">✏️ Inscribirme en el SAE</a>
+          <a href="tel:673366009" class="cur-modal-btn outline">📞 673 366 009</a>
+        </div>
+        <p class="cur-modal-nota">Programa subvencionado por la Junta de Andalucía, con financiación del Gobierno de España a través del Servicio Público de Empleo Estatal.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="cur-modal" id="modalEco">
+    <div class="cur-modal-box">
+      <button class="cur-modal-close" onclick="cerrarModal('modalEco')">✕</button>
+      <div class="cur-modal-img-wrap">
+        <img class="cur-modal-img-bg" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/CARTEL-MONACHIL-ECOJOVEN-IG.jpg" alt="">
+        <img class="cur-modal-img-main" src="https://centroformacionlascanteras.org/wp-content/uploads/2026/03/CARTEL-MONACHIL-ECOJOVEN-IG.jpg" alt="EcoJoven">
+      </div>
+      <div class="cur-modal-content">
+        <p class="cur-modal-tag">Medioambiente · 12 meses</p>
+        <h2 class="cur-modal-title">Programa EcoJoven</h2>
+        <p class="cur-modal-desc">Nuevo Programa de Empleo y Formación dirigido a <strong>jóvenes de Monachil</strong>. Una oportunidad para formarte y trabajar al mismo tiempo en el ámbito medioambiental.</p>
+        <div class="cur-modal-pills">
+          <span class="cur-modal-pill">🆓 Gratuito</span><span class="cur-modal-pill">📅 Inicio verano 2026</span><span class="cur-modal-pill">⏱ 12 meses</span><span class="cur-modal-pill">👶 Menores de 30 años</span>
+        </div>
+        <div class="cur-modal-section">
+          <p class="cur-modal-section-title">🎓 Especialidades</p>
+          <ul class="cur-modal-list">
+            <li>Habilitación para la Docencia en grados A, B y C del Sistema de FPE (SSCE0110)</li>
+            <li>Interpretación y Educación Ambiental (SEAG0109)</li>
+          </ul>
+        </div>
+        <div class="cur-modal-section">
+          <p class="cur-modal-section-title">✅ Qué ofrece</p>
+          <ul class="cur-modal-list">
+            <li>Formación acreditada en 2 Certificados Profesionales</li>
+            <li>Puesta en práctica en entorno real</li>
+            <li>Contrato de formación en alternancia</li>
+          </ul>
+        </div>
+        <div class="cur-modal-section">
+          <p class="cur-modal-section-title">📋 Requisitos</p>
+          <ul class="cur-modal-list">
+            <li>Bachillerato o titulación equivalente</li>
+            <li>Personas menores de 30 años</li>
+            <li>Demandante de empleo no ocupado</li>
+          </ul>
+        </div>
+        <div class="cur-modal-section">
+          <p class="cur-modal-section-title">📝 Cómo inscribirse</p>
+          <ul class="cur-modal-list"><li>En el SAE (Código 370)</li></ul>
+        </div>
+        <div class="cur-modal-actions">
+          <a href="https://www.juntadeandalucia.es/organismos/sae.html" target="_blank" class="cur-modal-btn">✏️ Inscribirme en el SAE</a>
+          <a href="tel:673366009" class="cur-modal-btn outline">📞 673 366 009</a>
+        </div>
+        <p class="cur-modal-nota">Programa subvencionado por la Junta de Andalucía, con financiación del Gobierno de España a través del Servicio Público de Empleo Estatal.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    // ── Mobile nav drawer ──
+    function openDrawer() {
+      document.getElementById('navDrawer').classList.add('open');
+      document.getElementById('navOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeDrawer() {
+      document.getElementById('navDrawer').classList.remove('open');
+      document.getElementById('navOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    // Cerrar con ESC
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeDrawer();
+        document.querySelectorAll('.cur-modal.open').forEach(function(m) { cerrarModal(m.id); });
+      }
+    });
+
+    // ── Scroll reveal ──
+    const reveals = document.querySelectorAll('.reveal');
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+    }, { threshold: 0.08 });
+    reveals.forEach(r => io.observe(r));
+
+    // ── Privacy tabs ──
+    function showPrivacy(tab, btn) {
+      document.querySelectorAll('.privacy-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.privacy-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('privacy-' + tab).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    // ── Modales cursos ──
+    function abrirModal(id) { document.getElementById(id).classList.add('open'); document.body.style.overflow = 'hidden'; }
+    function cerrarModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow = ''; }
+    document.querySelectorAll('.cur-modal').forEach(function(m) {
+      m.addEventListener('click', function(e) { if (e.target === this) cerrarModal(this.id); });
+    });
+
+    // ── Nav scroll highlight + sticky shadow ──
+    const navEl = document.querySelector('nav');
+    const navLinks = document.querySelectorAll('.nav-links a');
+    const sections = document.querySelectorAll('section[id]');
+    window.addEventListener('scroll', () => {
+      // Sombra nav al hacer scroll
+      navEl.style.boxShadow = window.scrollY > 20 ? '0 4px 24px rgba(0,0,0,0.18)' : '';
+      // Highlight link activo
+      let current = '';
+      sections.forEach(s => { if (window.scrollY >= s.offsetTop - 140) current = s.id; });
+      navLinks.forEach(l => { l.style.color = l.getAttribute('href') === '#' + current ? 'white' : ''; });
+    });
+  </script>
+</body>
+</html>
