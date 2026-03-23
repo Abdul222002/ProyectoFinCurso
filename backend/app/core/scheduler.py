@@ -221,7 +221,7 @@ def gameweek_lifecycle_tick():
     y ejecuta la acción correspondiente según la hora actual.
     """
     from app.core.database import SessionLocal
-    from app.models.models import Gameweek, GameweekLineup, Team, UserCard
+    from app.models.models import Gameweek, GameweekLineup, Team, UserCard, GameweekLineupPlayer
 
     db = SessionLocal()
     try:
@@ -247,14 +247,13 @@ def gameweek_lifecycle_tick():
                     team_id=team.id,
                     is_in_lineup=True
                 ).all()
-                player_ids_str = ",".join(str(c.id) for c in active_cards)
-
                 gw_lineup = GameweekLineup(
                     team_id=team.id,
                     gameweek_id=active_gw.id,
-                    player_ids=player_ids_str,
                     active_formation=team.active_formation or "4-3-3"
                 )
+                # RELACIONAL:
+                gw_lineup.players = [GameweekLineupPlayer(card_id=c.id) for c in active_cards]
                 db.add(gw_lineup)
                 locked += 1
 
@@ -303,9 +302,9 @@ def gameweek_lifecycle_tick():
 
                 team_points = 0.0
                 if gw_lineup:
-                    card_ids = [int(pid) for pid in gw_lineup.player_ids.split(",") if pid.strip()]
-                    for cid in card_ids:
-                        card = db.query(UserCard).filter(UserCard.id == cid).first()
+                    # En lugar de usar player_ids (CSV), usamos la relación normalizada
+                    for lp in gw_lineup.players:
+                        card = lp.card
                         if card and card.player_id in player_points:
                             team_points += player_points[card.player_id]
                     gw_lineup.points_earned = team_points

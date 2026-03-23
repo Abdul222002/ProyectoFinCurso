@@ -2,7 +2,7 @@
 Pydantic Schemas para Equipos
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import Optional, List
 from datetime import datetime
 
@@ -83,10 +83,19 @@ class GameweekLineupResponse(BaseModel):
     id: int
     team_id: int
     gameweek_id: int
-    player_ids: str
+    player_ids: List[int]  # Se transforma de la relación en el validador
     active_formation: str
     points_earned: float
     created_at: datetime
     
+    @model_validator(mode="before")
+    @classmethod
+    def extract_player_ids(cls, data):
+        # Si data es un objeto SQLAlchemy, extraemos los IDs de la relación 'players'
+        if hasattr(data, "players") and data.players is not None:
+            # GameweekLineup tiene relación 'players' -> List[GameweekLineupPlayer]
+            data.player_ids = [p.card_id for p in data.players]
+        return data
+
     class Config:
         from_attributes = True

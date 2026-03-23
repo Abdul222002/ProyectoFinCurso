@@ -54,16 +54,19 @@ class FantasyPointsCalculator:
         penalties += stats.red_cards * SCORING_RULES["RED_CARD"]
         
         # Goles en propia puerta
-        penalties += stats.own_goals * SCORING_RULES["OWN_GOALS"]
+        penalties += getattr(stats, 'own_goals', 0) * SCORING_RULES["OWN_GOALS"]
         
         # Penaltis fallados
-        penalties += stats.penalties_missed * SCORING_RULES["PENALTIES_MISSED"]
+        penalties += stats.penalty_miss * SCORING_RULES["PENALTIES_MISSED"]
+
+        # Penaltis cometidos
+        penalties += stats.penalty_committed * SCORING_RULES["PENALTIES_COMMITTED"]
         
         # Pérdidas de balón
         penalties += stats.dispossessed * SCORING_RULES["DISPOSSESSED"]
         
-        # Goles en contra (afecta poco a todos)
-        penalties += stats.goals_conceded * SCORING_RULES["GOALS_AGAINST"]
+        # Goles en contra (afecta a todos los jugadores del equipo)
+        penalties += stats.goals_conceded_team * SCORING_RULES["GOALS_AGAINST"]
         
         return penalties
     
@@ -101,19 +104,25 @@ class FantasyPointsCalculator:
         
         # Penaltis parados
         if "PENALTIES_SAVED" in rules:
-            points += stats.penalties_saved * rules["PENALTIES_SAVED"]
+            points += stats.penalty_save * rules["PENALTIES_SAVED"]
         
         # Despejes efectivos
         if "EFFECTIVE_CLEARANCES" in rules:
-            points += stats.effective_clearances * rules["EFFECTIVE_CLEARANCES"]
+            points += stats.clearances * rules["EFFECTIVE_CLEARANCES"]
         
-        # Recuperaciones
+        # Recuperaciones (incluye intercepciones si la regla lo dicta)
         if "BALL_RECOVERY" in rules:
-            points += stats.ball_recoveries * rules["BALL_RECOVERY"]
+            recovery_points = rules["BALL_RECOVERY"]
+            points += stats.ball_recoveries * recovery_points
+            # Si hay una regla específica de INTERCEPTIONS, sumarla (DEF suele tenerla en scoring_rules.py)
+            if "INTERCEPTIONS" in rules:
+                points += stats.interceptions * rules["INTERCEPTIONS"]
+        elif "INTERCEPTIONS" in rules:
+            points += stats.interceptions * rules["INTERCEPTIONS"]
         
         # Penaltis provocados
         if "PENALTIES_WON" in rules:
-            points += stats.penalties_won * rules["PENALTIES_WON"]
+            points += stats.penalty_won * rules["PENALTIES_WON"]
         
         # Tiros a puerta
         if "SHOTS_ON_TARGET" in rules:
@@ -121,11 +130,11 @@ class FantasyPointsCalculator:
         
         # Regates exitosos
         if "SUCCESSFUL_DRIBBLES" in rules:
-            points += stats.successful_dribbles * rules["SUCCESSFUL_DRIBBLES"]
+            points += stats.dribbles * rules["SUCCESSFUL_DRIBBLES"]
         
         # Centros precisos
         if "ACCURATE_CROSSES" in rules:
-            points += stats.accurate_crosses * rules["ACCURATE_CROSSES"]
+            points += stats.crosses * rules["ACCURATE_CROSSES"]
         
         # Penalización especial para porteros (goles en contra)
         if position_key == "GK" and "GOALS_AGAINST" in rules:

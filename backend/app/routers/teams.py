@@ -8,7 +8,7 @@ from typing import Optional, List
 from datetime import datetime
 
 from app.core.database import get_db
-from app.models.models import User, Team, UserCard, Gameweek, GameweekLineup, LeagueMember
+from app.models.models import User, Team, UserCard, Gameweek, GameweekLineup, LeagueMember, GameweekLineupPlayer
 from app.schemas.team import TeamResponse, TeamUpdate, SetLineupRequest, GameweekLineupResponse
 from app.routers.auth import get_current_user
 
@@ -196,18 +196,18 @@ async def set_lineup(
                 GameweekLineup.gameweek_id == active_gw.id
             ).first()
             
-            player_ids_str = ",".join(str(pid) for pid in data.lineup_card_ids)
-            
             if gw_lineup:
-                gw_lineup.player_ids = player_ids_str
                 gw_lineup.active_formation = team.active_formation
+                # 🔵 RELACIONAL: Actualizar tabla intermedia
+                gw_lineup.players = [GameweekLineupPlayer(card_id=pid) for pid in data.lineup_card_ids]
             else:
+                # 🔵 RELACIONAL: Crear con relación directa
                 gw_lineup = GameweekLineup(
                     team_id=team.id,
                     gameweek_id=active_gw.id,
-                    player_ids=player_ids_str,
                     active_formation=team.active_formation
                 )
+                gw_lineup.players = [GameweekLineupPlayer(card_id=pid) for pid in data.lineup_card_ids]
                 db.add(gw_lineup)
             
             db.commit()
@@ -262,6 +262,83 @@ async def get_active_gameweek(db: Session = Depends(get_db)):
         if not gw:
             raise HTTPException(status_code=404, detail="No hay jornadas configuradas")
     return gw
+
+
+class GameweekPointsItem(BaseModel):
+    gameweek_number: int
+    points_earned: float
+
+class GameweekPointsResponse(BaseModel):
+    gameweek_points: List[GameweekPointsItem]
+    total_points: float
+
+
+def _get_team_gameweek_points(team_id: int, db: Session) -> dict:
+    """Get points per gameweek for a team"""
+    lineups = db.query(GameweekLineup).filter(
+        GameweekLineup.team_id == team_id
+    ).all()
+    
+    items = []
+    total = 0.0
+    for lineup in lineups:
+        gw = lineup.gameweek
+        if gw:
+            items.append(GameweekPointsItem(
+                gameweek_number=gw.number,
+                points_earned=lineup.points_earned or 0.0
+            ))
+            total += (lineup.points_earned or 0.0)
+    
+    # Sort by gameweek number
+    items.sort(key=lambda x: x.gameweek_number)
+    
+    return GameweekPointsResponse(
+        gameweek_points=items,
+        total_points=total
+    )
+
+
+@router.get("/my/gameweek-points", response_model=GameweekPointsResponse)
+async def get_my_gameweek_points(
+    league_id: int = Query(..., description="ID de la liga"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Obtener los puntos por jornada de mi equipo"""
+    team = db.query(Team).filter(
+        Team.user_id == current_user.id,
+        Team.league_id == league_id
+    ).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="No tienes equipo en esta liga")
+    
+    return _get_team_gameweek_points(team.id, db)
+
+
+@router.get("/{league_id}/user/{target_user_id}/gameweek-points", response_model=GameweekPointsResponse)
+async def get_user_gameweek_points(
+    league_id: int,
+    target_user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Obtener los puntos por jornada del equipo de otro usuario"""
+    membership = db.query(LeagueMember).filter(
+        LeagueMember.league_id == league_id,
+        LeagueMember.user_id == current_user.id
+    ).first()
+    if not membership:
+        raise HTTPException(status_code=403, detail="No perteneces a esta liga")
+    
+    team = db.query(Team).filter(
+        Team.user_id == target_user_id,
+        Team.league_id == league_id
+    ).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="El usuario no tiene equipo en esta liga")
+    
+    return _get_team_gameweek_points(team.id, db)
 
 
 @router.post("/my/release/{card_id}")

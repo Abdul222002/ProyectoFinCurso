@@ -69,7 +69,7 @@ class User(Base):
     last_tickets_reset = Column(DateTime, default=datetime.utcnow)
     
     # Economía
-    coins = Column(Integer, default=10000)  # Monedas del juego
+    coins = Column(Integer, default=10000)  # Economía global (premios, cosméticos). Distinto de league_members.coins (economía por liga).
     
     # Estadísticas
     total_points = Column(Integer, default=0)  # Puntos Fantasy totales
@@ -144,13 +144,11 @@ class Player(Base):
     # Se actualiza solo los FINES DE SEMANA basado en rendimiento
     target_price = Column(Float, default=1000000.0)
     
-    # Campos acumulativos (para cálculos rápidos sin consultar historial)
-    total_matches_played = Column(Integer, default=0)
-    sum_match_ratings = Column(Float, default=0.0)  # Suma total de notas
-    sum_fantasy_points = Column(Float, default=0.0)  # Suma total de puntos Fantasy
-    
     # Imagen/foto
     image_url = Column(String(255), nullable=True)
+
+    # RELACIONAL: Estadísticas en tiempo real (Vista SQL)
+    stats = relationship("PlayerStatsSummary", uselist=False, backref="player", viewonly=True)
     
     # Relaciones
     user_cards = relationship("UserCard", back_populates="player")
@@ -160,18 +158,18 @@ class Player(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     @property
+    def total_matches_played(self) -> int:
+        return self.stats.total_matches_played if self.stats else 0
+
+    @property
     def average_rating(self) -> float:
-        """Calcula la nota promedio de forma eficiente"""
-        if self.total_matches_played == 0:
-            return 0.0
-        return self.sum_match_ratings / self.total_matches_played
+        """Calcula la nota promedio en tiempo real desde la vista"""
+        return self.stats.avg_rating if self.stats else 0.0
     
     @property
     def average_fantasy_points(self) -> float:
-        """Calcula los puntos Fantasy promedio"""
-        if self.total_matches_played == 0:
-            return 0.0
-        return self.sum_fantasy_points / self.total_matches_played
+        """Calcula los puntos Fantasy promedio en tiempo real desde la vista"""
+        return self.stats.avg_fantasy_points if self.stats else 0.0
     
     @property
     def price_gap(self) -> float:
@@ -204,7 +202,8 @@ class UserCard(Base):
     
     # Relaciones
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    league_id = Column(Integer, ForeignKey("leagues.id"), nullable=True)  # Vinculado a una liga específica
+    league_id = Column(Integer, ForeignKey("leagues.id"), nullable=True)  
+    # Puede estar presente sin team_id (carta en inventario de liga, no asignada a equipo)
     player_id = Column(Integer, ForeignKey("players.id"), nullable=False)
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)  # NULL = en el inventario
     
@@ -232,6 +231,9 @@ class UserCard(Base):
         """Obtiene el precio actual del jugador (base + blindaje)"""
         base_price = self.player.current_price if self.player else 0.0
         return base_price + (self.protected_value or 0)
+    
+    # Relación con el sobre del que salió (opcional)
+    obtained_from_pack = relationship("PackOpeningCard", back_populates="card", uselist=False)
     
     def __repr__(self):
         return f"<UserCard User:{self.user_id} Player:{self.player_id} OVR:{self.current_overall}>"
@@ -338,8 +340,6 @@ class GameweekLineup(Base):
     gameweek_id = Column(Integer, ForeignKey("gameweeks.id"), nullable=False)
     
     # Snapshot de los datos
-    # Como SQLite no tiene tipo de array nativo, guardaremos los IDs como CSV "12,4,45,2..."
-    player_ids = Column(String(255), nullable=False) 
     active_formation = Column(String(10), nullable=False)
     
     # Puntos calculados específicamente para esta jornada con esta alineación
@@ -348,6 +348,7 @@ class GameweekLineup(Base):
     # Relaciones
     team = relationship("Team")
     gameweek = relationship("Gameweek")
+    players = relationship("GameweekLineupPlayer", back_populates="lineup", cascade="all, delete-orphan")
     
     __table_args__ = (
         UniqueConstraint('team_id', 'gameweek_id', name='uq_team_gameweek'),
@@ -358,6 +359,28 @@ class GameweekLineup(Base):
 
     def __repr__(self):
         return f"<GameweekLineup Team:{self.team_id} GW:{self.gameweek_id}>"
+
+
+class GameweekLineupPlayer(Base):
+    """
+    Tabla intermedia para GameweekLineup <-> UserCard.
+    Permite normalizar la lista de jugadores.
+    """
+    __tablename__ = "gameweek_lineup_players"
+
+    id = Column(Integer, primary_key=True, index=True)
+    lineup_id = Column(Integer, ForeignKey("gameweek_lineups.id"), nullable=False)
+    card_id = Column(Integer, ForeignKey("user_cards.id"), nullable=False)
+    
+    position = Column(String(10), nullable=True)  # Posición específica en esa alineación
+    is_captain = Column(Integer, default=0)       # 1 si es capitán
+
+    # Relaciones
+    lineup = relationship("GameweekLineup", back_populates="players")
+    card = relationship("UserCard")
+
+    def __repr__(self):
+        return f"<GameweekLineupPlayer Lineup:{self.lineup_id} Card:{self.card_id}>"
 
 
 # ==========================================
@@ -498,6 +521,25 @@ class PlayerMatchStats(Base):
     
     def __repr__(self):
         return f"<PlayerMatchStats Player:{self.player_id} Match:{self.match_id} Points:{self.fantasy_points}>"
+
+
+# ==========================================
+# VISTA: PLAYER_STATS_SUMMARY (Estadísticas Reales)
+# ==========================================
+
+class PlayerStatsSummary(Base):
+    """
+    Modelo mapeado a una VISTA SQL que calcula agregativos en tiempo real.
+    No se puede insertar/borrar en esta tabla.
+    """
+    __tablename__ = "player_stats_summary"
+    
+    player_id = Column(Integer, ForeignKey("players.id"), primary_key=True)
+    total_matches_played = Column(Integer)
+    sum_match_ratings = Column(Float)
+    avg_rating = Column(Float)
+    sum_fantasy_points = Column(Float)
+    avg_fantasy_points = Column(Float)
 
 
 # ==========================================
@@ -678,6 +720,7 @@ class PackOpening(Base):
     # Relaciones
     user = relationship("User")
     league = relationship("League")
+    cards = relationship("PackOpeningCard", back_populates="pack_opening", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<PackOpening User:{self.user_id} League:{self.league_id} Type:{self.pack_type}>"
@@ -817,3 +860,25 @@ class SystemOffer(Base):
 
     def __repr__(self):
         return f"<SystemOffer Listing:{self.listing_id} Price:{self.offer_price}>"
+
+
+# ==========================================
+# MODELO: PACK_OPENING_CARD (Trazabilidad de Sobres)
+# ==========================================
+
+class PackOpeningCard(Base):
+    """
+    Relación n:m (o trazabilidad 1:n) entre un sobre abierto y las cartas obtenidas.
+    Permite auditar qué cartas salieron en qué sobre.
+    """
+    __tablename__ = "pack_opening_cards"
+
+    id = Column(Integer, primary_key=True, index=True)
+    pack_opening_id = Column(Integer, ForeignKey("pack_openings.id"), nullable=False)
+    card_id = Column(Integer, ForeignKey("user_cards.id"), nullable=False, unique=True) # Una carta solo sale de un sobre
+
+    pack_opening = relationship("PackOpening", back_populates="cards")
+    card = relationship("UserCard", back_populates="obtained_from_pack")
+
+    def __repr__(self):
+        return f"<PackOpeningCard Pack:{self.pack_opening_id} Card:{self.card_id}>"

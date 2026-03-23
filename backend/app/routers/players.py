@@ -177,37 +177,80 @@ async def get_player_history(
     player_id: int,
     db: Session = Depends(get_db)
 ):
-    """Obtiene el historial de puntos de un jugador partido a partido"""
+    """Obtiene el historial de puntos de un jugador partido a partido.
+    Devuelve TODAS las jornadas, rellenando con 0 donde no haya datos."""
     
     player = db.query(Player).filter(Player.id == player_id).first()
     if not player:
         raise HTTPException(status_code=404, detail="Jugador no encontrado")
-        
+    
+    # Get all gameweeks ordered by number
+    all_gameweeks = db.query(Gameweek).order_by(Gameweek.number.asc()).all()
+    
+    # Get all stats for this player, indexed by gameweek number
     stats = db.query(PlayerMatchStats).join(Match).join(Gameweek).filter(
         PlayerMatchStats.player_id == player_id
-    ).order_by(Match.kickoff_time.desc()).all()
+    ).all()
+    
+    # Build a lookup: gameweek_number -> list of stats
+    stats_by_gw = {}
+    for stat in stats:
+        gw_num = stat.match.gameweek.number if stat.match.gameweek else 0
+        if gw_num not in stats_by_gw:
+            stats_by_gw[gw_num] = []
+        stats_by_gw[gw_num].append(stat)
+    
+    player_team = player.current_team or "Equipo Desconocido"
     
     history = []
-    for stat in stats:
-        match = stat.match
-        history.append(PlayerMatchHistoryResponse(
-            match_id=match.id,
-            gameweek_number=match.gameweek.number if match.gameweek else 0,
-            home_team=match.home_team,
-            away_team=match.away_team,
-            home_score=match.home_score,
-            away_score=match.away_score,
-            status=match.status.value,
-            minutes_played=stat.minutes_played,
-            rating=stat.rating,
-            goals=stat.goals,
-            assists=stat.assists,
-            fantasy_points=stat.fantasy_points,
-            clean_sheet=stat.clean_sheet,
-            goals_conceded=stat.goals_conceded_team,
-            yellow_cards=stat.yellow_cards,
-            red_cards=stat.red_cards,
-            saves=stat.saves
-        ))
-        
+    for gw in all_gameweeks:
+        if gw.number in stats_by_gw:
+            # Player has real data for this gameweek
+            for stat in stats_by_gw[gw.number]:
+                match = stat.match
+                history.append(PlayerMatchHistoryResponse(
+                    match_id=match.id,
+                    gameweek_number=gw.number,
+                    home_team=match.home_team,
+                    away_team=match.away_team,
+                    home_score=match.home_score,
+                    away_score=match.away_score,
+                    status=match.status.value,
+                    minutes_played=stat.minutes_played,
+                    rating=stat.rating,
+                    goals=stat.goals,
+                    assists=stat.assists,
+                    fantasy_points=stat.fantasy_points,
+                    clean_sheet=stat.clean_sheet,
+                    goals_conceded=stat.goals_conceded_team,
+                    yellow_cards=stat.yellow_cards,
+                    red_cards=stat.red_cards,
+                    saves=stat.saves
+                ))
+        else:
+            # Player has NO data for this gameweek — fill with zeros
+            if gw.is_finished:
+                history.append(PlayerMatchHistoryResponse(
+                    match_id=0,
+                    gameweek_number=gw.number,
+                    home_team=player_team,
+                    away_team="—",
+                    home_score=None,
+                    away_score=None,
+                    status="FINISHED",
+                    minutes_played=0,
+                    rating=None,
+                    goals=0,
+                    assists=0,
+                    fantasy_points=0.0,
+                    clean_sheet=False,
+                    goals_conceded=0,
+                    yellow_cards=0,
+                    red_cards=0,
+                    saves=0
+                ))
+    
+    # Sort by gameweek number descending (most recent first)
+    history.sort(key=lambda h: h.gameweek_number, reverse=True)
+    
     return history

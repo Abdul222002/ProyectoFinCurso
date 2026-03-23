@@ -711,7 +711,18 @@ async def pay_release_clause(
     Pagar la cláusula de rescisión de un jugador de otro usuario.
     El precio es el valor de mercado actual + el valor protegido (blindaje).
     """
+    # Try to find the card — handle cards whose league_id may be NULL
     card = db.query(UserCard).filter(UserCard.id == card_id, UserCard.league_id == league_id).first()
+    if not card:
+        # Fallback: find card by id and verify it belongs to this league via its team
+        card = db.query(UserCard).filter(UserCard.id == card_id).first()
+        if card:
+            if card.team and card.team.league_id == league_id:
+                # Fix the league_id while we're at it
+                card.league_id = league_id
+                db.flush()
+            else:
+                card = None
     if not card:
         raise HTTPException(status_code=404, detail="Carta no encontrada en esta liga")
 

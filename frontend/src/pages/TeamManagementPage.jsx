@@ -38,6 +38,9 @@ export default function TeamManagementPage() {
   const [listedCardIds, setListedCardIds] = useState(new Set());
   const [releaseCard, setReleaseCard] = useState(null);
   const [releasing, setReleasing] = useState(false);
+  
+  // Gameweek points state
+  const [gwPoints, setGwPoints] = useState(null);
 
   const FORMATIONS = ['4-4-2', '4-3-3', '3-5-2', '4-2-3-1', '3-4-3', '5-3-2', '5-4-1'];
 
@@ -101,6 +104,23 @@ export default function TeamManagementPage() {
     };
     loadListings();
   }, [selectedTeam]);
+
+  // Load gameweek points
+  useEffect(() => {
+    if (!selectedTeam) return;
+    const loadPoints = async () => {
+      try {
+        let res;
+        if (isReadOnly && userIdParam) {
+          res = await teamsAPI.getUserGameweekPoints(selectedTeam.league_id, userIdParam);
+        } else {
+          res = await teamsAPI.getGameweekPoints(selectedTeam.league_id);
+        }
+        setGwPoints(res.data);
+      } catch { setGwPoints(null); }
+    };
+    loadPoints();
+  }, [selectedTeam, isReadOnly, userIdParam]);
 
   // ── Add player to lineup ──
   const handleAddToLineup = async (cardId) => {
@@ -483,6 +503,42 @@ export default function TeamManagementPage() {
           onRemovePlayer={isReadOnly ? undefined : handleRemoveFromLineup}
           onSlotClick={isReadOnly ? undefined : (pos) => setPickerPos(pos)}
         />
+      </section>
+
+      {/* ══ GAMEWEEK POINTS ══ */}
+      <section className="team-section">
+        <h2 className="team-section-title">📊 Puntos por Jornada</h2>
+        {gwPoints && gwPoints.gameweek_points && gwPoints.gameweek_points.length > 0 ? (
+          <div className="gw-points-container">
+            <div className="gw-points-total-card">
+              <div className="gw-points-total-label">Puntos Totales</div>
+              <div className="gw-points-total-value">{gwPoints.total_points.toFixed(1)}</div>
+              <div className="gw-points-total-sub">{gwPoints.gameweek_points.length} jornadas jugadas</div>
+            </div>
+            <div className="gw-points-grid">
+              {gwPoints.gameweek_points.map(gw => {
+                const maxPts = Math.max(...gwPoints.gameweek_points.map(g => g.points_earned), 1);
+                const pct = Math.min(100, (gw.points_earned / maxPts) * 100);
+                return (
+                  <div key={gw.gameweek_number} className="gw-points-row">
+                    <span className="gw-points-label">J{gw.gameweek_number}</span>
+                    <div className="gw-points-bar-bg">
+                      <div
+                        className="gw-points-bar-fill"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className={`gw-points-value ${gw.points_earned > 0 ? 'positive' : ''}`}>
+                      {gw.points_earned.toFixed(1)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="gw-points-empty">No hay datos de puntos por jornada aún</div>
+        )}
       </section>
 
       {/* ══ SELL MODAL ══ */}

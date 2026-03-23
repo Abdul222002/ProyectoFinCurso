@@ -1000,4 +1000,123 @@
 
 .team-value-amount {
     font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================
+   GAMEWEEK POINTS SECTION
+   ========================================== */
+.gw-points-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.gw-points-total-card {
+    text-align: center;
+    padding: 24px 20px;
+    background: linear-gradient(145deg, rgba(16, 185, 129, 0.12), rgba(37, 244, 120, 0.06));
+    border: 1px solid rgba(37, 244, 120, 0.25);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(16, 185, 129, 0.1), inset 0 0 30px rgba(16, 185, 129, 0.05);
+}
+
+.gw-points-total-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 6px;
+}
+
+.gw-points-total-value {
+    font-size: 2.8rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #25f478, #10b981);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.1;
+    text-shadow: 0 0 40px rgba(37, 244, 120, 0.3);
+}
+
+.gw-points-total-sub {
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+.gw-points-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 14px;
+    padding: 16px;
+}
+
+.gw-points-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    transition: background 0.2s;
+    border-radius: 6px;
+}
+
+.gw-points-row:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.gw-points-label {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #94a3b8;
+    min-width: 32px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.gw-points-bar-bg {
+    flex: 1;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 5px;
+    overflow: hidden;
+    min-width: 60px;
+}
+
+.gw-points-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #25f478);
+    border-radius: 5px;
+    transition: width 0.8s ease-out;
+    box-shadow: 0 0 8px rgba(37, 244, 120, 0.3);
+}
+
+.gw-points-value {
+    font-size: 0.82rem;
+    font-weight: 800;
+    min-width: 42px;
+    text-align: right;
+    color: #64748b;
+    flex-shrink: 0;
+}
+
+.gw-points-value.positive {
+    color: #4ade80;
+    text-shadow: 0 0 8px rgba(74, 222, 128, 0.3);
+}
+
+.gw-points-empty {
+    text-align: center;
+    padding: 32px 16px;
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 600;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 14px;
+    border: 1px dashed rgba(255, 255, 255, 0.08);
 }

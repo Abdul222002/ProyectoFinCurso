@@ -4,12 +4,12 @@ Los sobres de iconos son la ÚNICA forma de obtener jugadores legendarios (icons
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql.expression import func
 from typing import List
 
 from app.core.database import get_db
-from app.models.models import User, Player, UserCard, LeagueMember, CardRarity, PackOpening
+from app.models.models import User, Player, UserCard, LeagueMember, CardRarity, PackOpening, PackOpeningCard
 from app.schemas.pack import PackOpenResponse, PackCardResult, PackHistoryItem
 from app.routers.auth import get_current_user
 
@@ -131,6 +131,13 @@ async def open_icon_pack(
     db.add(card)
     db.flush()  # Para obtener el ID
 
+    # NUEVO: Trazabilidad del sobre
+    pack_trace = PackOpeningCard(
+        pack_opening_id=pack.id,
+        card_id=card.id
+    )
+    db.add(pack_trace)
+
     result_card = PackCardResult(
         card_id=card.id,
         player_id=selected_player.id,
@@ -161,18 +168,37 @@ async def pack_history(
     db: Session = Depends(get_db)
 ):
     """Historial de sobres abiertos por el usuario en una liga"""
-    packs = db.query(PackOpening).filter(
+    packs = db.query(PackOpening).options(
+        joinedload(PackOpening.cards).joinedload(PackOpeningCard.card).joinedload(UserCard.player)
+    ).filter(
         PackOpening.user_id == current_user.id,
         PackOpening.league_id == league_id
     ).order_by(PackOpening.opened_at.desc()).limit(limit).all()
 
-    return [
-        PackHistoryItem(
+    result = []
+    for p in packs:
+        cards_data = []
+        for poc in p.cards:
+            c = poc.card
+            pl = c.player
+            cards_data.append(PackCardResult(
+                card_id=c.id,
+                player_id=pl.id,
+                player_name=pl.name,
+                position=pl.position.value,
+                overall_rating=c.current_overall,
+                base_rarity=pl.base_rarity.value,
+                is_legend=pl.is_legend,
+                image_url=pl.image_url
+            ))
+        
+        result.append(PackHistoryItem(
             id=p.id,
             pack_type=p.pack_type,
             cost=p.cost,
             cards_obtained=p.cards_obtained,
-            opened_at=p.opened_at
-        )
-        for p in packs
-    ]
+            opened_at=p.opened_at,
+            cards=cards_data
+        ))
+
+    return result

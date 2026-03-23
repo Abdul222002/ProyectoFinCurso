@@ -28,6 +28,8 @@ export const teamsAPI = {
   getActiveGameweek: () => api.get('/teams/active-gameweek'),
   getGameweekLineup: (leagueId, gameweekId) => api.get('/teams/my/gameweek-lineup', { params: { league_id: leagueId, gameweek_id: gameweekId } }),
   releasePlayer: (leagueId, cardId) => api.post(`/teams/my/release/${cardId}`, {}, { params: { league_id: leagueId } }),
+  getGameweekPoints: (leagueId) => api.get('/teams/my/gameweek-points', { params: { league_id: leagueId } }),
+  getUserGameweekPoints: (leagueId, userId) => api.get(`/teams/${leagueId}/user/${userId}/gameweek-points`),
 };
 
 // ==========================================

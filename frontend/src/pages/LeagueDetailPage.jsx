@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { leaguesAPI, auctionAPI, packsAPI, authAPI } from '../services/endpoints';
 import PackOpeningModal from '../components/PackOpeningModal';
+import PlayerDetailModal from '../components/PlayerDetailModal';
 import { toast } from 'sonner';
 import './LeagueDetailPage.css';
 
@@ -915,7 +916,7 @@ export default function LeagueDetailPage() {
       {/* Bottom Nav */}
       <div className="ld-bottom-bar">
         <button className="ld-bottom-btn" onClick={() => navigate('/dashboard')}>🏠 Home</button>
-        <button className="ld-bottom-btn" onClick={() => navigate(`/team?league=${leagueId}`)}>⚽ Equipo</button>
+        <button className="ld-bottom-btn" onClick={() => navigate(`/team?league_id=${leagueId}`)}>⚽ Equipo</button>
         <button className="ld-bottom-btn active">🏆 Liga</button>
       </div>
     </div >

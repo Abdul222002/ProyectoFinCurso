@@ -38,6 +38,7 @@ class PackHistoryItem(BaseModel):
     cost: int
     cards_obtained: int
     opened_at: datetime
+    cards: Optional[List[PackCardResult]] = None
 
     class Config:
         from_attributes = True
