@@ -259,26 +259,45 @@ export default function TeamManagementPage() {
     }
   };
 
-  const handleClausulazo = async (playerObj) => {
+  const executeClausulazo = async (playerObj) => {
+    try {
+      const leagueId = leagueIdParam || selectedTeam?.league_id;
+      if (!leagueId) {
+        toast.error('No se pudo determinar la liga');
+        return;
+      }
+      await auctionAPI.payClause(leagueId, playerObj.id);
+      toast.success(`✅ Has fichado a ${playerObj.player_name}`);
+      setSelectedPlayerForDetail(null);
+      await loadData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Error al pagar cláusula');
+    }
+  };
+
+  const handleClausulazo = (playerObj) => {
     toast.error(`¿Pagar la cláusula de ${playerObj.player_name}? Se descontarán ${formatPrice(playerObj.current_market_value)} y pasará a tu equipo.`, {
       cancel: { label: 'Cancelar' },
       action: {
         label: 'Comprar',
-        onClick: async () => {
-          try {
-            await auctionAPI.payClause(leagueIdParam, playerObj.id);
-            toast.success(`✅ Has fichado a ${playerObj.player_name}`);
-            setSelectedPlayerForDetail(null);
-            loadData();
-          } catch (err) {
-            toast.error(err.response?.data?.detail || 'Error al pagar cláusula');
-          }
-        }
+        onClick: () => executeClausulazo(playerObj)
       }
     });
   };
 
-  const handleBlindar = async (playerObj) => {
+  const executeBlindar = async (playerObj, amount) => {
+    try {
+      const leagueId = leagueIdParam || selectedTeam?.league_id;
+      await auctionAPI.protectPlayer(leagueId, playerObj.id, amount);
+      toast.success(`✅ Cláusula aumentada en ${formatPrice(amount)}`);
+      setSelectedPlayerForDetail(null);
+      await loadData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Error al blindar jugador');
+    }
+  };
+
+  const handleBlindar = (playerObj) => {
     const amountStr = window.prompt(`¿Cuántas monedas quieres quemar para subir la cláusula de ${playerObj.player_name}?`);
     if (!amountStr) return;
     const amount = parseInt(amountStr, 10);
@@ -291,16 +310,7 @@ export default function TeamManagementPage() {
       cancel: { label: 'Cancelar' },
       action: {
         label: 'Blindar',
-        onClick: async () => {
-          try {
-            await auctionAPI.protectPlayer(selectedTeam.league_id, playerObj.id, amount);
-            toast.success(`✅ Cláusula aumentada en ${formatPrice(amount)}`);
-            setSelectedPlayerForDetail(null);
-            loadData();
-          } catch (err) {
-            toast.error(err.response?.data?.detail || 'Error al blindar jugador');
-          }
-        }
+        onClick: () => executeBlindar(playerObj, amount)
       }
     });
   };

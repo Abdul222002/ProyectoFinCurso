@@ -4,6 +4,7 @@ FastAPI Main Application Entry Point
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 # Routers
 from app.routers.auth import router as auth_router
@@ -40,6 +41,8 @@ origins = [
     settings.FRONTEND_URL,
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
     "http://localhost",
     "http://127.0.0.1",
 ]
@@ -60,9 +63,15 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def on_startup():
-    """Crea tablas que falten (leagues, league_members, league_invitations)"""
+    """Crea tablas que falten y garantiza que la carpeta de estáticos existe"""
+    import os
+    # Garantizar que la carpeta existe antes de montar StaticFiles
+    os.makedirs("static/players", exist_ok=True)
+    # Montar archivos estáticos (imágenes de jugadores)
+    app.mount("/static", StaticFiles(directory="static"), name="static")
     Base.metadata.create_all(bind=engine)
     print("✅ Tablas verificadas/creadas correctamente")
+    print("📁 Carpeta static/players/ verificada")
     start_scheduler()
 
 

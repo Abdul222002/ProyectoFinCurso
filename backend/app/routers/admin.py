@@ -95,7 +95,6 @@ async def admin_list_users(
             "username": u.username,
             "email": u.email,
             "role": u.role.value if u.role else "free",
-            "coins": u.coins,
             "total_points": u.total_points,
             "level": u.level,
             "league_count": league_count,
@@ -390,7 +389,6 @@ async def admin_get_user_league_coins(
     return {
         "user_id": user_id,
         "username": user.username,
-        "global_coins": user.coins,
         "leagues": result,
     }
 
@@ -423,11 +421,6 @@ async def admin_update_user_league_coins(
         if not membership:
             raise HTTPException(status_code=404, detail="El usuario no pertenece a esa liga")
         membership.coins = int(new_coins)
-
-    # Update global coins
-    global_coins = data.get("global_coins")
-    if global_coins is not None:
-        user.coins = int(global_coins)
 
     db.commit()
 

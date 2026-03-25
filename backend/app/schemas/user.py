@@ -38,7 +38,6 @@ class UserResponse(UserBase):
     """Schema de respuesta de usuario"""
     id: int
     role: UserRoleEnum
-    coins: int
     total_points: int
     level: int
     experience: int

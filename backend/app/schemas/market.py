@@ -41,8 +41,6 @@ class AuctionSlotResponse(BaseModel):
     
     base_price: int
     current_bid: int
-    highest_bidder_id: Optional[int]
-    highest_bidder_username: Optional[str]  # Para mostrar quién va ganando
     bid_count: int = 0
     user_has_bid: bool = False
     

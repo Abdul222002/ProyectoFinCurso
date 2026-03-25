@@ -34,6 +34,8 @@ services:
       - MYSQL_USER=root
       - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-fantasyleague2026}
       - MYSQL_DATABASE=ultimate_fantasy_legends
+    volumes:
+      - ./backend/static/players:/backend/static/players
 
   frontend:
     build:
@@ -41,7 +43,7 @@ services:
       dockerfile: Dockerfile
     container_name: football-fantasy-frontend
     ports:
-      - "80:80"
+      - "3000:80"
     restart: unless-stopped
     depends_on:
       - backend

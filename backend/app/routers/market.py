@@ -15,7 +15,7 @@ from typing import List, Optional
 
 from app.core.database import get_db
 from app.models.models import (
-    User, Player, UserCard, LeagueMember, League,
+    User, Player, UserCard, LeagueMember, League, Team,
     MarketAuction, AuctionSlot, AuctionBid,
     MarketListing, SystemOffer
 )
@@ -31,11 +31,51 @@ router = APIRouter()
 AUCTION_DURATION_HOURS = 24
 SLOTS_PER_AUCTION = 12
 
+def reconcile_locked_coins(db: Session, league_id: int = None):
+    """
+    Recalcula locked_coins para todos los miembros de liga comparando
+    contra las pujas activas reales en subastas vigentes.
+    Corrige silenciosamente cualquier desajuste (prevención de bugs históricos).
+    """
+    query = db.query(LeagueMember)
+    if league_id:
+        query = query.filter(LeagueMember.league_id == league_id)
+    
+    members = query.all()
+    fixed = 0
+    
+    for member in members:
+        # Calcular lo que debería tener bloqueado (pujas en subastas ACTIVAS)
+        real_locked = db.query(func.coalesce(func.sum(AuctionBid.amount), 0)).join(
+            AuctionSlot, AuctionSlot.id == AuctionBid.slot_id
+        ).join(
+            MarketAuction, MarketAuction.id == AuctionSlot.auction_id
+        ).filter(
+            AuctionBid.user_id == member.user_id,
+            MarketAuction.league_id == member.league_id,
+            MarketAuction.is_active == True
+        ).scalar()
+        
+        if member.locked_coins != real_locked:
+            # logs básicos para auditoría en el contenedor
+            print(f"[reconcile] user {member.user_id} liga {member.league_id}: {member.locked_coins} -> {real_locked}")
+            member.locked_coins = real_locked
+            fixed += 1
+    
+    if fixed > 0:
+        db.commit()
+    
+    return fixed
+
+
 def _resolve_auction(auction: MarketAuction, db: Session):
     """
     Cierra una subasta, genera las cartas para los ganadores
     y marca la subasta como resuelta.
     """
+    # 0. Reconciliación preventiva para asegurar que locked_coins es correcto antes de restar
+    reconcile_locked_coins(db, auction.league_id)
+
     if auction.is_resolved:
         return
 
@@ -95,10 +135,14 @@ def _create_new_auction(league_id: int, db: Session) -> MarketAuction:
     db.add(auction)
     db.flush() # ID necesario
     
-    # 2. Seleccionar 12 jugadores aleatorios (NO LEGENDS)
-    # Podríamos filtrar por rareza para asegurar variedad
+    # 2. Seleccionar 12 jugadores aleatorios (NO LEGENDS) que NO estén ya en la liga
+    # Subquery para IDs de jugadores ya poseídos
+    owned_player_ids = db.query(UserCard.player_id).filter(UserCard.league_id == league_id).all()
+    owned_player_ids = [r[0] for r in owned_player_ids]
+
     players = db.query(Player).filter(
-        Player.is_legend == False
+        Player.is_legend == False,
+        ~Player.id.in_(owned_player_ids)
     ).order_by(func.rand()).limit(SLOTS_PER_AUCTION).all()
     
     # 3. Crear los slots
@@ -324,10 +368,14 @@ async def withdraw_bid(
         # Borrar las pujas de este usuario en este slot
         for b in user_bids:
             db.delete(b)
+            
+        # Forzar sincronización con DB para que la siguiente query no vea la puja borrada
+        db.flush()
 
         # Buscar el siguiente máximo postor
         next_bid = db.query(AuctionBid).filter(
-            AuctionBid.slot_id == slot_id
+            AuctionBid.slot_id == slot_id,
+            AuctionBid.user_id != current_user.id # Asegurar que no somos nosotros
         ).order_by(AuctionBid.amount.desc()).first()
 
         if next_bid:

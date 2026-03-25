@@ -48,29 +48,37 @@ def _create_team_for_league(user: User, league: League, db: Session) -> Team:
     db.add(team)
     db.flush()  # Para obtener team.id
 
-    # Obtener jugadores aleatorios por posición, EXCLUYENDO LEYENDAS
+    # IDs de jugadores ya poseídos en la liga para evitar duplicados globales
+    owned_player_ids = db.query(UserCard.player_id).filter(UserCard.league_id == league.id).all()
+    owned_player_ids = [r[0] for r in owned_player_ids]
+
+    # Obtener jugadores aleatorios por posición, EXCLUYENDO LEYENDAS y YA POSEÍDOS
     gk_players = db.query(Player).filter(
         Player.position == Position.GK,
-        Player.base_rarity != 'legend'
+        Player.base_rarity != 'legend',
+        ~Player.id.in_(owned_player_ids)
     ).order_by(func.rand()).limit(2).all()
     
     def_players = db.query(Player).filter(
         Player.position == Position.DEF,
-        Player.base_rarity != 'legend'
+        Player.base_rarity != 'legend',
+        ~Player.id.in_(owned_player_ids + [p.id for p in gk_players])
     ).order_by(func.rand()).limit(4).all()
     
     mid_players = db.query(Player).filter(
         Player.position == Position.MID,
-        Player.base_rarity != 'legend'
+        Player.base_rarity != 'legend',
+        ~Player.id.in_(owned_player_ids + [p.id for p in gk_players + def_players])
     ).order_by(func.rand()).limit(4).all()
     
     fwd_players = db.query(Player).filter(
         Player.position == Position.FWD,
-        Player.base_rarity != 'legend'
+        Player.base_rarity != 'legend',
+        ~Player.id.in_(owned_player_ids + [p.id for p in gk_players + def_players + mid_players])
     ).order_by(func.rand()).limit(3).all()
 
-    # 2 suplentes extra aleatorios (de cualquier posición, evitando duplicados, sin leyendas)
-    assigned_ids = [p.id for p in gk_players + def_players + mid_players + fwd_players]
+    # 2 suplentes extra aleatorios (de cualquier posición, evitando duplicados, sin leyendas y no poseídos)
+    assigned_ids = owned_player_ids + [p.id for p in gk_players + def_players + mid_players + fwd_players]
     extra_players = db.query(Player).filter(
         ~Player.id.in_(assigned_ids),
         Player.base_rarity != 'legend'

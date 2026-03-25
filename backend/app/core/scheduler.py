@@ -20,6 +20,7 @@ load_dotenv()
 logger = logging.getLogger("fantasy.scheduler")
 
 scheduler = AsyncIOScheduler()
+from app.routers.market import reconcile_locked_coins
 
 # ──────────────────────────────────────────────────────────────────
 # HELPER: Descargar stats de un partido desde Sportmonks API
@@ -419,6 +420,27 @@ def generate_system_offers_tick():
         db.close()
 
 
+def economy_reconciliation_tick():
+    """
+    Ejecuta la reconciliación de locked_coins para todas las ligas
+    cada hora, para corregir posibles desajustes de integridad.
+    """
+    from app.core.database import SessionLocal
+    db = SessionLocal()
+    try:
+        logger.info("⚖️ Iniciando reconciliación económica global de locked_coins...")
+        from app.routers.market import reconcile_locked_coins
+        fixed = reconcile_locked_coins(db)
+        if fixed > 0:
+            logger.info(f"✅ Reconciliación completada: {fixed} desajustes corregidos.")
+        else:
+            logger.info("✅ Reconciliación completada: integridad OK.")
+    except Exception as e:
+        logger.error(f"❌ Error en reconciliación económica: {e}")
+    finally:
+        db.close()
+
+
 # ──────────────────────────────────────────────────────────────────
 # START / STOP
 # ──────────────────────────────────────────────────────────────────
@@ -437,8 +459,14 @@ def start_scheduler():
         id="system_offers",
         replace_existing=True
     )
+    scheduler.add_job(
+        economy_reconciliation_tick,
+        trigger=IntervalTrigger(hours=1),
+        id="economy_reconciliation",
+        replace_existing=True
+    )
     scheduler.start()
-    logger.info("✅ Scheduler iniciado: jornadas (1min) + ofertas (1h)")
+    logger.info("✅ Scheduler iniciado: jornadas (1min) + ofertas (1h) + reconciliación (1h)")
 
 
 def stop_scheduler():

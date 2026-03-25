@@ -32,19 +32,33 @@ export default function LeagueDetailPage() {
   // System offers state
   const [offers, setOffers] = useState([]);
 
-  // Packs state
-  const [opening, setOpening] = useState(false);
-  const [packResult, setPackResult] = useState(null);
-  const [packHistory, setPackHistory] = useState([]);
-
   // Invite state
   const [inviteUsername, setInviteUsername] = useState('');
   const [inviting, setInviting] = useState(false);
   
+  // Pack history and opening state
+  const [packHistory, setPackHistory] = useState([]);
+  const [packResult, setPackResult] = useState(null);
+  const [opening, setOpening] = useState(false);
+  const [expandedPacks, setExpandedPacks] = useState(new Set());
+
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+
+  // 1. Centralized message helper
+  const showMessage = (msg) => {
+    setMessage(msg);
+    setTimeout(() => setMessage(''), 4000);
+  };
+
+  // 2. Move coin calculations to the top (derived from state)
+  const myMembership = league?.members?.find(m => m.user_id === user?.id);
+  const myCoins = myMembership?.coins || 0;
+  const myLockedCoins = myMembership?.locked_coins || 0;
+  const freeCoins = myCoins - myLockedCoins;
+  const displayAvailable = freeCoins;
 
   // Debounced user search
   useEffect(() => {
@@ -124,7 +138,10 @@ export default function LeagueDetailPage() {
   useEffect(() => {
     if (activeTab === 'market') { loadAuction(); loadListings(); loadOffers(); }
     const interval = setInterval(() => {
-      if (activeTab === 'market') { pollAuction(); pollListings(); }
+      // 5. Polling inteligente: solo si el tab es visible
+      if (activeTab === 'market' && document.visibilityState === 'visible') { 
+        pollAuction(); pollListings(); 
+      }
     }, 10000);
     return () => clearInterval(interval);
   }, [activeTab, loadAuction, loadListings, loadOffers, pollAuction, pollListings]);
@@ -154,7 +171,7 @@ export default function LeagueDetailPage() {
   const loadPackHistory = useCallback(async () => {
     try {
       const res = await packsAPI.history(leagueId);
-      setPackHistory(res.data);
+      setPackHistory(Array.isArray(res.data) ? res.data : []);
     } catch {
       setPackHistory([]);
     }
@@ -171,41 +188,44 @@ export default function LeagueDetailPage() {
     // Validations (min bid)
     const minBid = currentBid > 0 ? currentBid + 1 : basePrice;
     if (amount < minBid) {
-      setMessage(`❌ La puja debe ser al menos ${formatPrice(minBid)}`);
+      showMessage(`❌ La puja debe ser al menos ${formatPrice(minBid)}`);
       return;
     }
 
     setBidding(slotId);
     try {
       const res = await auctionAPI.placeBid(leagueId, slotId, amount);
-      setMessage(`✅ ${res.data.message}`);
-      // Force reload to get updated status
-      loadAuction();
+      showMessage(`✅ ${res.data.message}`);
+      // Force reload to get updated status and refresh coins
+      await Promise.all([loadAuction(), loadLeague()]);
       // Clear input
       setBidAmounts(prev => ({ ...prev, [slotId]: '' }));
     } catch (err) {
-      setMessage(`❌ ${err.response?.data?.detail || 'Error al pujar'}`);
+      showMessage(`❌ ${err.response?.data?.detail || 'Error al pujar'}`);
     }
     setBidding(null);
   };
 
-  const handleWithdrawBid = async (slotId) => {
+  const executeWithdraw = async (slotId) => {
+    setBidding(slotId);
+    try {
+      const res = await auctionAPI.withdrawBid(leagueId, slotId);
+      showMessage(`✅ ${res.data.message}`);
+      // Pequeño delay para asegurar que el commit del backend está completo
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await Promise.all([loadAuction(), loadLeague()]);
+    } catch (err) {
+      showMessage(`❌ ${err.response?.data?.detail || 'Error al retirar puja'}`);
+    }
+    setBidding(null);
+  };
+
+  const handleWithdrawBid = (slotId) => {
     toast.warning('¿Seguro que quieres retirar tu puja?', {
       cancel: { label: 'Cancelar' },
       action: {
         label: 'Sí, retirar',
-        onClick: async () => {
-          setBidding(slotId);
-          try {
-            const res = await auctionAPI.withdrawBid(leagueId, slotId);
-            setMessage(`✅ ${res.data.message}`);
-            loadAuction();
-            loadLeague(); // Update coins visually
-          } catch (err) {
-            setMessage(`❌ ${err.response?.data?.detail || 'Error al retirar puja'}`);
-          }
-          setBidding(null);
-        }
+        onClick: () => executeWithdraw(slotId)
       }
     });
   };
@@ -213,13 +233,9 @@ export default function LeagueDetailPage() {
   const handleOpenPack = async () => {
     if (opening) return;
 
-    // Find user's league membership to get specific league coins
-    const myMembership = league?.members?.find(m => m.user_id === user?.id);
-    const leagueCoins = myMembership ? myMembership.coins : 0;
-
-    if (freeCoins < 150000000) {
-      setMessage('❌ Necesitas 150.000.000 monedas en esta liga para abrir un sobre de iconos');
-      setTimeout(() => setMessage(''), 4000);
+    // Check raw league coins (NOT freeCoins — locked_coins are only for auction bids)
+    if (myCoins < 150000000) {
+      showMessage(`❌ No tienes suficientes monedas. Necesitas 150.000.000, tienes ${myCoins.toLocaleString('es-ES')}`);
       return;
     }
     setOpening(true);
@@ -227,11 +243,11 @@ export default function LeagueDetailPage() {
     try {
       const res = await packsAPI.openIcon(leagueId);
       setPackResult(res.data);
-      setMessage(`✅ ${res.data.message}`);
+      showMessage(`✅ ${res.data.message}`);
       if (refreshUser) refreshUser();
       loadPackHistory();
     } catch (err) {
-      setMessage(`❌ ${err.response?.data?.detail || 'Error al abrir sobre'}`);
+      showMessage(`❌ ${err.response?.data?.detail || 'Error al abrir sobre'}`);
     }
     setOpening(false);
   };
@@ -242,55 +258,61 @@ export default function LeagueDetailPage() {
     
     setInviting(true);
     
-    // Determine if input is an email or username
-    const isEmail = input.includes('@') && input.includes('.');
+    // 6. Validación de email mejorada
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
     input = input.startsWith('@') ? input.slice(1) : input;
     const payload = isEmail ? { email: input } : { username: input };
     
     try {
       await leaguesAPI.invite(leagueId, payload);
-      setMessage(`✅ Invitación enviada a ${input}`);
+      showMessage(`✅ Invitación enviada a ${input}`);
       setInviteUsername('');
       setSearchQuery('');
       setSearchResults([]);
     } catch (err) {
-      setMessage(`❌ ${err.response?.data?.detail || 'Error al invitar'}`);
+      showMessage(`❌ ${err.response?.data?.detail || 'Error al invitar'}`);
     } finally {
       setInviting(false);
     }
   };
 
-  const handleLeave = async () => {
+  const executeLeave = async () => {
+    try {
+      await leaguesAPI.leave(leagueId);
+      navigate('/leagues');
+    } catch (err) {
+      showMessage(`❌ ${err.response?.data?.detail || 'Error al salir'}`);
+    }
+  };
+
+  const handleLeave = () => {
     toast.error('¿Seguro que quieres salir de esta liga?', {
       cancel: { label: 'Cancelar' },
       action: {
         label: 'Sí, salir',
-        onClick: async () => {
-          try {
-            await leaguesAPI.leave(leagueId);
-            navigate('/leagues');
-          } catch (err) {
-            setMessage(`❌ ${err.response?.data?.detail || 'Error'}`);
-          }
-        }
+        onClick: () => executeLeave()
       }
     });
   };
 
-  const handleKick = async (memberId, memberUsername) => {
+  const executeKick = async (memberId, memberUsername) => {
+    try {
+      await leaguesAPI.kickMember(leagueId, memberId);
+      showMessage(`✅ @${memberUsername} ha sido expulsado.`);
+      // Delay para sync DB
+      await new Promise(resolve => setTimeout(resolve, 300));
+      loadLeague();
+    } catch (err) {
+      showMessage(`❌ ${err.response?.data?.detail || 'Error al expulsar jugador'}`);
+    }
+  };
+
+  const handleKick = (memberId, memberUsername) => {
     toast.error(`¿Seguro que quieres expulsar a @${memberUsername} de la liga?`, {
       cancel: { label: 'Cancelar' },
       action: {
         label: 'Expulsar',
-        onClick: async () => {
-          try {
-            await leaguesAPI.kickMember(leagueId, memberId);
-            setMessage(`✅ @${memberUsername} ha sido expulsado.`);
-            loadLeague();
-          } catch (err) {
-            setMessage(`❌ ${err.response?.data?.detail || 'Error al expulsar jugador'}`);
-          }
-        }
+        onClick: () => executeKick(memberId, memberUsername)
       }
     });
   };
@@ -309,6 +331,45 @@ export default function LeagueDetailPage() {
       case 'legend': return '#a78bfa';
       default: return '#cd7f32';
     }
+  };
+
+  // 7. Extraer handlers inline a funciones nombradas
+  const handleAcceptOffer = async (offerId) => {
+    try {
+      const res = await auctionAPI.acceptOffer(leagueId, offerId);
+      showMessage(`✅ ${res.data.message}`);
+      loadOffers(); 
+      loadListings();
+    } catch (err) { 
+      showMessage(`❌ ${err.response?.data?.detail || 'Error'}`); 
+    }
+  };
+
+  const handleBuyListing = async (listingId) => {
+    try {
+      const res = await auctionAPI.buyListing(leagueId, listingId);
+      showMessage(`✅ ${res.data.message}`);
+      loadListings();
+    } catch (err) { 
+      showMessage(`❌ ${err.response?.data?.detail || 'Error'}`); 
+    }
+  };
+
+  const handleCancelListing = async (listingId) => {
+    try {
+      await auctionAPI.cancelListing(leagueId, listingId);
+      showMessage('✅ Listado cancelado');
+      loadListings();
+    } catch (err) { 
+      showMessage(`❌ ${err.response?.data?.detail || 'Error'}`); 
+    }
+  };
+
+  const togglePackExpansion = (packId) => {
+    const newExpanded = new Set(expandedPacks);
+    if (newExpanded.has(packId)) newExpanded.delete(packId);
+    else newExpanded.add(packId);
+    setExpandedPacks(newExpanded);
   };
 
   if (loading) {
@@ -330,22 +391,7 @@ export default function LeagueDetailPage() {
     );
   }
 
-  // Find user's league membership to get specific league coins
-  const myMembership = league?.members?.find(m => m.user_id === user?.id);
-  const myCoins = myMembership?.coins || 0;
-  const myLockedCoins = myMembership?.locked_coins || 0;
-  const freeCoins = myCoins - myLockedCoins;
-
-  // Calculate coins locked in active winning bids so user can see real available balance
-  const activeBidCoins = auction?.slots?.reduce((total, slot) => {
-    if (slot.highest_bidder_id === user?.id && slot.current_bid > 0) {
-      return total + slot.current_bid;
-    }
-    return total;
-  }, 0) || 0;
-  
-  // En backend `locked_coins` ya tiene sumado el activeBidCoins, usamos el del backend para ser 100% precisos
-  const displayAvailable = freeCoins;
+// 2. Eliminamos duplicado en el return (ya calculados al inicio)
 
   return (
     <div className="ld-page">
@@ -480,7 +526,7 @@ export default function LeagueDetailPage() {
                       onClick={() => setSelectedPlayerForDetail({ ...slot, player_id: slot.player_id, name: slot.player_name, current_price: slot.base_price })}
                       style={{ cursor: 'pointer' }}
                     >
-                      <div className={`ld-market-row-accent ${hasBid ? 'winning' : 'neutral'}`}></div>
+                      <div className="ld-market-row-accent neutral"></div>
 
                       {/* Player Info Col */}
                       <div className="ld-market-row-info-col">
@@ -498,9 +544,9 @@ export default function LeagueDetailPage() {
                           <div className="ld-market-row-team">
                             <span style={{ color: getRarityColor(slot.base_rarity) }}>OVR {slot.overall_rating}</span>
                             <span>•</span>
-                            <span>{hasBid ? 'Has pujado' : 'No has pujado'}</span>
-                            <span>•</span>
-                            <span style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '1.05rem', textShadow: '0 0 5px rgba(251, 191, 36, 0.3)' }}>{slot.bid_count} {slot.bid_count === 1 ? 'puja' : 'pujas'}</span>
+                            <span style={{ color: hasBid ? '#fbbf24' : '#64748b' }}>
+                              {hasBid ? 'Puja activa' : 'Sin participación'}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -528,10 +574,9 @@ export default function LeagueDetailPage() {
                           <button
                             className="ld-market-row-btn primary"
                             onClick={() => handleBid(slot.id, slot.current_bid, slot.base_price)}
-                            disabled={bidding === slot.id || (slot.highest_bidder_id === user?.id)}
-                            title={(slot.highest_bidder_id === user?.id) ? "Ya vas ganando este jugador" : ""}
+                            disabled={bidding === slot.id}
                           >
-                            {bidding === slot.id ? '...' : (slot.highest_bidder_id === user?.id ? 'VENDIDO' : 'Pujar')}
+                            {bidding === slot.id ? '...' : (hasBid ? 'Actualizar puja' : 'Pujar')}
                           </button>
                           {hasBid && (
                             <button
@@ -593,13 +638,7 @@ export default function LeagueDetailPage() {
                         </div>
                         <button
                           className="ld-market-row-btn primary"
-                          onClick={async () => {
-                            try {
-                              const res = await auctionAPI.acceptOffer(leagueId, offer.id);
-                              setMessage(`✅ ${res.data.message}`);
-                              loadOffers(); loadListings();
-                            } catch (err) { setMessage(`❌ ${err.response?.data?.detail || 'Error'}`); }
-                          }}
+                          onClick={() => handleAcceptOffer(offer.id)}
                         >
                           Aceptar
                         </button>
@@ -674,26 +713,14 @@ export default function LeagueDetailPage() {
                         {listing.is_mine ? (
                           <button
                             className="ld-market-row-btn danger"
-                            onClick={async () => {
-                              try {
-                                await auctionAPI.cancelListing(leagueId, listing.id);
-                                setMessage('✅ Listado cancelado');
-                                loadListings();
-                              } catch (err) { setMessage(`❌ ${err.response?.data?.detail || 'Error'}`); }
-                            }}
+                            onClick={() => handleCancelListing(listing.id)}
                           >
                             Retirar
                           </button>
                         ) : (
                           <button
                             className="ld-market-row-btn primary"
-                            onClick={async () => {
-                              try {
-                                const res = await auctionAPI.buyListing(leagueId, listing.id);
-                                setMessage(`✅ ${res.data.message}`);
-                                loadListings();
-                              } catch (err) { setMessage(`❌ ${err.response?.data?.detail || 'Error'}`); }
-                            }}
+                            onClick={() => handleBuyListing(listing.id)}
                           >
                             Comprar
                           </button>
@@ -782,17 +809,45 @@ export default function LeagueDetailPage() {
             />
           )}
 
-          {/* Pack History */}
+          {/* Pack History with Card Details */}
           {packHistory.length > 0 && (
             <div className="ld-pack-history">
               <h3>Historial de sobres</h3>
-              {packHistory.map(p => (
-                <div key={p.id} className="ld-history-row">
-                  <span>🎴 Sobre de Iconos</span>
-                  <span>{p.cards_obtained} cartas</span>
-                  <span>{new Date(p.opened_at).toLocaleDateString()}</span>
-                </div>
-              ))}
+              <div className="ld-history-list">
+                {packHistory.map(p => {
+                  const isExpanded = expandedPacks.has(p.id);
+                  return (
+                    <div key={p.id} className="ld-history-group">
+                      <div 
+                        className={`ld-history-row ${isExpanded ? 'active' : ''}`} 
+                        onClick={() => togglePackExpansion(p.id)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div className="ld-history-main">
+                          <span className="ld-history-icon">🎴</span>
+                          <div className="ld-history-info">
+                            <span className="ld-history-name">Sobre de Iconos</span>
+                            <span className="ld-history-meta">{new Date(p.opened_at).toLocaleDateString()} · {p.cards_obtained} {p.cards_obtained === 1 ? 'carta' : 'cartas'}</span>
+                          </div>
+                        </div>
+                        <span className="ld-history-toggle">{isExpanded ? '▲' : '▼'}</span>
+                      </div>
+                      
+                      {isExpanded && p.cards && p.cards.length > 0 && (
+                        <div className="ld-history-details">
+                          {p.cards.map((card, cidx) => (
+                            <div key={cidx} className="ld-history-card">
+                              <span className="ld-card-rarity" style={{ color: getRarityColor(card.rarity) }}>★</span>
+                              <span className="ld-card-name">{card.name}</span>
+                              <span className="ld-card-ovr">OVR {card.overall_rating}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

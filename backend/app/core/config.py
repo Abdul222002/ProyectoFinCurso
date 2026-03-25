@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 días
     
     # Sportmonks API
-    SPORTMONKS_API_KEY: str = ""
+    SPORTMONKS_API_KEY: str = "825013413a8946948555871374248208"
     SPORTMONKS_BASE_URL: str = "https://api.sportmonks.com/v3"
     
     # Frontend URL (para CORS)

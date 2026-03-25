@@ -68,9 +68,6 @@ class User(Base):
     arena_tickets = Column(Integer, default=5)
     last_tickets_reset = Column(DateTime, default=datetime.utcnow)
     
-    # Economía
-    coins = Column(Integer, default=10000)  # Economía global (premios, cosméticos). Distinto de league_members.coins (economía por liga).
-    
     # Estadísticas
     total_points = Column(Integer, default=0)  # Puntos Fantasy totales
     level = Column(Integer, default=1)

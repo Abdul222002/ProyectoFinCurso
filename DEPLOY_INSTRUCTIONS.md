@@ -9,12 +9,13 @@ Para llevarte el proyecto a otro PC de la manera más fácil posible, sigue esto
 ### 2. Pasos para Migrar
 
 1.  **En este PC (Origen):**
-    *   Ejecuta el script `BACKUP_DATABASE.ps1`. Esto creará un archivo llamado `ultimate_fantasy_legends_latest.sql` con todo tu progreso actual (puntos corregidos, equipos, etc.).
-    *   Copia toda la carpeta `ProyectoFinCurso` a un pendrive o súbela a la nube/Git.
+    *   (Opcional) Ejecuta `BACKUP_DATABASE.ps1` si quieres llevarte los últimos cambios de datos "vivos" (puntos, estados de subasta, etc.). Esto genera `ultimate_fantasy_legends_latest.sql`.
+    *   Copia toda la carpeta `ProyectoFinCurso` al otro ordenador.
     
 2.  **En el otro PC (Destino):**
-    *   Abre una terminal de PowerShell en la carpeta del proyecto.
-    *   Ejecuta el script: `.\portable_deploy.ps1`.
+    *   Abre una terminal de PowerShell dentro de la carpeta.
+    *   Ejecuta: `.\portable_deploy.ps1`. 
+    *   **Importante**: El script ya incluye todo el **Refactor de Base de Datos (Fases 1-6)** porque he actualizado el archivo base `ultimate_fantasy_legends.sql`.
         *   *Nota: Si es la primera vez que ejecutas scripts, puede que necesites poner `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` antes.*
     *   El script construirá las imágenes y levantará los servicios.
     
