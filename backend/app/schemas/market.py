@@ -111,6 +111,10 @@ class UserCardResponse(BaseModel):
     physical: int = 50
     acquired_at: datetime
     league_id: Optional[int]
+    # Icon scoring fields
+    scoring_profile: Optional[str] = None
+    min_fantasy: Optional[int] = None
+    max_fantasy: Optional[int] = None
 
     class Config:
         from_attributes = True

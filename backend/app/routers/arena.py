@@ -308,24 +308,47 @@ async def battle_history(
 
 
 @router.get("/leaderboard", response_model=List[LeaderboardEntry])
-async def leaderboard(
+async def get_leaderboard(
     limit: int = Query(50, ge=1, le=100),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Ranking global por arena_rating"""
-    teams = db.query(Team).order_by(desc(Team.arena_rating)).limit(limit).all()
+    """Ranking global por arena_rating (un solo equipo por usuario, el mejor)"""
+    from sqlalchemy import func
+    
+    # 1. Obtener el máximo arena_rating por usuario
+    subq_max = db.query(
+        Team.user_id,
+        func.max(Team.arena_rating).label('max_rating')
+    ).filter(
+        Team.arena_rating.isnot(None)
+    ).group_by(Team.user_id).subquery()
 
-    return [
-        LeaderboardEntry(
-            rank=i + 1,
-            team_id=t.id,
-            team_name=t.name,
-            username=t.user.username,
-            arena_rating=t.arena_rating,
-            arena_wins=t.arena_wins,
-            arena_losses=t.arena_losses,
-            arena_draws=t.arena_draws,
-            overall_rating=t.overall_rating
-        )
-        for i, t in enumerate(teams)
-    ]
+    # 2. De los equipos con ese rating máximo, elegir solo uno (el de ID más bajo)
+    subq_id = db.query(
+        func.min(Team.id).label('target_id')
+    ).join(
+        subq_max,
+        (Team.user_id == subq_max.c.user_id) & (Team.arena_rating == subq_max.c.max_rating)
+    ).group_by(Team.user_id).subquery()
+
+    # 3. Obtener los datos completos de esos equipos únicos
+    teams = db.query(Team).filter(
+        Team.id.in_(subq_id)
+    ).order_by(Team.arena_rating.desc()
+    ).limit(limit).all()
+
+    result = []
+    for i, team in enumerate(teams, 1):
+        result.append(LeaderboardEntry(
+            rank=i,
+            team_id=team.id,
+            team_name=team.name,
+            username=team.user.username,
+            arena_rating=team.arena_rating or 1000,
+            arena_wins=team.arena_wins or 0,
+            arena_losses=team.arena_losses or 0,
+            arena_draws=team.arena_draws or 0,
+            overall_rating=team.overall_rating or 0.0
+        ))
+    return result

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { playersAPI } from '../services/endpoints';
 import './PlayerDetailModal.css';
 
-export default function PlayerDetailModal({ playerId, playerObj, onClose, isReadOnly, onClausulazo, onBlindar }) {
+export default function PlayerDetailModal({ playerId, playerObj, onClose, isReadOnly, onClausulazo, onBlindar, onSell, onRelease }) {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -156,7 +156,42 @@ export default function PlayerDetailModal({ playerId, playerObj, onClose, isRead
                     </div>
                 </div>
 
-                {/* History */}
+                {/* History / Icon Profile */}
+                {playerObj?.is_legend ? (
+                    <div className="pdm-history">
+                        <h3 className="pdm-stats-title">⚡ Perfil Fantasy</h3>
+                        {(() => {
+                            const profileInfo = {
+                                LEGEND:   { emoji: '🏆', name: 'La Leyenda',       desc: 'Siempre cumple. Alto suelo, nunca decepciona.', color: '#c9a84c' },
+                                MAESTRO:  { emoji: '🎨', name: 'El Maestro',        desc: 'Alta calidad consistente, con algún bajón puntual.', color: '#818cf8' },
+                                RELIABLE: { emoji: '⚙️', name: 'El Motor',         desc: 'Predecible y fiable. Sin sorpresas, siempre puntúa.', color: '#34d399' },
+                                VOLCANO:  { emoji: '🌋', name: 'El Volcán',         desc: 'O brilla al máximo o desaparece. Alto riesgo, alto premio.', color: '#f97316' },
+                                CURSED:   { emoji: '😔', name: 'La Joya Maldita',  desc: 'Cuando aparece es el mejor del mundo. Pero…', color: '#ef4444' },
+                            };
+                            const p = profileInfo[playerObj.scoring_profile] || { emoji: '⭐', name: 'Icono', desc: 'Legendario', color: '#c9a84c' };
+                            return (
+                                <div style={{ background: 'var(--bg-elevated)', borderRadius: '12px', padding: '16px', border: `1px solid ${p.color}40` }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                                        <span style={{ fontSize: '1.8rem' }}>{p.emoji}</span>
+                                        <div>
+                                            <div style={{ fontWeight: 800, color: p.color, fontSize: '1rem' }}>{p.name}</div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{p.desc}</div>
+                                        </div>
+                                    </div>
+                                    {playerObj.min_fantasy != null && playerObj.max_fantasy != null && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', padding: '8px 12px', background: 'var(--bg-hover)', borderRadius: '8px' }}>
+                                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Rango de puntos</span>
+                                            <span style={{ fontWeight: 800, color: p.color, fontSize: '1.1rem' }}>{playerObj.min_fantasy} – {playerObj.max_fantasy} pts</span>
+                                        </div>
+                                    )}
+                                    <div style={{ marginTop: '8px', fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                                        Puntúa cada jornada si está en tu 11 titular
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                    </div>
+                ) : (
                 <div className="pdm-history">
                     <h3 className="pdm-stats-title">Historial de Partidos</h3>
                     {loading ? (
@@ -204,8 +239,9 @@ export default function PlayerDetailModal({ playerId, playerObj, onClose, isRead
                         </div>
                     )}
                 </div>
+                )}
 
-                {/* Actions Row */}
+                {/* Actions Row — Clausulazo / Blindar */}
                 {(onClausulazo || onBlindar) && playerObj?.id && (
                     <div className="pdm-actions-bar" style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
                         {isReadOnly && onClausulazo && (
@@ -222,6 +258,28 @@ export default function PlayerDetailModal({ playerId, playerObj, onClose, isRead
                                 style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
                             >
                                 🛡️ Blindar Jugador
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {/* Actions Row — Vender / Despedir (from pitch or bench) */}
+                {!isReadOnly && (onSell || onRelease) && playerObj && (
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+                        {onSell && playerObj.is_tradeable && (
+                            <button
+                                onClick={() => { onClose(); onSell(playerObj); }}
+                                style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'linear-gradient(135deg, var(--gold), var(--gold-dark))', color: '#080d1a', fontWeight: 800, border: 'none', cursor: 'pointer' }}
+                            >
+                                🏷️ Vender
+                            </button>
+                        )}
+                        {onRelease && (
+                            <button
+                                onClick={() => { onClose(); onRelease(playerObj); }}
+                                style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'transparent', border: '1px solid rgba(239,68,68,0.5)', color: '#ef4444', fontWeight: 800, cursor: 'pointer' }}
+                            >
+                                🔓 Despedir
                             </button>
                         )}
                     </div>

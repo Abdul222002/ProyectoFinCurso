@@ -1,8 +1,9 @@
 /* ==========================================
-   GLOBAL STYLES - Ultimate Fantasy Legends
+   GLOBAL STYLES - Scottish Premiership Fantasy
    ========================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import './styles/variables.css';
 
 /* Reset */
 *,
@@ -13,22 +14,22 @@
   box-sizing: border-box;
 }
 
-/* Root variables */
+/* Root overrides for legacy variables if any elements still use them temporarily */
 :root {
-  --color-bg: #0a0f1c;
-  --color-surface: #111827;
-  --color-surface-light: #1a2234;
-  --color-primary: #256af4;
-  --color-primary-light: #5b8def;
-  --color-accent-green: #10b981;
-  --color-accent-gold: #f59e0b;
-  --color-accent-red: #f43f5e;
+  --color-bg: var(--bg-base);
+  --color-surface: var(--bg-surface);
+  --color-surface-light: var(--bg-elevated);
+  --color-primary: var(--gold);
+  --color-primary-light: var(--gold-light);
+  --color-accent-green: var(--success);
+  --color-accent-gold: var(--gold);
+  --color-accent-red: var(--danger);
   --color-accent-purple: #8b5cf6;
-  --color-text: #ffffff;
-  --color-text-secondary: rgba(255, 255, 255, 0.5);
-  --color-text-muted: rgba(255, 255, 255, 0.3);
-  --color-border: rgba(255, 255, 255, 0.06);
-  --font-main: 'Spline Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --color-text: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;

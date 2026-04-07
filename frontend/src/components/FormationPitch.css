@@ -319,4 +319,12 @@
         min-height: 420px;
         padding: 18px 4px 14px;
     }
+
+    /* Always show the X button on touch/mobile — hover doesn't work there */
+    .pitch-player .pitch-player-remove {
+        opacity: 1;
+        width: 20px;
+        height: 20px;
+        font-size: 0.65rem;
+    }
 }

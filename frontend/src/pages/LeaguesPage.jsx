@@ -1,12 +1,11 @@
-import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { leaguesAPI, authAPI } from '../services/endpoints';
 import { toast } from 'sonner';
+import AppLayout from '../components/AppLayout';
 import './LeaguesPage.css';
 
 export default function LeaguesPage() {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [leagues, setLeagues] = useState([]);
   const [invitations, setInvitations] = useState([]);
@@ -163,260 +162,238 @@ export default function LeaguesPage() {
   };
 
   return (
-    <div className="leagues-page">
-      {/* Header */}
-      <header className="lg-header">
-        <button className="lg-back-btn" onClick={() => navigate('/dashboard')}>←</button>
-        <h1 className="lg-title">🏆 Ligas</h1>
-      </header>
+    <AppLayout title="🏆 Ligas" backTo="/dashboard">
+      <div className="leagues-container">
+        {/* Message */}
+        {message && (
+          <div className={`lg-message ${message.startsWith('✅') ? 'success' : 'error'}`}>
+            {message}
+            <button className="lg-msg-close" onClick={() => setMessage('')}>✕</button>
+          </div>
+        )}
 
-      {/* Message */}
-      {message && (
-        <div className={`lg-message ${message.startsWith('✅') ? 'success' : 'error'}`}>
-          {message}
-          <button className="lg-msg-close" onClick={() => setMessage('')}>✕</button>
+        {/* Tabs */}
+        <div className="lg-tabs">
+          <button className={`lg-tab ${activeTab === 'my' ? 'active' : ''}`} onClick={() => setActiveTab('my')}>
+            Mis Ligas
+          </button>
+          <button className={`lg-tab ${activeTab === 'create' ? 'active' : ''}`} onClick={() => setActiveTab('create')}>
+            + Crear
+          </button>
+          <button className={`lg-tab ${activeTab === 'join' ? 'active' : ''}`} onClick={() => setActiveTab('join')}>
+            Unirse
+          </button>
+          <button className={`lg-tab ${activeTab === 'invitations' ? 'active' : ''}`} onClick={() => setActiveTab('invitations')}>
+            📩 {invitations.length > 0 ? `(${invitations.length})` : ''}
+          </button>
         </div>
-      )}
 
-      {/* Tabs */}
-      <div className="lg-tabs">
-        <button className={`lg-tab ${activeTab === 'my' ? 'active' : ''}`} onClick={() => setActiveTab('my')}>
-          Mis Ligas
-        </button>
-        <button className={`lg-tab ${activeTab === 'create' ? 'active' : ''}`} onClick={() => setActiveTab('create')}>
-          + Crear
-        </button>
-        <button className={`lg-tab ${activeTab === 'join' ? 'active' : ''}`} onClick={() => setActiveTab('join')}>
-          Unirse
-        </button>
-        <button className={`lg-tab ${activeTab === 'invitations' ? 'active' : ''}`} onClick={() => setActiveTab('invitations')}>
-          📩 {invitations.length > 0 ? `(${invitations.length})` : ''}
-        </button>
-      </div>
-
-      {/* My Leagues */}
-      {activeTab === 'my' && (
-        <div className="lg-content">
-          {loading ? (
-            <div className="lg-loading">Cargando...</div>
-          ) : leagues.length === 0 ? (
-            <div className="lg-empty">
-              <p>No estás en ninguna liga aún</p>
-              <button className="lg-cta-btn" onClick={() => setActiveTab('create')}>
-                🏆 Crear una Liga
-              </button>
-              <button className="lg-cta-btn secondary" onClick={() => setActiveTab('join')}>
-                🔗 Unirse con Código
-              </button>
-            </div>
-          ) : (
-            <div className="lg-list">
-              {leagues.map(league => (
-                <div key={league.id} className="lg-card">
-                  <div className="lg-card-main">
-                    <h3 className="lg-card-name">{league.name}</h3>
-                    <span className="lg-card-owner">por @{league.owner_username}</span>
-                    <div className="lg-card-stats">
-                      <span>👥 {league.member_count}/{league.max_members}</span>
+        {/* My Leagues */}
+        {activeTab === 'my' && (
+          <div className="lg-content">
+            {loading ? (
+              <div className="lg-loading">Cargando...</div>
+            ) : leagues.length === 0 ? (
+              <div className="lg-empty">
+                <p>No estás en ninguna liga aún</p>
+                <button className="btn-primary" onClick={() => setActiveTab('create')}>
+                  🏆 Crear una Liga
+                </button>
+                <div style={{ padding: '8px' }}></div>
+                <button className="btn-secondary" onClick={() => setActiveTab('join')}>
+                  🔗 Unirse con Código
+                </button>
+              </div>
+            ) : (
+              <div className="lg-list">
+                {leagues.map(league => (
+                  <div key={league.id} className="lg-card">
+                    <div className="lg-card-main">
+                      <div className="lg-card-info">
+                        <h3 className="lg-card-name">{league.name}</h3>
+                        <div className="lg-card-meta">
+                          <span className="lg-card-owner">por @{league.owner_username}</span>
+                          <span className="lg-card-stats"> · {league.member_count}/{league.max_members} 👥</span>
+                        </div>
+                      </div>
+                      <div className="lg-card-actions">
+                        <button
+                          className="btn-primary"
+                          onClick={() => window.location.assign(`/leagues/${league.id}`)}
+                        >
+                          Ver
+                        </button>
+                        <button
+                          className="btn-secondary"
+                          onClick={() => setInviteLeagueId(inviteLeagueId === league.id ? null : league.id)}
+                        >
+                          Invitar
+                        </button>
+                        {league.owner_username !== user?.username && (
+                          <button
+                            className="lg-btn-danger"
+                            onClick={() => handleLeave(league)}
+                            title="Abandonar liga"
+                          >
+                            Salir
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="lg-card-actions">
-                    <button
-                      className="lg-card-btn view"
-                      onClick={() => navigate(`/leagues/${league.id}`)}
-                    >
-                      Ver
-                    </button>
-                    <button
-                      className="lg-card-btn invite"
-                      onClick={() => setInviteLeagueId(inviteLeagueId === league.id ? null : league.id)}
-                    >
-                      Invitar
-                    </button>
-                    {league.owner_username !== user?.username && (
-                      <button
-                        className="lg-card-btn reject"
-                        onClick={() => handleLeave(league)}
-                        style={{ marginLeft: '8px' }}
-                        title="Abandonar liga"
-                      >
-                        Abandonar
-                      </button>
+
+                    {/* Inline invite form */}
+                    {inviteLeagueId === league.id && (
+                      <div className="lg-invite-inline">
+                        <input
+                          type="text"
+                          value={searchQuery || inviteUsername}
+                          onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setInviteUsername(e.target.value);
+                          }}
+                          placeholder="Nombre de usuario o correo..."
+                          className="lg-input"
+                        />
+                        <button
+                          className="lg-invite-send"
+                          onClick={() => handleInvite(league.id)}
+                          disabled={inviting}
+                        >
+                          {inviting || searching ? '...' : 'Enviar'}
+                        </button>
+
+                        {/* Search Results Dropdown */}
+                        {searchResults.length > 0 && searchQuery.length >= 2 && (
+                          <div className="ld-search-results">
+                            {searchResults.map(u => (
+                              <div
+                                key={u.id}
+                                className="ld-search-item"
+                                onClick={() => {
+                                  setInviteUsername(u.username);
+                                  setSearchQuery('');
+                                  setSearchResults([]);
+                                  handleInvite(league.id, u.username);
+                                }}
+                              >
+                                <div style={{ fontWeight: 'bold' }}>@{u.username}</div>
+                                {u.email && <div style={{ fontSize: '0.8em', color: 'var(--text-secondary)' }}>{u.email}</div>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
-
-                  {/* Inline invite form */}
-                  {inviteLeagueId === league.id && (
-                    <div className="lg-invite-inline" style={{ position: 'relative' }}>
-                      <input
-                        type="text"
-                        value={searchQuery || inviteUsername}
-                        onChange={(e) => {
-                          setSearchQuery(e.target.value);
-                          setInviteUsername(e.target.value);
-                        }}
-                        placeholder="Nombre de usuario o correo..."
-                        className="lg-input"
-                      />
-                      <button
-                        className="lg-invite-send"
-                        onClick={() => handleInvite(league.id)}
-                        disabled={inviting}
-                      >
-                        {inviting || searching ? '...' : 'Enviar'}
-                      </button>
-
-                      {/* Search Results Dropdown */}
-                      {searchResults.length > 0 && searchQuery.length >= 2 && (
-                        <div className="ld-search-results" style={{
-                          position: 'absolute',
-                          top: '100%',
-                          left: 0,
-                          width: 'calc(100% - 90px)',
-                          background: '#1e293b',
-                          border: '1px solid rgba(255,255,255,0.1)',
-                          borderRadius: '8px',
-                          marginTop: '4px',
-                          maxHeight: '200px',
-                          overflowY: 'auto',
-                          zIndex: 10
-                        }}>
-                          {searchResults.map(u => (
-                            <div
-                              key={u.id}
-                              className="ld-search-item"
-                              style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-                              onClick={() => {
-                                setInviteUsername(u.username);
-                                setSearchQuery('');
-                                setSearchResults([]);
-                                handleInvite(league.id, u.username);
-                              }}
-                            >
-                              <div style={{ fontWeight: 'bold' }}>@{u.username}</div>
-                              {u.email && <div style={{ fontSize: '0.8em', color: '#94a3b8' }}>{u.email}</div>}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Create League */}
-      {activeTab === 'create' && (
-        <div className="lg-content">
-          <form onSubmit={handleCreate} className="lg-form">
-            <h2 className="lg-form-title">Crear nueva liga</h2>
-            <label className="lg-label">
-              Nombre de la liga
-              <input
-                type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="Ej: Liga de Amigos"
-                className="lg-input"
-                required
-                minLength={3}
-              />
-            </label>
-            <label className="lg-label">
-              Descripción (opcional)
-              <textarea
-                value={newDesc}
-                onChange={(e) => setNewDesc(e.target.value)}
-                placeholder="Describe tu liga..."
-                className="lg-textarea"
-                rows={3}
-              />
-            </label>
-            <label className="lg-label">
-              Máximo de miembros
-              <select
-                value={newMax}
-                onChange={(e) => setNewMax(Number(e.target.value))}
-                className="lg-select"
-              >
-                {[4, 6, 8, 10, 12, 16, 20].map(n => (
-                  <option key={n} value={n}>{n} jugadores</option>
                 ))}
-              </select>
-            </label>
-            <button type="submit" className="lg-submit-btn" disabled={creating}>
-              {creating ? 'Creando...' : '🏆 Crear Liga'}
-            </button>
-          </form>
-        </div>
-      )}
+              </div>
+            )}
+          </div>
+        )}
 
-      {/* Join by Code */}
-      {activeTab === 'join' && (
-        <div className="lg-content">
-          <form onSubmit={handleJoin} className="lg-form">
-            <h2 className="lg-form-title">Unirse a una liga</h2>
-            <p className="lg-form-desc">
-              Introduce el código de invitación que te ha dado un amigo
-            </p>
-            <label className="lg-label">
-              Código de invitación
-              <input
-                type="text"
-                value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                placeholder="Ej: A1B2C3D4"
-                className="lg-input lg-input-code"
-                required
-                maxLength={8}
-              />
-            </label>
-            <button type="submit" className="lg-submit-btn" disabled={joining}>
-              {joining ? 'Uniéndose...' : '🔗 Unirse'}
-            </button>
-          </form>
-        </div>
-      )}
+        {/* Create League */}
+        {activeTab === 'create' && (
+          <div className="lg-content">
+            <form onSubmit={handleCreate} className="lg-form">
+              <h2 className="lg-form-title">Crear nueva liga</h2>
+              <label className="lg-label">
+                Nombre de la liga
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Ej: Liga de Amigos"
+                  className="lg-input"
+                  required
+                  minLength={3}
+                />
+              </label>
+              <label className="lg-label">
+                Descripción (opcional)
+                <textarea
+                  value={newDesc}
+                  onChange={(e) => setNewDesc(e.target.value)}
+                  placeholder="Describe tu liga..."
+                  className="lg-textarea"
+                  rows={3}
+                />
+              </label>
+              <label className="lg-label">
+                Máximo de miembros
+                <select
+                  value={newMax}
+                  onChange={(e) => setNewMax(Number(e.target.value))}
+                  className="lg-select"
+                >
+                  {[4, 6, 8, 10, 12, 16, 20].map(n => (
+                    <option key={n} value={n}>{n} jugadores</option>
+                  ))}
+                </select>
+              </label>
+              <button type="submit" className="btn-primary" disabled={creating} style={{width: '100%', marginTop: '1rem'}}>
+                {creating ? 'Creando...' : '🏆 Crear Liga'}
+              </button>
+            </form>
+          </div>
+        )}
 
-      {/* Pending Invitations */}
-      {activeTab === 'invitations' && (
-        <div className="lg-content">
-          {invitations.length === 0 ? (
-            <div className="lg-empty">
-              <p>No tienes invitaciones pendientes</p>
-            </div>
-          ) : (
-            <div className="lg-list">
-              {invitations.map(inv => (
-                <div key={inv.id} className="lg-invite-card">
-                  <div className="lg-invite-info">
-                    <h3>{inv.league_name}</h3>
-                    <span>Invitado por @{inv.invited_by_username}</span>
+        {/* Join by Code */}
+        {activeTab === 'join' && (
+          <div className="lg-content">
+            <form onSubmit={handleJoin} className="lg-form">
+              <h2 className="lg-form-title">Unirse a una liga</h2>
+              <p className="lg-form-desc">
+                Introduce el código de invitación que te ha dado un amigo
+              </p>
+              <label className="lg-label">
+                Código de invitación
+                <input
+                  type="text"
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                  placeholder="Ej: A1B2C3D4"
+                  className="lg-input lg-input-code"
+                  required
+                  maxLength={8}
+                />
+              </label>
+              <button type="submit" className="btn-primary" disabled={joining} style={{width: '100%', marginTop: '1rem'}}>
+                {joining ? 'Uniéndose...' : '🔗 Unirse'}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Pending Invitations */}
+        {activeTab === 'invitations' && (
+          <div className="lg-content">
+            {invitations.length === 0 ? (
+              <div className="lg-empty">
+                <p>No tienes invitaciones pendientes</p>
+              </div>
+            ) : (
+              <div className="lg-list">
+                {invitations.map(inv => (
+                  <div key={inv.id} className="lg-invite-card">
+                    <div className="lg-invite-info">
+                      <h3>{inv.league_name}</h3>
+                      <span>Invitado por @{inv.invited_by_username}</span>
+                    </div>
+                    <div className="lg-invite-actions">
+                      <button className="btn-primary" onClick={() => handleAccept(inv.id)}>
+                        Aceptar
+                      </button>
+                      <button className="lg-btn-danger" onClick={() => handleReject(inv.id)}>
+                        ✕
+                      </button>
+                    </div>
                   </div>
-                  <div className="lg-invite-actions">
-                    <button className="lg-invite-btn accept" onClick={() => handleAccept(inv.id)}>
-                      ✓ Aceptar
-                    </button>
-                    <button className="lg-invite-btn reject" onClick={() => handleReject(inv.id)}>
-                      ✕
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Bottom Nav */}
-      <div className="lg-bottom-bar">
-        <button className="lg-bottom-btn" onClick={() => navigate('/dashboard')}>🏠 Home</button>
-        <button className="lg-bottom-btn" onClick={() => navigate('/team')}>⚽ Equipo</button>
-        <button className="lg-bottom-btn active">🏆 Ligas</button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
-    </div>
+    </AppLayout>
   );
 }

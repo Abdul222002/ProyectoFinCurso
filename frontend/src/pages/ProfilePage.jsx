@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { leaguesAPI } from '../services/endpoints';
 import { toast } from 'sonner';
+import AppLayout from '../components/AppLayout';
 import './ProfilePage.css';
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [leagues, setLeagues] = useState([]);
   const [invitations, setInvitations] = useState([]);
@@ -41,7 +42,6 @@ export default function ProfilePage() {
       await leaguesAPI.acceptInvitation(id);
       toast.success('✅ ¡Te has unido a la liga!');
       setInvitations(prev => prev.filter(inv => inv.id !== id));
-      // Refresh leagues
       const res = await leaguesAPI.myLeagues();
       setLeagues(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
@@ -59,11 +59,6 @@ export default function ProfilePage() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   const handleSaveProfile = async () => {
     if (!newUsername.trim() || newUsername === user?.username) {
       setEditMode(false);
@@ -73,9 +68,7 @@ export default function ProfilePage() {
     setSaving(true);
     try {
       const { authAPI } = await import('../services/endpoints');
-      const res = await authAPI.updateProfile({ username: newUsername });
-      
-      // Update local storage and context if possible, or just force reload
+      await authAPI.updateProfile({ username: newUsername });
       toast.success('Perfil actualizado correctamente');
       setTimeout(() => window.location.reload(), 1000);
     } catch (err) {
@@ -91,188 +84,179 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="profile-page">
-        <div className="profile-loading">⚽ Cargando perfil...</div>
-      </div>
+      <AppLayout title="Mi Perfil" backTo="/dashboard">
+        <div className="profile-loading">Cargando perfil...</div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="profile-page">
-      {/* Background glow */}
-      <div className="profile-bg-glow"></div>
-
-      {/* Header */}
-      <header className="profile-header">
-        <button className="profile-back-btn" onClick={() => navigate('/dashboard')}>
-          <span>‹</span> Volver
-        </button>
-        <h1 className="profile-page-title">Mi Perfil</h1>
-        <button className="profile-logout-btn" onClick={handleLogout}>
-          Cerrar sesión
-        </button>
-      </header>
-
-      {/* User Card */}
-      <section className="profile-user-card">
-        <div className="profile-avatar">
-          <span className="profile-avatar-letter">
-            {user?.username?.charAt(0)?.toUpperCase() || '?'}
-          </span>
-        </div>
-        <div className="profile-user-info">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {editMode ? (
-              <input 
-                type="text" 
-                value={newUsername} 
-                onChange={e => setNewUsername(e.target.value)}
-                className="profile-edit-input"
-                autoFocus
-                disabled={saving}
-              />
-            ) : (
-              <h2 className="profile-username">{user?.username || 'Manager'}</h2>
-            )}
-            
-            {editMode ? (
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button 
-                  className="profile-save-btn" 
-                  onClick={handleSaveProfile}
-                  disabled={saving}
-                >
-                  {saving ? '...' : 'Guardar'}
-                </button>
-                <button 
-                  className="profile-cancel-btn"
-                  onClick={() => setEditMode(false)}
-                  disabled={saving}
-                >
-                  ✕
-                </button>
-              </div>
-            ) : (
-              <button 
-                className="profile-edit-toggle"
-                onClick={() => {
-                  setNewUsername(user?.username || '');
-                  setEditMode(true);
-                }}
-                title="Editar Nombre"
-              >
-                ✏️
-              </button>
-            )}
-          </div>
-          <p className="profile-email">{user?.email || ''}</p>
-          <div className="profile-meta">
-            <span className="profile-meta-item">
-              🏆 {leagues.length} {leagues.length === 1 ? 'liga' : 'ligas'}
-            </span>
-            <span className="profile-meta-item">
-              ⭐ Nivel {user?.level || 1}
-            </span>
-            <span className="profile-meta-item">
-              📅 Desde {formatDate(user?.created_at)}
+    <AppLayout title="Mi Perfil" backTo="/dashboard">
+      <div className="profile-container">
+        
+        {/* User Card */}
+        <section className="profile-user-card">
+          <div className="profile-avatar">
+            <span className="profile-avatar-letter">
+              {user?.username?.charAt(0)?.toUpperCase() || '?'}
             </span>
           </div>
-        </div>
-      </section>
-
-      {/* Tabs */}
-      <nav className="profile-tabs">
-        <button
-          className={`profile-tab ${activeTab === 'info' ? 'active' : ''}`}
-          onClick={() => setActiveTab('info')}
-        >
-          🏟️ Mis Ligas
-        </button>
-        <button
-          className={`profile-tab ${activeTab === 'inbox' ? 'active' : ''}`}
-          onClick={() => setActiveTab('inbox')}
-        >
-          📩 Mensajes {invitations.length > 0 && <span className="profile-tab-badge">{invitations.length}</span>}
-        </button>
-      </nav>
-
-      {/* Tab Content */}
-      <main className="profile-content">
-        {/* My Leagues Tab */}
-        {activeTab === 'info' && (
-          <div className="profile-leagues-list">
-            {leagues.length === 0 ? (
-              <div className="profile-empty">
-                <span className="profile-empty-icon">🏆</span>
-                <p>No estás en ninguna liga</p>
-                <button className="profile-action-btn" onClick={() => navigate('/leagues')}>
-                  Unirse a una Liga →
-                </button>
-              </div>
-            ) : (
-              leagues.map(league => (
-                <div
-                  key={league.id}
-                  className="profile-league-card"
-                  onClick={() => navigate(`/leagues/${league.id}`)}
-                >
-                  <div className="profile-league-icon">⚽</div>
-                  <div className="profile-league-info">
-                    <h3 className="profile-league-name">{league.name}</h3>
-                    <p className="profile-league-detail">
-                      {league.member_count || '?'} miembros · Creada {formatDate(league.created_at)}
-                    </p>
-                  </div>
-                  <span className="profile-league-arrow">›</span>
+          <div className="profile-user-info">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {editMode ? (
+                <input 
+                  type="text" 
+                  value={newUsername} 
+                  onChange={e => setNewUsername(e.target.value)}
+                  className="profile-edit-input"
+                  autoFocus
+                  disabled={saving}
+                />
+              ) : (
+                <h2 className="profile-username">{user?.username || 'Manager'}</h2>
+              )}
+              
+              {editMode ? (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button 
+                    className="btn-primary profile-save-btn" 
+                    onClick={handleSaveProfile}
+                    disabled={saving}
+                  >
+                    {saving ? '...' : 'Guardar'}
+                  </button>
+                  <button 
+                    className="profile-cancel-btn"
+                    onClick={() => setEditMode(false)}
+                    disabled={saving}
+                  >
+                    ✕
+                  </button>
                 </div>
-              ))
-            )}
+              ) : (
+                <button 
+                  className="profile-edit-toggle"
+                  onClick={() => {
+                    setNewUsername(user?.username || '');
+                    setEditMode(true);
+                  }}
+                  title="Editar Nombre"
+                >
+                  ✏️
+                </button>
+              )}
+            </div>
+            <p className="profile-email">{user?.email || ''}</p>
+            <div className="profile-meta">
+              <span className="profile-meta-badge">
+                🏆 {leagues.length} {leagues.length === 1 ? 'liga' : 'ligas'}
+              </span>
+              <span className="profile-meta-badge">
+                ⭐ Nivel {user?.level || 1}
+              </span>
+              <span className="profile-meta-badge">
+                📅 Desde {formatDate(user?.created_at)}
+              </span>
+            </div>
           </div>
-        )}
+        </section>
 
-        {/* Inbox Tab */}
-        {activeTab === 'inbox' && (
-          <div className="profile-inbox">
-            {invitations.length === 0 ? (
-              <div className="profile-empty">
-                <span className="profile-empty-icon">📭</span>
-                <p>No tienes invitaciones pendientes</p>
-                <span className="profile-empty-sub">Cuando alguien te invite a una liga, aparecerá aquí.</span>
-              </div>
-            ) : (
-              invitations.map(inv => (
-                <div key={inv.id} className="profile-invitation-card">
-                  <div className="profile-invitation-header">
-                    <span className="profile-invitation-icon">📩</span>
-                    <div className="profile-invitation-info">
-                      <h3 className="profile-invitation-title">
-                        Invitación a <strong>{inv.league_name}</strong>
-                      </h3>
-                      <p className="profile-invitation-from">
-                        De: {inv.invited_by_name || 'Admin'} · {formatDate(inv.created_at)}
+        {/* Tabs */}
+        <div className="lg-tabs" style={{ margin: '0 20px 10px', borderRadius: '14px', overflow: 'hidden' }}>
+          <button
+            className={`lg-tab ${activeTab === 'info' ? 'active' : ''}`}
+            onClick={() => setActiveTab('info')}
+          >
+            🏟️ Mis Ligas
+          </button>
+          <button
+            className={`lg-tab ${activeTab === 'inbox' ? 'active' : ''}`}
+            onClick={() => setActiveTab('inbox')}
+          >
+            📩 Mensajes {invitations.length > 0 && <span className="profile-tab-badge">{invitations.length}</span>}
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <main className="profile-main-content">
+          {activeTab === 'info' && (
+            <div className="profile-leagues-list">
+              {leagues.length === 0 ? (
+                <div className="lg-empty">
+                  <span className="profile-empty-icon">🏆</span>
+                  <p>No estás en ninguna liga</p>
+                  <button className="btn-primary" onClick={() => navigate('/leagues')}>
+                    Unirse a una Liga →
+                  </button>
+                </div>
+              ) : (
+                leagues.map(league => (
+                  <div
+                    key={league.id}
+                    className="lg-card profile-league-card"
+                    onClick={() => navigate(`/leagues/${league.id}`)}
+                  >
+                    <div className="profile-league-icon">⚽</div>
+                    <div className="profile-league-info">
+                      <h3 className="profile-league-name">{league.name}</h3>
+                      <p className="profile-league-detail">
+                        {league.member_count || '?'} miembros · Creada {formatDate(league.created_at)}
                       </p>
                     </div>
+                    <span className="profile-league-arrow">›</span>
                   </div>
-                  <div className="profile-invitation-actions">
-                    <button
-                      className="profile-inv-btn accept"
-                      onClick={() => handleAccept(inv.id)}
-                    >
-                      ✅ Aceptar
-                    </button>
-                    <button
-                      className="profile-inv-btn reject"
-                      onClick={() => handleReject(inv.id)}
-                    >
-                      ❌ Rechazar
-                    </button>
-                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {activeTab === 'inbox' && (
+            <div className="profile-inbox">
+              {invitations.length === 0 ? (
+                <div className="lg-empty">
+                  <span className="profile-empty-icon">📭</span>
+                  <p>No tienes invitaciones pendientes</p>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
+                    Cuando alguien te invite a una liga, aparecerá aquí.
+                  </span>
                 </div>
-              ))
-            )}
-          </div>
-        )}
-      </main>
-    </div>
+              ) : (
+                invitations.map(inv => (
+                  <div key={inv.id} className="profile-invitation-card lg-card">
+                    <div className="profile-invitation-header">
+                      <span className="profile-invitation-icon">📩</span>
+                      <div className="profile-invitation-info">
+                        <h3 className="profile-invitation-title">
+                          Invitación a <strong>{inv.league_name}</strong>
+                        </h3>
+                        <p className="profile-invitation-from">
+                          De: {inv.invited_by_name || 'Admin'} · {formatDate(inv.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="profile-invitation-actions">
+                      <button
+                        className="btn-primary"
+                        onClick={() => handleAccept(inv.id)}
+                        style={{flex: 1}}
+                      >
+                        Aceptar
+                      </button>
+                      <button
+                        className="lg-btn-danger"
+                        onClick={() => handleReject(inv.id)}
+                        style={{flex: 1}}
+                      >
+                        Rechazar
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </main>
+      </div>
+    </AppLayout>
   );
 }

@@ -3,7 +3,7 @@ Database Models - Esquema completo unificado
 Todos los modelos de la base de datos en un solo archivo
 """
 
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, DateTime, Text, Enum, UniqueConstraint
+from sqlalchemy import Column, Integer, BigInteger, String, Float, Boolean, ForeignKey, DateTime, Text, Enum, UniqueConstraint
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.core.database import Base
@@ -143,6 +143,15 @@ class Player(Base):
     
     # Imagen/foto
     image_url = Column(String(255), nullable=True)
+
+    # ==========================================
+    # SISTEMA DE PUNTUACIÓN DE ICONOS
+    # ==========================================
+    # scoring_profile: LEGEND | MAESTRO | RELIABLE | VOLCANO | CURSED
+    scoring_profile = Column(String(20), nullable=True)
+    # Rango de puntos fantasy por jornada (solo iconos)
+    min_fantasy = Column(Integer, nullable=True)
+    max_fantasy = Column(Integer, nullable=True)
 
     # RELACIONAL: Estadísticas en tiempo real (Vista SQL)
     stats = relationship("PlayerStatsSummary", uselist=False, backref="player", viewonly=True)
@@ -645,8 +654,8 @@ class LeagueMember(Base):
     league_points = Column(Integer, default=0)
     
     # Economía de la liga (cada usuario empieza con 100M)
-    coins = Column(Integer, default=100000000)
-    locked_coins = Column(Integer, default=0)
+    coins = Column(BigInteger, default=100000000)
+    locked_coins = Column(BigInteger, default=0)
 
     # Rol dentro de la liga
     is_admin = Column(Boolean, default=False)

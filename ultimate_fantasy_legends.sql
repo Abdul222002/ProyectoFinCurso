@@ -1,4 +1,4 @@
-﻿-- MariaDB dump 10.19  Distrib 10.4.32-MariaDB, for Win64 (AMD64)
+-- MariaDB dump 10.19  Distrib 10.4.32-MariaDB, for Win64 (AMD64)
 --
 -- Host: localhost    Database: ultimate_fantasy_legends
 -- ------------------------------------------------------
@@ -267,8 +267,8 @@ CREATE TABLE `league_members` (
   `league_points` int(11) DEFAULT NULL,
   `is_admin` tinyint(1) DEFAULT NULL,
   `joined_at` datetime DEFAULT NULL,
-  `coins` int(11) DEFAULT 100000000,
-  `locked_coins` int(11) DEFAULT 0,
+  `coins` bigint DEFAULT 100000000,
+  `locked_coins` bigint DEFAULT 0,
   PRIMARY KEY (`id`),
   KEY `league_id` (`league_id`),
   KEY `user_id` (`user_id`),

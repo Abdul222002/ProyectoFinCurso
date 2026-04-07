@@ -5,6 +5,7 @@ import { leaguesAPI, auctionAPI, packsAPI, authAPI } from '../services/endpoints
 import PackOpeningModal from '../components/PackOpeningModal';
 import PlayerDetailModal from '../components/PlayerDetailModal';
 import { toast } from 'sonner';
+import AppLayout from '../components/AppLayout';
 import './LeagueDetailPage.css';
 
 export default function LeagueDetailPage() {
@@ -47,20 +48,17 @@ export default function LeagueDetailPage() {
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
 
-  // 1. Centralized message helper
   const showMessage = (msg) => {
     setMessage(msg);
     setTimeout(() => setMessage(''), 4000);
   };
 
-  // 2. Move coin calculations to the top (derived from state)
   const myMembership = league?.members?.find(m => m.user_id === user?.id);
   const myCoins = myMembership?.coins || 0;
   const myLockedCoins = myMembership?.locked_coins || 0;
   const freeCoins = myCoins - myLockedCoins;
   const displayAvailable = freeCoins;
 
-  // Debounced user search
   useEffect(() => {
     if (searchQuery.trim().length < 2) {
       setSearchResults([]);
@@ -92,7 +90,6 @@ export default function LeagueDetailPage() {
 
   useEffect(() => { loadLeague(); }, [loadLeague]);
 
-  // Load auction
   const loadAuction = useCallback(async () => {
     setAuctionLoading(true);
     try {
@@ -104,7 +101,6 @@ export default function LeagueDetailPage() {
     setAuctionLoading(false);
   }, [leagueId]);
 
-  // Silent versions for polling - no loading spinner flash
   const pollAuction = useCallback(async () => {
     try {
       const res = await auctionAPI.getAuction(leagueId);
@@ -138,7 +134,6 @@ export default function LeagueDetailPage() {
   useEffect(() => {
     if (activeTab === 'market') { loadAuction(); loadListings(); loadOffers(); }
     const interval = setInterval(() => {
-      // 5. Polling inteligente: solo si el tab es visible
       if (activeTab === 'market' && document.visibilityState === 'visible') { 
         pollAuction(); pollListings(); 
       }
@@ -146,17 +141,16 @@ export default function LeagueDetailPage() {
     return () => clearInterval(interval);
   }, [activeTab, loadAuction, loadListings, loadOffers, pollAuction, pollListings]);
 
-  // Countdown timer
   useEffect(() => {
     if (!auction?.ends_at) return;
     const interval = setInterval(() => {
       const now = new Date().getTime();
-      const end = new Date(auction.ends_at).getTime(); // is ISO string
+      const end = new Date(auction.ends_at).getTime();
       const distance = end - now;
 
       if (distance < 0) {
         setTimeLeft('SUBASTA FINALIZADA');
-        if (auction.is_active) loadAuction(); // Reload to see if new one started
+        if (auction.is_active) loadAuction();
       } else {
         const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
@@ -165,9 +159,8 @@ export default function LeagueDetailPage() {
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [auction]);
+  }, [auction, loadAuction]);
 
-  // Load pack history
   const loadPackHistory = useCallback(async () => {
     try {
       const res = await packsAPI.history(leagueId);
@@ -185,7 +178,6 @@ export default function LeagueDetailPage() {
     const amount = parseInt(bidAmounts[slotId]);
     if (!amount) return;
 
-    // Validations (min bid)
     const minBid = currentBid > 0 ? currentBid + 1 : basePrice;
     if (amount < minBid) {
       showMessage(`❌ La puja debe ser al menos ${formatPrice(minBid)}`);
@@ -196,9 +188,7 @@ export default function LeagueDetailPage() {
     try {
       const res = await auctionAPI.placeBid(leagueId, slotId, amount);
       showMessage(`✅ ${res.data.message}`);
-      // Force reload to get updated status and refresh coins
       await Promise.all([loadAuction(), loadLeague()]);
-      // Clear input
       setBidAmounts(prev => ({ ...prev, [slotId]: '' }));
     } catch (err) {
       showMessage(`❌ ${err.response?.data?.detail || 'Error al pujar'}`);
@@ -211,7 +201,6 @@ export default function LeagueDetailPage() {
     try {
       const res = await auctionAPI.withdrawBid(leagueId, slotId);
       showMessage(`✅ ${res.data.message}`);
-      // Pequeño delay para asegurar que el commit del backend está completo
       await new Promise(resolve => setTimeout(resolve, 300));
       await Promise.all([loadAuction(), loadLeague()]);
     } catch (err) {
@@ -223,17 +212,12 @@ export default function LeagueDetailPage() {
   const handleWithdrawBid = (slotId) => {
     toast.warning('¿Seguro que quieres retirar tu puja?', {
       cancel: { label: 'Cancelar' },
-      action: {
-        label: 'Sí, retirar',
-        onClick: () => executeWithdraw(slotId)
-      }
+      action: { label: 'Sí, retirar', onClick: () => executeWithdraw(slotId) }
     });
   };
 
   const handleOpenPack = async () => {
     if (opening) return;
-
-    // Check raw league coins (NOT freeCoins — locked_coins are only for auction bids)
     if (myCoins < 150000000) {
       showMessage(`❌ No tienes suficientes monedas. Necesitas 150.000.000, tienes ${myCoins.toLocaleString('es-ES')}`);
       return;
@@ -255,10 +239,8 @@ export default function LeagueDetailPage() {
   const handleInvite = async (targetUser = null) => {
     let input = (targetUser || inviteUsername).trim();
     if (!input) return;
-    
     setInviting(true);
     
-    // 6. Validación de email mejorada
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
     input = input.startsWith('@') ? input.slice(1) : input;
     const payload = isEmail ? { email: input } : { username: input };
@@ -288,10 +270,7 @@ export default function LeagueDetailPage() {
   const handleLeave = () => {
     toast.error('¿Seguro que quieres salir de esta liga?', {
       cancel: { label: 'Cancelar' },
-      action: {
-        label: 'Sí, salir',
-        onClick: () => executeLeave()
-      }
+      action: { label: 'Sí, salir', onClick: () => executeLeave() }
     });
   };
 
@@ -299,21 +278,17 @@ export default function LeagueDetailPage() {
     try {
       await leaguesAPI.kickMember(leagueId, memberId);
       showMessage(`✅ @${memberUsername} ha sido expulsado.`);
-      // Delay para sync DB
       await new Promise(resolve => setTimeout(resolve, 300));
       loadLeague();
     } catch (err) {
-      showMessage(`❌ ${err.response?.data?.detail || 'Error al expulsar jugador'}`);
+      showMessage(`❌ ${err.response?.data?.detail || 'Error al expulsar'}`);
     }
   };
 
   const handleKick = (memberId, memberUsername) => {
     toast.error(`¿Seguro que quieres expulsar a @${memberUsername} de la liga?`, {
       cancel: { label: 'Cancelar' },
-      action: {
-        label: 'Expulsar',
-        onClick: () => executeKick(memberId, memberUsername)
-      }
+      action: { label: 'Expulsar', onClick: () => executeKick(memberId, memberUsername) }
     });
   };
 
@@ -326,14 +301,13 @@ export default function LeagueDetailPage() {
 
   const getRarityColor = (rarity) => {
     switch (rarity) {
-      case 'gold': return '#fbbf24';
-      case 'silver': return '#94a3b8';
+      case 'gold': return 'var(--gold)';
+      case 'silver': return 'var(--text-muted)';
       case 'legend': return '#a78bfa';
       default: return '#cd7f32';
     }
   };
 
-  // 7. Extraer handlers inline a funciones nombradas
   const handleAcceptOffer = async (offerId) => {
     try {
       const res = await auctionAPI.acceptOffer(leagueId, offerId);
@@ -374,492 +348,463 @@ export default function LeagueDetailPage() {
 
   if (loading) {
     return (
-      <div className="ld-page">
-        <div className="ld-loading">Cargando liga...</div>
-      </div>
+      <AppLayout title="Cargando Liga..." backTo="/leagues">
+        <div className="ld-loading">Cargando datos...</div>
+      </AppLayout>
     );
   }
 
   if (!league) {
     return (
-      <div className="ld-page">
-        <header className="ld-header">
-          <button className="ld-back-btn" onClick={() => navigate('/leagues')}>←</button>
-          <h1>Liga no encontrada</h1>
-        </header>
-      </div>
+      <AppLayout title="Liga no encontrada" backTo="/leagues">
+        <div className="ld-loading">Esta liga no existe o no tienes acceso.</div>
+      </AppLayout>
     );
   }
 
-// 2. Eliminamos duplicado en el return (ya calculados al inicio)
+  const headerRight = (
+    <div className="ld-coins-wrap">
+      <div className="ld-coins">🪙 {formatPrice(displayAvailable)}</div>
+      {myLockedCoins > 0 && (
+        <div className="ld-coins-locked" title="Monedas bloqueadas en pujas activas">🔒 {formatPrice(myLockedCoins)} Retenidas</div>
+      )}
+    </div>
+  );
 
   return (
-    <div className="ld-page">
-      {/* Header */}
-      <header className="ld-header">
-        <button className="ld-back-btn" onClick={() => navigate('/leagues')}>←</button>
-        <div className="ld-header-info">
-          <h1 className="ld-title">🏆 {league.name}</h1>
-          <span className="ld-subtitle">
-            👥 {league.member_count}/{league.max_members} · Código: <strong>{league.invite_code}</strong>
-          </span>
-        </div>
-        <div className="ld-coins-wrap">
-          <div className="ld-coins">🪙 {formatPrice(displayAvailable)}</div>
-          {myLockedCoins > 0 && (
-            <div className="ld-coins-locked" title="Monedas bloqueadas en pujas activas">🔒 {formatPrice(myLockedCoins)} Retenidas</div>
-          )}
-        </div>
-      </header>
+    <AppLayout title={league.name} backTo="/leagues" rightContent={headerRight}>
+      <div className="ld-page-content">
 
-      {/* Message */}
-      {message && (
-        <div className={`ld-message ${message.startsWith('✅') ? 'success' : 'error'}`}>
-          {message}
-          <button className="ld-msg-close" onClick={() => setMessage('')}>✕</button>
-        </div>
-      )}
-
-      {/* Player Detail Modal */}
-      {selectedPlayerForDetail && (
-        <PlayerDetailModal
-          playerId={selectedPlayerForDetail.player_id}
-          playerObj={selectedPlayerForDetail}
-          onClose={() => setSelectedPlayerForDetail(null)}
-        />
-      )}
-
-      {/* Tabs */}
-      <div className="ld-tabs">
-        <button className={`ld-tab ${activeTab === 'standings' ? 'active' : ''}`} onClick={() => setActiveTab('standings')}>
-          🏅 Clasificación
-        </button>
-        <button className="ld-tab" onClick={() => navigate(`/team?league_id=${leagueId}`)}>
-          ⚽ Mi Equipo
-        </button>
-        <button className={`ld-tab ${activeTab === 'market' ? 'active' : ''}`} onClick={() => setActiveTab('market')}>
-          📈 Mercado
-        </button>
-        <button className={`ld-tab ${activeTab === 'packs' ? 'active' : ''}`} onClick={() => setActiveTab('packs')}>
-          🎴 Sobres
-        </button>
-        <button className={`ld-tab ${activeTab === 'info' ? 'active' : ''}`} onClick={() => setActiveTab('info')}>
-          ℹ️ Info
-        </button>
-      </div>
-
-      {/* ==== STANDINGS TAB ==== */}
-      {activeTab === 'standings' && (
-        <div className="ld-content">
-          <div className="ld-standings">
-            {league.members?.sort((a, b) => b.league_points - a.league_points).map((member, idx) => {
-              const isAdmin = myMembership?.is_admin || league.owner_id === user?.id;
-              const isOwner = league.owner_id === member.user_id;
-              const isSelf = member.user_id === user?.id;
-
-              return (
-                <div
-                  key={member.id}
-                  className={`ld-member-row ${isSelf ? 'me' : ''}`}
-                  onClick={() => navigate(`/team?league_id=${leagueId}&user_id=${member.user_id}`)}
-                  style={{ cursor: 'pointer' }}
-                  title={`Ver equipo de @${member.username}`}
-                >
-                  <span className="ld-rank">{idx + 1}</span>
-                  <div className="ld-member-info">
-                    <span className="ld-member-name">
-                      @{member.username}
-                      {member.is_admin && ' 👑'}
-                    </span>
-                    <span className="ld-member-pts">{member.league_points} pts</span>
-                  </div>
-                  {isAdmin && !isOwner && !isSelf && (
-                    <button
-                      className="ld-leave-btn"
-                      style={{ padding: '4px 12px', fontSize: '0.8rem', marginLeft: '10px', marginTop: '0', width: 'auto' }}
-                      onClick={(e) => { e.stopPropagation(); handleKick(member.user_id, member.username); }}
-                      title="Expulsar jugador"
-                    >
-                      🥾 Expulsar
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+        {/* Message */}
+        {message && (
+          <div className={`ld-message ${message.startsWith('✅') ? 'success' : 'error'}`}>
+            {message}
+            <button className="ld-msg-close" onClick={() => setMessage('')}>✕</button>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ==== MARKET TAB (AUCTION) ==== */}
-      {activeTab === 'market' && (
-        <div className="ld-content">
-          <div className="ld-auction-header">
-            <h2>⏳ Subasta Diaria</h2>
-            <div className="ld-timer">
-              {timeLeft || 'Calculando...'}
+        {/* Player Detail Modal */}
+        {selectedPlayerForDetail && (
+          <PlayerDetailModal
+            playerId={selectedPlayerForDetail.player_id}
+            playerObj={selectedPlayerForDetail}
+            onClose={() => setSelectedPlayerForDetail(null)}
+          />
+        )}
+
+        {/* Subtitle / Minor Info below header conceptually */}
+        <div className="ld-subtitle-bar">
+          <span>👥 {league.member_count}/{league.max_members}</span>
+          <span>·</span>
+          <span>Código: <strong>{league.invite_code}</strong></span>
+        </div>
+
+        {/* Tabs */}
+        <div className="lg-tabs">
+          <button className={`lg-tab ${activeTab === 'standings' ? 'active' : ''}`} onClick={() => setActiveTab('standings')}>
+            🏅 Clasificación
+          </button>
+          <button className="lg-tab" onClick={() => navigate(`/team?league_id=${leagueId}`)}>
+            ⚽ Mi Equipo
+          </button>
+          <button className={`lg-tab ${activeTab === 'market' ? 'active' : ''}`} onClick={() => setActiveTab('market')}>
+            📈 Mercado
+          </button>
+          <button className={`lg-tab ${activeTab === 'packs' ? 'active' : ''}`} onClick={() => setActiveTab('packs')}>
+            🎴 Sobres
+          </button>
+          <button className={`lg-tab ${activeTab === 'info' ? 'active' : ''}`} onClick={() => setActiveTab('info')}>
+            ℹ️ Info
+          </button>
+        </div>
+
+        {/* ==== STANDINGS TAB ==== */}
+        {activeTab === 'standings' && (
+          <div className="ld-content">
+            <div className="ld-standings">
+              {league.members?.sort((a, b) => b.league_points - a.league_points).map((member, idx) => {
+                const isAdmin = myMembership?.is_admin || league.owner_id === user?.id;
+                const isOwner = league.owner_id === member.user_id;
+                const isSelf = member.user_id === user?.id;
+
+                let borderClass = '';
+                if (idx === 0) borderClass = 'ld-rank-gold';
+                else if (idx === 1) borderClass = 'ld-rank-silver';
+                else if (idx === 2) borderClass = 'ld-rank-bronze';
+
+                return (
+                  <div
+                    key={member.id}
+                    className={`ld-member-row ${isSelf ? 'me' : ''} ${borderClass}`}
+                    onClick={() => navigate(`/team?league_id=${leagueId}&user_id=${member.user_id}`)}
+                    style={{ cursor: 'pointer' }}
+                    title={`Ver equipo de @${member.username}`}
+                  >
+                    <span className="ld-rank">{idx + 1}</span>
+                    <div className="ld-member-info">
+                      <span className="ld-member-name">
+                        @{member.username}
+                        {member.is_admin && ' 👑'}
+                      </span>
+                      <span className="ld-member-pts">{member.league_points} pts</span>
+                    </div>
+                    {isAdmin && !isOwner && !isSelf && (
+                      <button
+                        className="ld-leave-btn ld-kick-btn"
+                        onClick={(e) => { e.stopPropagation(); handleKick(member.user_id, member.username); }}
+                        title="Expulsar jugador"
+                      >
+                        🥾 Expulsar
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
-          <p className="ld-auction-desc">
-            Los mejores postores al finalizar el tiempo se llevan a los jugadores.
-          </p>
+        )}
 
-          <div className="ld-market-list">
-            {auctionLoading ? (
-              <div className="ld-loading-small">Cargando subasta...</div>
-            ) : !auction || auction.slots.length === 0 ? (
-              <div className="ld-empty">No hay subasta activa</div>
-            ) : (
-              <div className="ld-market-list-view">
-                <div className="ld-market-list-header">
-                  <div>Jugador</div>
-                  <div style={{ textAlign: 'right' }}>Puja / Base</div>
-                  <div style={{ textAlign: 'right' }}>Acción</div>
+        {/* ==== MARKET TAB (AUCTION) ==== */}
+        {activeTab === 'market' && (
+          <div className="ld-content">
+            <div className="ld-auction-header">
+              <h2>⏳ Subasta Diaria</h2>
+              <div className="ld-timer">
+                {timeLeft || 'Calculando...'}
+              </div>
+            </div>
+            <p className="ld-auction-desc">
+              Los mejores postores al finalizar el tiempo se llevan a los jugadores.
+            </p>
+
+            <div className="ld-market-list">
+              {auctionLoading ? (
+                <div className="ld-loading-small">Cargando subasta...</div>
+              ) : !auction || auction.slots.length === 0 ? (
+                <div className="lg-empty">
+                   <span className="mkt-empty-icon">⏳</span>
+                   <p>No hay subasta activa</p>
                 </div>
-                {auction.slots.map(slot => {
-                  const minBid = slot.current_bid > 0 ? slot.current_bid + 1 : slot.base_price;
-                  const hasBid = slot.user_has_bid;
+              ) : (
+                <div className="ld-market-list-view">
+                  <div className="ld-market-list-header">
+                    <div>Jugador</div>
+                    <div style={{ textAlign: 'right' }}>Puja / Base</div>
+                    <div style={{ textAlign: 'right' }}>Acción</div>
+                  </div>
+                  {auction.slots.map(slot => {
+                    const minBid = slot.current_bid > 0 ? slot.current_bid + 1 : slot.base_price;
+                    const hasBid = slot.user_has_bid;
 
-                  return (
-                    <div
-                      key={slot.id}
-                      className="ld-market-row"
-                      onClick={() => setSelectedPlayerForDetail({ ...slot, player_id: slot.player_id, name: slot.player_name, current_price: slot.base_price })}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <div className="ld-market-row-accent neutral"></div>
+                    return (
+                      <div
+                        key={slot.id}
+                        className="ld-market-row"
+                        onClick={() => setSelectedPlayerForDetail({ ...slot, player_id: slot.player_id, name: slot.player_name, current_price: slot.base_price })}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div className="ld-market-row-accent neutral"></div>
 
-                      {/* Player Info Col */}
+                        <div className="ld-market-row-info-col">
+                          <div className="ld-market-row-img-wrap" style={{ borderColor: getRarityColor(slot.base_rarity) }}>
+                            <img
+                              src={slot.image_url || '/images/placeholder.png'}
+                              alt={slot.player_name}
+                              className="ld-market-row-img"
+                              onError={(e) => { e.target.src = '/images/placeholder.png'; }}
+                            />
+                            <div className="ld-market-row-pos">{slot.position}</div>
+                          </div>
+                          <div className="ld-market-row-details">
+                            <div className="ld-market-row-name">{slot.player_name}</div>
+                            <div className="ld-market-row-team">
+                              <span style={{ color: getRarityColor(slot.base_rarity) }}>OVR {slot.overall_rating}</span>
+                              <span>•</span>
+                              <span style={{ color: hasBid ? 'var(--gold)' : 'var(--text-secondary)' }}>
+                                {hasBid ? 'Puja activa' : 'Sin participación'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="ld-market-row-price-col">
+                          <div className={`ld-market-row-price ${slot.current_bid > 0 ? 'highlight' : ''}`}>
+                            {formatPrice(slot.current_bid > 0 ? slot.current_bid : slot.base_price)}
+                          </div>
+                          <div className="ld-market-row-subprice">
+                            {slot.current_bid > 0 ? `Base: ${formatPrice(slot.base_price)}` : 'Precio Base'}
+                          </div>
+                        </div>
+
+                        <div className="ld-market-row-action-col" onClick={(e) => e.stopPropagation()}>
+                          <div className="ld-market-row-bid-wrap">
+                            <input
+                              type="number"
+                              placeholder={hasBid ? 'Subir a...' : `Mín: ${formatPrice(minBid)}`}
+                              value={bidAmounts[slot.id] || ''}
+                              onChange={(e) => setBidAmounts({ ...bidAmounts, [slot.id]: e.target.value })}
+                              className="ld-market-row-input"
+                            />
+                            <button
+                              className="btn-primary"
+                              style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                              onClick={() => handleBid(slot.id, slot.current_bid, slot.base_price)}
+                              disabled={bidding === slot.id}
+                            >
+                              {bidding === slot.id ? '...' : (hasBid ? 'Actualizar' : 'Pujar')}
+                            </button>
+                            {hasBid && (
+                              <button
+                                className="lg-btn-danger"
+                                style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                                onClick={() => handleWithdrawBid(slot.id)}
+                                disabled={bidding === slot.id}
+                              >
+                                Retirar
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* ═══ SYSTEM OFFERS ═══ */}
+            {offers.length > 0 && (
+              <div style={{ marginTop: 24 }}>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--gold)', marginBottom: 12 }}>🤖 Ofertas del Sistema</h2>
+                <p className="ld-auction-desc">El sistema te ha hecho una oferta por tus jugadores en venta.</p>
+                <div className="ld-market-list-view">
+                  {offers.map(offer => (
+                    <div key={offer.id} className="ld-market-row dark-row">
+                      <div className="ld-market-row-accent warning"></div>
+
                       <div className="ld-market-row-info-col">
-                        <div className="ld-market-row-img-wrap" style={{ borderBottomColor: getRarityColor(slot.base_rarity) }}>
-                          <img
-                            src={slot.image_url || '/images/placeholder.png'}
-                            alt={slot.player_name}
-                            className="ld-market-row-img"
-                            onError={(e) => { e.target.src = '/images/placeholder.png'; }}
-                          />
-                          <div className="ld-market-row-pos">{slot.position}</div>
+                        <div className="ld-market-row-img-wrap" style={{ borderColor: 'var(--gold)' }}>
+                          <div className="ld-player-fallback" style={{ display: 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>🤖</div>
                         </div>
                         <div className="ld-market-row-details">
-                          <div className="ld-market-row-name">{slot.player_name}</div>
+                          <div className="ld-market-row-name">{offer.player_name}</div>
                           <div className="ld-market-row-team">
-                            <span style={{ color: getRarityColor(slot.base_rarity) }}>OVR {slot.overall_rating}</span>
-                            <span>•</span>
-                            <span style={{ color: hasBid ? '#fbbf24' : '#64748b' }}>
-                              {hasBid ? 'Puja activa' : 'Sin participación'}
-                            </span>
+                            <span style={{ color: 'var(--gold)' }}>Oferta del Sistema</span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Price Col */}
                       <div className="ld-market-row-price-col">
-                        <div className={`ld-market-row-price ${slot.current_bid > 0 ? 'highlight' : ''}`}>
-                          {formatPrice(slot.current_bid > 0 ? slot.current_bid : slot.base_price)}
+                        <div className="ld-market-row-price highlight">
+                          {formatPrice(offer.offer_price)}
                         </div>
-                        <div className="ld-market-row-subprice">
-                          {slot.current_bid > 0 ? `Base: ${formatPrice(slot.base_price)}` : 'Precio Base'}
+                        <div className="ld-market-row-subprice" style={{ color: 'var(--danger)' }}>
+                          Tú pedías: {formatPrice(offer.asking_price)}
                         </div>
                       </div>
 
-                      {/* Action Col */}
-                      <div className="ld-market-row-action-col" onClick={(e) => e.stopPropagation()}>
+                      <div className="ld-market-row-action-col" onClick={e => e.stopPropagation()}>
                         <div className="ld-market-row-bid-wrap">
-                          <input
-                            type="number"
-                            placeholder={hasBid ? 'Subir a...' : `Mín: ${formatPrice(minBid)}`}
-                            value={bidAmounts[slot.id] || ''}
-                            onChange={(e) => setBidAmounts({ ...bidAmounts, [slot.id]: e.target.value })}
-                            className="ld-market-row-input"
-                          />
+                          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginRight: '8px', textAlign: 'right', lineHeight: 1.2 }}>
+                            Expira:<br />{new Date(offer.expires_at).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                          </div>
                           <button
-                            className="ld-market-row-btn primary"
-                            onClick={() => handleBid(slot.id, slot.current_bid, slot.base_price)}
-                            disabled={bidding === slot.id}
+                            className="btn-primary"
+                            style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                            onClick={() => handleAcceptOffer(offer.id)}
                           >
-                            {bidding === slot.id ? '...' : (hasBid ? 'Actualizar puja' : 'Pujar')}
+                            Aceptar
                           </button>
-                          {hasBid && (
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ═══ USER LISTINGS ═══ */}
+            <div style={{ marginTop: 24 }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12 }}>🏷️ Fichajes Recientes & En Venta</h2>
+              <p className="ld-auction-desc">Jugadores puestos a la venta por usuarios de la liga.</p>
+
+              {listingsLoading ? (
+                <div className="ld-loading-small">Cargando listados...</div>
+              ) : listings.length === 0 ? (
+                <div className="lg-empty">
+                   <p>No hay jugadores en venta</p>
+                </div>
+              ) : (
+                <div className="ld-market-list-view">
+                  {listings.map((listing, index) => (
+                    <div
+                      key={listing.id}
+                      className={`ld-market-row ${index % 2 === 0 ? 'dark-row' : ''}`}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setSelectedPlayerForDetail({
+                        ...listing,
+                        player_id: listing.player_id || listing.card?.player_id,
+                        name: listing.player_name,
+                        current_price: listing.asking_price,
+                        current_market_value: listing.asking_price
+                      })}
+                    >
+                      <div className={`ld-market-row-accent ${listing.is_mine ? 'warning' : 'neutral'}`}></div>
+
+                      <div className="ld-market-row-info-col">
+                        <div className="ld-market-row-img-wrap" style={{ borderColor: getRarityColor(listing.base_rarity) }}>
+                          <img
+                            src={listing.image_url || '/images/placeholder.png'}
+                            alt={listing.player_name}
+                            className="ld-market-row-img"
+                            onError={(e) => { e.target.src = '/images/placeholder.png'; }}
+                          />
+                          <div className="ld-market-row-pos">{listing.position}</div>
+                        </div>
+                        <div className="ld-market-row-details">
+                          <div className="ld-market-row-name">{listing.player_name}</div>
+                          <div className="ld-market-row-team">
+                            <span style={{ color: getRarityColor(listing.base_rarity) }}>OVR {listing.overall_rating}</span>
+                            <span>•</span>
+                            <span>Venta de: @{listing.seller_username}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="ld-market-row-price-col">
+                        <div className="ld-market-row-price highlight">
+                          {formatPrice(listing.asking_price)}
+                        </div>
+                        <div className="ld-market-row-subprice">
+                          Precio Solicitado
+                        </div>
+                      </div>
+
+                      <div className="ld-market-row-action-col" onClick={e => e.stopPropagation()}>
+                        <div className="ld-market-row-bid-wrap">
+                          {listing.is_mine ? (
                             <button
-                              className="ld-market-row-btn danger"
-                              onClick={() => handleWithdrawBid(slot.id)}
-                              disabled={bidding === slot.id}
-                              style={{ marginLeft: '4px' }}
+                              className="lg-btn-danger"
+                              style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                              onClick={() => handleCancelListing(listing.id)}
                             >
                               Retirar
+                            </button>
+                          ) : (
+                            <button
+                              className="btn-primary"
+                              style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                              onClick={() => handleBuyListing(listing.id)}
+                            >
+                              Comprar
                             </button>
                           )}
                         </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
+        )}
 
-          {/* ═══ SYSTEM OFFERS ═══ */}
-          {offers.length > 0 && (
-            <div style={{ marginTop: 24 }}>
-              <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#fbbf24', marginBottom: 12 }}>🤖 Ofertas del Sistema</h2>
-              <p className="ld-auction-desc">El sistema te ha hecho una oferta por tus jugadores en venta.</p>
-              <div className="ld-market-list-view">
-                {offers.map(offer => (
-                  <div key={offer.id} className="ld-market-row">
-                    <div className="ld-market-row-accent warning"></div>
-
-                    {/* Player Info Col */}
-                    <div className="ld-market-row-info-col">
-                      <div className="ld-market-row-img-wrap" style={{ borderBottomColor: '#fbbf24' }}>
-                        <div className="ld-player-fallback" style={{ display: 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>🤖</div>
-                      </div>
-                      <div className="ld-market-row-details">
-                        <div className="ld-market-row-name">{offer.player_name}</div>
-                        <div className="ld-market-row-team">
-                          <span style={{ color: '#fbbf24' }}>Oferta del Sistema</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Price Col */}
-                    <div className="ld-market-row-price-col">
-                      <div className="ld-market-row-price highlight">
-                        {formatPrice(offer.offer_price)}
-                      </div>
-                      <div className="ld-market-row-subprice" style={{ color: '#ef4444' }}>
-                        Tú pedías: {formatPrice(offer.asking_price)}
-                      </div>
-                    </div>
-
-                    {/* Action Col */}
-                    <div className="ld-market-row-action-col" onClick={e => e.stopPropagation()}>
-                      <div className="ld-market-row-bid-wrap">
-                        <div style={{ fontSize: '0.7rem', color: '#64748b', marginRight: '8px', textAlign: 'right', lineHeight: 1.2 }}>
-                          Expira:<br />{new Date(offer.expires_at).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                        <button
-                          className="ld-market-row-btn primary"
-                          onClick={() => handleAcceptOffer(offer.id)}
-                        >
-                          Aceptar
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ═══ USER LISTINGS ═══ */}
-          <div style={{ marginTop: 24 }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: 800, color: '#e2e8f0', marginBottom: 12 }}>🏷️ Jugadores en Venta</h2>
-            <p className="ld-auction-desc">Jugadores puestos a la venta por usuarios de la liga.</p>
-
-            {listingsLoading ? (
-              <div className="ld-loading-small">Cargando listados...</div>
-            ) : listings.length === 0 ? (
-              <div className="ld-empty">No hay jugadores en venta</div>
-            ) : (
-              <div className="ld-market-list-view">
-                {listings.map(listing => (
-                  <div
-                    key={listing.id}
-                    className="ld-market-row"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => setSelectedPlayerForDetail({
-                      ...listing,
-                      player_id: listing.player_id || listing.card?.player_id,
-                      name: listing.player_name,
-                      current_price: listing.asking_price,
-                      current_market_value: listing.asking_price
-                    })}
-                  >
-                    <div className={`ld-market-row-accent ${listing.is_mine ? 'warning' : 'neutral'}`}></div>
-
-                    {/* Player Info Col */}
-                    <div className="ld-market-row-info-col">
-                      <div className="ld-market-row-img-wrap" style={{ borderBottomColor: getRarityColor(listing.base_rarity) }}>
-                        <img
-                          src={listing.image_url || '/images/placeholder.png'}
-                          alt={listing.player_name}
-                          className="ld-market-row-img"
-                          onError={(e) => { e.target.src = '/images/placeholder.png'; }}
-                        />
-                        <div className="ld-market-row-pos">{listing.position}</div>
-                      </div>
-                      <div className="ld-market-row-details">
-                        <div className="ld-market-row-name">{listing.player_name}</div>
-                        <div className="ld-market-row-team">
-                          <span style={{ color: getRarityColor(listing.base_rarity) }}>OVR {listing.overall_rating}</span>
-                          <span>•</span>
-                          <span>Venta de: @{listing.seller_username}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Price Col */}
-                    <div className="ld-market-row-price-col">
-                      <div className="ld-market-row-price highlight">
-                        {formatPrice(listing.asking_price)}
-                      </div>
-                      <div className="ld-market-row-subprice">
-                        Precio
-                      </div>
-                    </div>
-
-                    {/* Action Col */}
-                    <div className="ld-market-row-action-col" onClick={e => e.stopPropagation()}>
-                      <div className="ld-market-row-bid-wrap">
-                        {listing.is_mine ? (
-                          <button
-                            className="ld-market-row-btn danger"
-                            onClick={() => handleCancelListing(listing.id)}
-                          >
-                            Retirar
-                          </button>
-                        ) : (
-                          <button
-                            className="ld-market-row-btn primary"
-                            onClick={() => handleBuyListing(listing.id)}
-                          >
-                            Comprar
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ==== PACKS TAB — Premium Design ==== */}
-      {activeTab === 'packs' && (
-        <div className="ld-content">
-          <div className="ld-packs-premium">
-            {/* Background effects */}
-            <div className="ld-pack-rays">
-              {[0, 45, 90, 135, 180, 225, 270, 315].map(deg => (
-                <div key={deg} className="ld-pack-ray" style={{ transform: `rotate(${deg}deg)` }} />
-              ))}
-              <div className="ld-pack-center-glow" />
-              <div className="ld-pack-center-glow-inner" />
-            </div>
-
-            {/* Floating particles */}
-            <div className="ld-pack-particle" style={{ top: '20%', left: '15%', animationDelay: '0s' }} />
-            <div className="ld-pack-particle" style={{ top: '30%', right: '20%', animationDelay: '1.5s' }} />
-            <div className="ld-pack-particle" style={{ bottom: '25%', left: '25%', animationDelay: '0.8s' }} />
-            <div className="ld-pack-particle" style={{ top: '50%', right: '10%', animationDelay: '2s' }} />
-
-            {/* Top label */}
-            <div className="ld-pack-top-label">
-              <div className="ld-pack-live-dot" />
-              <span>Legendary Scottish Pack</span>
-            </div>
-
-            {/* The Pack */}
-            <div className="ld-pack-container">
-              <div className="ld-pack-energy-flare" />
-              <div className="ld-pack-card-wrapper">
+        {/* ==== PACKS TAB — Premium Design ==== */}
+        {activeTab === 'packs' && (
+          <div className="ld-content">
+            <div className="ld-packs-premium">
+              <div className="ld-pack-container">
                 <div className="ld-pack-card-premium">
-                  <div className="ld-pack-card-gradient" />
-                  <div className="ld-pack-card-content">
-                    <div className="ld-pack-card-circle">
-                      <span>🏆</span>
-                    </div>
-                    <div className="ld-pack-card-badge-text">LEGENDARY</div>
-                    <div className="ld-pack-card-sub">SCOTTISH PREMIERSHIP</div>
-                  </div>
-                  <div className="ld-pack-foil-shine" />
+                  <img
+                    src="/images/pack-cover.png"
+                    alt="Sobre Legendario"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      borderRadius: '16px',
+                      display: 'block'
+                    }}
+                    onError={(e) => { e.target.style.display='none'; }}
+                  />
                 </div>
               </div>
-            </div>
 
-            {/* Pack info */}
-            <div className="ld-pack-info-area">
-              <p className="ld-pack-info-desc">Contiene <strong>1 carta legendaria</strong> aleatoria</p>
-              <div className="ld-pack-price-tag">🪙 150.000.000</div>
-            </div>
-
-            {/* Open button */}
-            <button
-              className={`ld-pack-open-btn ${opening ? 'opening' : ''}`}
-              onClick={handleOpenPack}
-              disabled={opening}
-            >
-              <span className="ld-pack-btn-text">
-                {opening ? '⚽ Abriendo...' : '⚡ ABRIR SOBRE'}
-              </span>
-              <div className="ld-pack-btn-shine" />
-            </button>
-          </div>
-
-          {/* Pack Result Modal */}
-          {packResult && packResult.cards && (
-            <PackOpeningModal
-              cards={packResult.cards}
-              remainingCoins={packResult.remaining_coins}
-              onClose={() => {
-                setPackResult(null);
-                loadLeague();
-              }}
-            />
-          )}
-
-          {/* Pack History with Card Details */}
-          {packHistory.length > 0 && (
-            <div className="ld-pack-history">
-              <h3>Historial de sobres</h3>
-              <div className="ld-history-list">
-                {packHistory.map(p => {
-                  const isExpanded = expandedPacks.has(p.id);
-                  return (
-                    <div key={p.id} className="ld-history-group">
-                      <div 
-                        className={`ld-history-row ${isExpanded ? 'active' : ''}`} 
-                        onClick={() => togglePackExpansion(p.id)}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <div className="ld-history-main">
-                          <span className="ld-history-icon">🎴</span>
-                          <div className="ld-history-info">
-                            <span className="ld-history-name">Sobre de Iconos</span>
-                            <span className="ld-history-meta">{new Date(p.opened_at).toLocaleDateString()} · {p.cards_obtained} {p.cards_obtained === 1 ? 'carta' : 'cartas'}</span>
-                          </div>
-                        </div>
-                        <span className="ld-history-toggle">{isExpanded ? '▲' : '▼'}</span>
-                      </div>
-                      
-                      {isExpanded && p.cards && p.cards.length > 0 && (
-                        <div className="ld-history-details">
-                          {p.cards.map((card, cidx) => (
-                            <div key={cidx} className="ld-history-card">
-                              <span className="ld-card-rarity" style={{ color: getRarityColor(card.rarity) }}>★</span>
-                              <span className="ld-card-name">{card.name}</span>
-                              <span className="ld-card-ovr">OVR {card.overall_rating}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="ld-pack-info-area">
+                <p className="ld-pack-info-desc">Contiene <strong>1 carta legendaria</strong> aleatoria</p>
+                <div className="ld-pack-price-tag">🪙 150.000.000</div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* ==== INFO TAB ==== */}
-      {
-        activeTab === 'info' && (
+              <button
+                className={`ld-pack-open-btn ${opening ? 'opening' : ''}`}
+                onClick={handleOpenPack}
+                disabled={opening}
+              >
+                {opening ? '⚽ Abriendo...' : '⚡ ABRIR SOBRE'}
+              </button>
+            </div>
+
+            {/* Pack Result Modal */}
+            {packResult && packResult.cards && (
+              <PackOpeningModal
+                cards={packResult.cards}
+                remainingCoins={packResult.remaining_coins}
+                onClose={() => {
+                  setPackResult(null);
+                  loadLeague();
+                }}
+              />
+            )}
+
+            {/* Pack History */}
+            {packHistory.length > 0 && (
+              <div className="ld-pack-history">
+                <h3>Historial de sobres</h3>
+                <div className="ld-history-list">
+                  {packHistory.map(p => {
+                    const isExpanded = expandedPacks.has(p.id);
+                    return (
+                      <div key={p.id} className="ld-card" style={{ marginBottom: '8px', padding: '12px' }}>
+                        <div 
+                          className="ld-history-row"
+                          onClick={() => togglePackExpansion(p.id)}
+                          style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                        >
+                          <div className="ld-history-main" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ fontSize: '1.5rem' }}>🎴</span>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <strong style={{ color: 'var(--text-primary)' }}>Sobre de Iconos</strong>
+                              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{new Date(p.opened_at).toLocaleDateString()} · {p.cards_obtained} {p.cards_obtained === 1 ? 'carta' : 'cartas'}</span>
+                            </div>
+                          </div>
+                          <span style={{ color: 'var(--gold)' }}>{isExpanded ? '▲' : '▼'}</span>
+                        </div>
+                        
+                        {isExpanded && p.cards && p.cards.length > 0 && (
+                          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
+                            {p.cards.map((card, cidx) => (
+                              <div key={cidx} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
+                                <span style={{ color: getRarityColor(card.base_rarity), fontWeight: 800 }}>★ {card.player_name}</span>
+                                <span style={{ color: 'var(--text-secondary)' }}>OVR {card.overall_rating}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ==== INFO TAB ==== */}
+        {activeTab === 'info' && (
           <div className="ld-content">
             <div className="ld-info-section">
-              <div className="ld-info-card">
-                <h3>📋 Información de la Liga</h3>
+              <div className="ld-card">
+                <h3 style={{ margin: '0 0 16px', color: 'var(--text-primary)', fontWeight: 800 }}>📋 Información de la Liga</h3>
                 <div className="ld-info-row">
                   <span>Nombre</span>
                   <strong>{league.name}</strong>
@@ -867,7 +812,7 @@ export default function LeagueDetailPage() {
                 {league.description && (
                   <div className="ld-info-row">
                     <span>Descripción</span>
-                    <span>{league.description}</span>
+                    <span style={{ textAlign: 'right', flex: 1 }}>{league.description}</span>
                   </div>
                 )}
                 <div className="ld-info-row">
@@ -889,11 +834,11 @@ export default function LeagueDetailPage() {
               </div>
 
               {/* Invite */}
-              <div className="ld-info-card" style={{ overflow: 'visible' }}>
-                <h3>📩 Invitar amigo</h3>
-                <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '12px' }}>Busca un usuario por su nombre o email para invitarle a la liga.</p>
-                <div className="ld-invite-search-container" style={{ position: 'relative' }}>
-                  <div className="ld-invite-form" style={{ display: 'flex', gap: '8px' }}>
+              <div className="ld-card" style={{ overflow: 'visible' }}>
+                <h3 style={{ margin: '0 0 8px', color: 'var(--text-primary)', fontWeight: 800 }}>📩 Invitar amigo</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 16px' }}>Busca un usuario por su nombre o email para invitarle a la liga.</p>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ display: 'flex', gap: '8px' }}>
                     <input
                       type="text"
                       className="ld-input"
@@ -901,11 +846,11 @@ export default function LeagueDetailPage() {
                       value={searchQuery}
                       onChange={e => {
                         setSearchQuery(e.target.value);
-                        setInviteUsername(e.target.value); // fallback
+                        setInviteUsername(e.target.value);
                       }}
                       style={{ flex: 1 }}
                     />
-                    <button className="ld-invite-btn" onClick={() => handleInvite()} disabled={inviting}>
+                    <button className="btn-primary" onClick={() => handleInvite()} disabled={inviting}>
                       {inviting ? '...' : 'Enviar'}
                     </button>
                   </div>
@@ -913,20 +858,19 @@ export default function LeagueDetailPage() {
                   {(searchResults.length > 0 || searching) && searchQuery.length >= 2 && (
                     <div className="ld-search-dropdown" style={{
                       position: 'absolute', top: '100%', left: 0, right: 0, 
-                      backgroundColor: '#1e293b', border: '1px solid #334155', 
+                      backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-strong)', 
                       borderRadius: '8px', zIndex: 50, marginTop: '4px',
-                      boxShadow: '0 4px 6px rgba(0,0,0,0.3)', maxHeight: '200px', overflowY: 'auto'
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.5)', maxHeight: '200px', overflowY: 'auto'
                     }}>
                       {searching ? (
-                        <div style={{ padding: '12px', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>Buscando...</div>
+                        <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Buscando...</div>
                       ) : searchResults.length > 0 ? (
                         searchResults.map(u => (
                           <div key={u.id} style={{
                             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                            padding: '10px 12px', borderBottom: '1px solid #334155', cursor: 'pointer',
-                            transition: 'background-color 0.2s'
+                            padding: '10px 12px', borderBottom: '1px solid var(--border)', cursor: 'pointer'
                           }}
-                          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#334155'}
+                          onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
                           onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
                           onClick={() => {
                             setInviteUsername(u.username);
@@ -935,11 +879,11 @@ export default function LeagueDetailPage() {
                           }}
                           >
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontWeight: 'bold', color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.username}</div>
-                              <div style={{ fontSize: '0.8rem', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.email}</div>
+                              <div style={{ fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.username}</div>
+                              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.email}</div>
                             </div>
                             <button 
-                              className="ld-invite-btn"
+                              className="btn-primary"
                               style={{ padding: '6px 12px', marginLeft: '8px', fontSize: '0.85rem' }}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -952,7 +896,7 @@ export default function LeagueDetailPage() {
                           </div>
                         ))
                       ) : (
-                        <div style={{ padding: '12px', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>No se encontraron usuarios</div>
+                        <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No se encontraron usuarios</div>
                       )}
                     </div>
                   )}
@@ -960,20 +904,14 @@ export default function LeagueDetailPage() {
               </div>
 
               {/* Leave */}
-              <button className="ld-leave-btn" onClick={handleLeave}>
+              <button className="lg-btn-danger" style={{ width: '100%', padding: '16px' }} onClick={handleLeave}>
                 🚪 Salir de la liga
               </button>
             </div>
           </div>
-        )
-      }
+        )}
 
-      {/* Bottom Nav */}
-      <div className="ld-bottom-bar">
-        <button className="ld-bottom-btn" onClick={() => navigate('/dashboard')}>🏠 Home</button>
-        <button className="ld-bottom-btn" onClick={() => navigate(`/team?league_id=${leagueId}`)}>⚽ Equipo</button>
-        <button className="ld-bottom-btn active">🏆 Liga</button>
       </div>
-    </div >
+    </AppLayout>
   );
 }

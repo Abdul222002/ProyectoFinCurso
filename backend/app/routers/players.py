@@ -144,7 +144,11 @@ async def my_cards(
             dribbling=c.player.dribbling,
             defending=c.player.defending,
             physical=c.player.physical,
-            acquired_at=c.acquired_at
+            acquired_at=c.acquired_at,
+            league_id=c.league_id,
+            scoring_profile=c.player.scoring_profile,
+            min_fantasy=c.player.min_fantasy,
+            max_fantasy=c.player.max_fantasy,
         )
         for c in cards
     ]
@@ -183,6 +187,10 @@ async def get_player_history(
     player = db.query(Player).filter(Player.id == player_id).first()
     if not player:
         raise HTTPException(status_code=404, detail="Jugador no encontrado")
+    
+    # Los iconos no tienen partidos reales — devolver lista vacía
+    if player.is_legend:
+        return []
     
     # Get all gameweeks ordered by number
     all_gameweeks = db.query(Gameweek).order_by(Gameweek.number.asc()).all()

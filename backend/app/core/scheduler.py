@@ -285,7 +285,7 @@ def gameweek_lifecycle_tick():
 
             db.flush()
 
-            # 2c. Diccionario rápido player_id → puntos
+            # 2c. Diccionario rápido player_id → puntos (jugadores reales de Sportmonks)
             player_points = {}
             for match in matches:
                 for stats in db.query(PlayerMatchStats).filter(
@@ -294,6 +294,7 @@ def gameweek_lifecycle_tick():
                     player_points[stats.player_id] = stats.fantasy_points or 0
 
             # 2d. Sumar puntos a cada equipo usando su 11 congelado
+            from app.services.icon_scoring import calculate_icon_points
             teams = db.query(Team).all()
             for team in teams:
                 gw_lineup = db.query(GameweekLineup).filter_by(
@@ -303,11 +304,23 @@ def gameweek_lifecycle_tick():
 
                 team_points = 0.0
                 if gw_lineup:
-                    # En lugar de usar player_ids (CSV), usamos la relación normalizada
                     for lp in gw_lineup.players:
                         card = lp.card
-                        if card and card.player_id in player_points:
-                            team_points += player_points[card.player_id]
+                        if not card:
+                            continue
+                        player = db.query(Player).filter(Player.id == card.player_id).first()
+                        if not player:
+                            continue
+
+                        if player.is_legend:
+                            # 🏆 ICONO: puntos calculados por el sistema de arquetipos
+                            pts = calculate_icon_points(player)
+                            logger.info(f"   🌟 {player.name} ({player.scoring_profile}): {pts} pts")
+                        else:
+                            # Jugador real: puntos de Sportmonks
+                            pts = player_points.get(card.player_id, 0)
+
+                        team_points += pts
                     gw_lineup.points_earned = team_points
 
                 # Acumular al total histórico
@@ -467,6 +480,16 @@ def start_scheduler():
     )
     scheduler.start()
     logger.info("✅ Scheduler iniciado: jornadas (1min) + ofertas (1h) + reconciliación (1h)")
+
+    # Ejecución inmediata al arrancar (catch-up)
+    try:
+        logger.info("🚀 Ejecutando tareas de mantenimiento inicial (catch-up)...")
+        gameweek_lifecycle_tick()
+        generate_system_offers_tick()
+        economy_reconciliation_tick()
+        logger.info("✅ Tareas iniciales completadas.")
+    except Exception as e:
+        logger.error(f"❌ Error en tareas iniciales del scheduler: {e}")
 
 
 def stop_scheduler():

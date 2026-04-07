@@ -5,6 +5,65 @@ import { adminAPI } from '../services/endpoints';
 import { toast } from 'sonner';
 import './AdminDashboard.css';
 
+const parseCoinInput = (val) => {
+    if (!val) return 0;
+    let str = val.toString().trim().toUpperCase().replace(/,/g, '');
+    let mult = 1;
+    if (str.endsWith('K')) { mult = 1e3; str = str.slice(0, -1); }
+    else if (str.endsWith('M')) { mult = 1e6; str = str.slice(0, -1); }
+    else if (str.endsWith('B')) { mult = 1e9; str = str.slice(0, -1); }
+    
+    if (str.includes(',')) str = str.replace(/,/g, ''); // just in case
+    const num = parseFloat(str);
+    return isNaN(num) ? 0 : Math.floor(num * mult);
+};
+
+function QuickCoinEdit({ initialCoins, onSave }) {
+    const [val, setVal] = useState(initialCoins.toString());
+    const parsed = parseCoinInput(val);
+    
+    const handleAdd = (amount) => {
+        const newVal = parsed + amount;
+        if (newVal < 0) return;
+        setVal(newVal.toString());
+    };
+    
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                    type="text"
+                    value={val}
+                    onChange={(e) => setVal(e.target.value)}
+                    style={{ width: 140, padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 15, textAlign: 'right', outline: 'none' }}
+                    placeholder="Ej. 1.5M, 500K"
+                />
+                <button className="adm-save-btn" style={{ padding: '8px 14px' }} onClick={() => onSave(parsed)}>💾 Guardar</button>
+            </div>
+            
+            <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end', width: '100%' }}>
+                <span style={{ fontSize: 12, color: '#84cc16', marginRight: 'auto', alignSelf: 'center', fontWeight: 'bold' }}>
+                    = {parsed.toLocaleString()} €
+                </span>
+                <button type="button" onClick={() => handleAdd(-1000000)} style={quickBtnStyle}>-1M</button>
+                <button type="button" onClick={() => handleAdd(1000000)} style={quickBtnStyle}>+1M</button>
+                <button type="button" onClick={() => handleAdd(10000000)} style={quickBtnStyle}>+10M</button>
+            </div>
+        </div>
+    );
+}
+
+const quickBtnStyle = {
+    background: 'rgba(255,255,255,0.1)',
+    border: 'none',
+    color: '#fff',
+    padding: '4px 8px',
+    borderRadius: 4,
+    fontSize: 11,
+    cursor: 'pointer',
+    fontWeight: 600
+};
+
 export default function AdminDashboard() {
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -526,16 +585,10 @@ export default function AdminDashboard() {
                                                     <div style={{ fontWeight: 600, color: '#fff' }}>{lg.league_name}</div>
                                                     <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Puntos: {lg.league_points}</div>
                                                 </div>
-                                                <input
-                                                    type="number"
-                                                    defaultValue={lg.coins}
-                                                    id={`league-coins-${lg.league_id}`}
-                                                    style={{ width: 140, padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 15, textAlign: 'right' }}
+                                                <QuickCoinEdit 
+                                                    initialCoins={lg.coins} 
+                                                    onSave={(newCoins) => handleSaveCoins(lg.league_id, newCoins)} 
                                                 />
-                                                <button className="adm-save-btn" style={{ padding: '8px 14px' }} onClick={() => {
-                                                    const val = document.getElementById(`league-coins-${lg.league_id}`).value;
-                                                    handleSaveCoins(lg.league_id, parseInt(val) || 0);
-                                                }}>💾</button>
                                             </div>
                                         ))}
                                     </div>

@@ -1,0 +1,26 @@
+:root {
+  /* Fondos */
+  --bg-base: #080d1a;        /* Azul marino muy oscuro — fondo de toda la app */
+  --bg-surface: #0e1628;     /* Superficie de cards y panels */
+  --bg-elevated: #162035;    /* Elementos elevados, modales */
+  --bg-hover: #1c2a45;       /* Hover state */
+
+  /* Acentos */
+  --gold: #c9a84c;           /* Dorado principal — botones, badges, títulos */
+  --gold-light: #e8c96d;     /* Dorado claro — hover, highlights */
+  --gold-dark: #9a7a2e;      /* Dorado oscuro — bordes, sombras */
+
+  /* Texto */
+  --text-primary: #f0f4ff;   /* Blanco azulado — texto principal */
+  --text-secondary: #8a9bc4; /* Azul grisáceo — texto secundario */
+  --text-muted: #4a5a7a;     /* Texto deshabilitado */
+
+  /* Semánticos */
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+
+  /* Bordes */
+  --border: rgba(201, 168, 76, 0.15);   /* Borde dorado sutil */
+  --border-strong: rgba(201, 168, 76, 0.4); /* Borde dorado visible */
+}

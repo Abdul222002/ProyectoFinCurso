@@ -1,7 +1,8 @@
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { teamsAPI, leaguesAPI } from '../services/endpoints';
+import { teamsAPI } from '../services/endpoints';
+import AppLayout from '../components/AppLayout';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -29,62 +30,38 @@ export default function Dashboard() {
     navigate('/login');
   };
 
-  const formatCoins = (coins) => {
-    if (coins >= 1000) return (coins / 1000).toFixed(1) + 'k';
-    return coins;
-  };
-
-  // Best team for summary display
-  const bestTeam = teams.length > 0
-    ? teams.reduce((best, t) => t.overall_rating > best.overall_rating ? t : best, teams[0])
-    : null;
+  const logoutButton = (
+    <button className="dash-logout-btn" onClick={handleLogout} title="Cerrar sesión">
+      Cerrar Sesión
+    </button>
+  );
 
   return (
-    <div className="dashboard">
-      {/* Top Header */}
-      <header className="dash-header">
-        <div className="dash-header-left">
-          <div className="dash-avatar">
-            <div className="dash-avatar-img">
-              {user?.username?.charAt(0)?.toUpperCase() || 'M'}
-            </div>
-            <div className="dash-level-badge">{user?.level || 1}</div>
+    <AppLayout title="Inicio" rightContent={logoutButton}>
+      <div className="dashboard-content">
+        {/* Welcome Hero Banner */}
+        <section className="dash-hero-banner">
+          <div className="dash-hero-avatar">
+            {user?.username?.charAt(0)?.toUpperCase() || 'M'}
+            <span className="dash-hero-level">{user?.level || 1}</span>
           </div>
-          <div className="dash-user-info">
-            <h1 className="dash-username">{user?.username || 'Manager'}</h1>
+          <div className="dash-hero-info">
+            <span className="dash-hero-badge">Scottish Premiership</span>
+            <h2>Bienvenido, {user?.username || 'Manager'}</h2>
             <div className="dash-xp-bar">
-              <div
-                className="dash-xp-fill"
+              <div 
+                className="dash-xp-fill" 
                 style={{ width: `${Math.min((user?.experience || 0) % 100, 100)}%` }}
               ></div>
             </div>
-          </div>
-        </div>
-        <div className="dash-header-right">
-          <button className="dash-logout-btn" onClick={handleLogout} title="Cerrar sesión">
-            ↩️
-          </button>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="dash-main">
-        {/* Welcome Hero Banner */}
-        <section className="dash-hero-banner">
-          <div className="dash-hero-content">
-            <span className="dash-hero-badge">NUEVA TEMPORADA</span>
-            <h2>Bienvenido de nuevo, {user?.username || 'Manager'}</h2>
-            <p>Gestiona tu plantilla, ficha estrellas y compite en la Arena.</p>
-          </div>
-          <div className="dash-hero-image">
-            <span style={{ fontSize: '4rem' }}>⚽</span>
+            <p>Gestiona tu plantilla, ficha estrellas y compite.</p>
           </div>
         </section>
 
         {/* My Leagues / Teams Summary */}
         <section className="dash-section">
           <div className="dash-section-header">
-            <h2 className="dash-section-title">Tu Club ({teams.length})</h2>
+            <h2 className="dash-section-title">Tu Club</h2>
             <button className="dash-section-link" onClick={() => navigate('/leagues')}>
               Mis Ligas ›
             </button>
@@ -92,10 +69,10 @@ export default function Dashboard() {
           {teams.length === 0 ? (
             <div className="dash-squad-card empty">
               <div className="dash-squad-placeholder">
-                <span style={{ fontSize: '2.5rem' }}>🏆</span>
+                <span className="empty-icon">🏆</span>
                 <p>Aún no tienes equipo</p>
                 <button
-                  className="dash-primary-btn"
+                  className="btn-primary"
                   onClick={() => navigate('/leagues')}
                 >
                   Unirse a una Liga →
@@ -105,7 +82,6 @@ export default function Dashboard() {
           ) : (
             teams.slice(0, 1).map(team => (
               <div className="dash-squad-card premium" key={team.id} onClick={() => navigate(`/team?league_id=${team.league_id}`)}>
-                <div className="dash-squad-texture"></div>
                 <div className="dash-squad-content">
                   <div className="dash-squad-overall">
                     <svg viewBox="0 0 36 36" className="circular-chart">
@@ -147,134 +123,52 @@ export default function Dashboard() {
         <section className="dash-section">
           <h2 className="dash-section-title">Accesos Rápidos</h2>
           <div className="dash-actions-grid">
-            <button className="dash-action-card action-team" onClick={() => navigate('/team')}>
+            <button className="dash-action-card" onClick={() => navigate('/team')}>
               <div className="dash-action-icon">👕</div>
               <div className="dash-action-info">
                 <h3>Mi Equipo</h3>
-                <p>Gestionar</p>
               </div>
             </button>
 
-            <button className="dash-action-card action-market" onClick={() => navigate('/market')}>
+            <button className="dash-action-card" onClick={() => navigate('/market')}>
               <div className="dash-action-icon">💸</div>
               <div className="dash-action-info">
                 <h3>Mercado</h3>
-                <p>Transferencias</p>
               </div>
             </button>
 
-            <button className="dash-action-card action-arena" onClick={() => navigate('/arena')}>
+            <button className="dash-action-card" onClick={() => navigate('/arena')}>
               <div className="dash-action-icon">⚔️</div>
               <div className="dash-action-info">
                 <h3>PvP Arena</h3>
-                <p>Compite</p>
               </div>
             </button>
 
-            <button className="dash-action-card action-leagues" onClick={() => navigate('/leagues')}>
+            <button className="dash-action-card" onClick={() => navigate('/leagues')}>
               <div className="dash-action-icon">🏆</div>
               <div className="dash-action-info">
                 <h3>Ligas</h3>
-                <p>Ver clasificación</p>
               </div>
             </button>
 
-            <button className="dash-action-card action-profile" onClick={() => navigate('/profile')}>
+            <button className="dash-action-card" onClick={() => navigate('/profile')}>
               <div className="dash-action-icon">👤</div>
               <div className="dash-action-info">
-                <h3>Mi Perfil</h3>
-                <p>Mensajes</p>
+                <h3>Perfil</h3>
               </div>
             </button>
 
             {user?.role === 'admin' && (
-              <button className="dash-action-card action-admin" onClick={() => navigate('/admin')}>
+              <button className="dash-action-card" onClick={() => navigate('/admin')}>
                 <div className="dash-action-icon">🛡️</div>
                 <div className="dash-action-info">
                   <h3>Admin</h3>
-                  <p>Panel Admin</p>
                 </div>
               </button>
             )}
           </div>
         </section>
-
-        {/* Trending Section (Mocked logic for fullness) */}
-        <section className="dash-section">
-          <div className="dash-section-header">
-            <h2 className="dash-section-title">Jugadores Top de la Semana</h2>
-            <span className="dash-badge">Premium</span>
-          </div>
-          <div className="dash-trending-scroll">
-            {/* Mock cards to fill the space */}
-            <div className="dash-trending-card">
-              <div className="trend-img-wrap gold-bg">
-                <img src="/images/placeholder.png" alt="Player" className="trend-img" />
-                <span className="trend-ovr">81</span>
-              </div>
-              <div className="trend-info">
-                <h4>J. Tavernier</h4>
-                <p>Rangers</p>
-              </div>
-              <div className="trend-price">💰 12.5M</div>
-            </div>
-            <div className="dash-trending-card">
-              <div className="trend-img-wrap legend-bg">
-                <img src="/images/placeholder.png" alt="Player" className="trend-img" />
-                <span className="trend-ovr">93</span>
-              </div>
-              <div className="trend-info">
-                <h4>K. Dalglish</h4>
-                <p>Icon</p>
-              </div>
-              <div className="trend-price">💰 85.0M</div>
-            </div>
-            <div className="dash-trending-card">
-              <div className="trend-img-wrap gold-bg">
-                <img src="/images/placeholder.png" alt="Player" className="trend-img" />
-                <span className="trend-ovr">78</span>
-              </div>
-              <div className="trend-info">
-                <h4>B. Miovski</h4>
-                <p>Aberdeen</p>
-              </div>
-              <div className="trend-price">💰 8.0M</div>
-            </div>
-          </div>
-        </section>
-
-      </main>
-
-      {/* Bottom Navigation */}
-      <nav className="dash-nav">
-        <ul className="dash-nav-list">
-          <li>
-            <button className="dash-nav-item dash-nav-item--active">
-              <span className="dash-nav-icon">🏠</span>
-            </button>
-          </li>
-          <li>
-            <button className="dash-nav-item" onClick={() => navigate('/team')}>
-              <span className="dash-nav-icon">👥</span>
-            </button>
-          </li>
-          <li>
-            <button className="dash-nav-item dash-nav-item--center" onClick={() => navigate('/arena')}>
-              <span className="dash-nav-icon">⚔️</span>
-            </button>
-          </li>
-          <li>
-            <button className="dash-nav-item" onClick={() => navigate('/market')}>
-              <span className="dash-nav-icon">🛍️</span>
-            </button>
-          </li>
-          <li>
-            <button className="dash-nav-item" onClick={() => navigate('/leagues')}>
-              <span className="dash-nav-icon">🏆</span>
-            </button>
-          </li>
-        </ul>
-      </nav>
-    </div>
+      </div>
+    </AppLayout>
   );
 }
