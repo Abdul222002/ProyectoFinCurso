@@ -14,6 +14,10 @@ import LeaguesPage from './pages/LeaguesPage';
 import LeagueDetailPage from './pages/LeagueDetailPage';
 import AdminDashboard from './pages/AdminDashboard';
 import ProfilePage from './pages/ProfilePage';
+import CookiesPage from './pages/CookiesPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
+import PendingVerificationPage from './pages/PendingVerificationPage';
+import CookieBanner from './components/CookieBanner';
 
 function App() {
   return (
@@ -24,6 +28,9 @@ function App() {
           {/* Rutas públicas */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/pending-verification" element={<PendingVerificationPage />} />
+          <Route path="/cookies" element={<CookiesPage />} />
 
           {/* Rutas protegidas */}
           <Route
@@ -110,6 +117,7 @@ function App() {
           {/* Redirección por defecto */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
+        <CookieBanner />
       </Router>
     </AuthProvider>
   );

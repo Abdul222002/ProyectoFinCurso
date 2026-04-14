@@ -1,0 +1,577 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800;900&display=swap');
+
+/* ── KEYFRAMES ── */
+@keyframes wtm-ray-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes wtm-flash-out {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes wtm-particle-burst {
+  0%   { transform: translate(0,0) rotate(0deg) scale(0); opacity:1; }
+  60%  { opacity: 1; }
+  100% { transform: translate(var(--tx),var(--ty)) rotate(var(--r)) scale(1.5); opacity: 0; }
+}
+@keyframes wtm-card-in {
+  0%   { opacity: 0; transform: translateY(30px) scale(0.88); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes wtm-flip-done {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+@keyframes wtm-stage-in {
+  0%   { opacity: 0; transform: scale(0.9) translateY(16px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes wtm-badge-in {
+  0%   { opacity: 0; transform: scale(0.6); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes wtm-text-glow {
+  0%,100% { text-shadow: 0 0 10px currentColor; }
+  50%      { text-shadow: 0 0 30px currentColor, 0 0 60px currentColor; }
+}
+@keyframes wtm-summary-in {
+  0%   { opacity:0; transform: translateY(20px); }
+  100% { opacity:1; transform: translateY(0); }
+}
+@keyframes wtm-float {
+  0%,100% { transform: translateY(0px); }
+  50%      { transform: translateY(-8px); }
+}
+
+/* ── OVERLAY ── */
+.wtm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: #05050f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: 'Bebas Neue', 'Impact', sans-serif;
+}
+
+/* ── RAYS ── */
+.wtm-rays {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 1s;
+}
+.wtm-rays__disk {
+  width: 200vmax;
+  height: 200vmax;
+  background-image: repeating-conic-gradient(
+    rgba(201,168,76,0.08) 0deg 10deg,
+    transparent 10deg 30deg
+  );
+  animation: wtm-ray-rotate 25s linear infinite;
+}
+
+/* ── FLASH ── */
+.wtm-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: radial-gradient(circle, #fff 0%, rgba(201,168,76,0.9) 40%, transparent 100%);
+  animation: wtm-flash-out 0.9s ease-out forwards;
+  pointer-events: none;
+}
+
+/* ── PARTICLES ── */
+.wtm-particles {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 201;
+  pointer-events: none;
+}
+.wtm-particle {
+  position: absolute;
+  animation: wtm-particle-burst 0.9s ease-out both;
+}
+
+/* ─────────────────────────────────
+   INTRO PHASE — Trophy icon + text
+───────────────────────────────── */
+.wtm-intro {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  animation: wtm-stage-in 0.6s ease-out both;
+}
+.wtm-intro__trophy {
+  font-size: 80px;
+  animation: wtm-float 2.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 30px rgba(201,168,76,0.8));
+}
+.wtm-intro__title {
+  color: var(--gold, #c9a84c);
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  letter-spacing: 0.05em;
+  text-align: center;
+  line-height: 1;
+  text-shadow: 0 0 40px rgba(201,168,76,0.6);
+}
+.wtm-intro__subtitle {
+  color: rgba(255,255,255,0.6);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+.wtm-intro__btn {
+  margin-top: 12px;
+  padding: 14px 40px;
+  background: linear-gradient(135deg, #c9a84c, #9a7a2e);
+  color: #09090f;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  border: none;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 24px rgba(201,168,76,0.5);
+}
+.wtm-intro__btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 36px rgba(201,168,76,0.7);
+}
+
+/* ─────────────────────────────────
+   REVEAL PHASE — Single card
+───────────────────────────────── */
+.wtm-reveal-stage {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  animation: wtm-stage-in 0.5s ease-out both;
+}
+
+.wtm-counter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.wtm-counter__text {
+  color: rgba(255,255,255,0.4);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+.wtm-counter__dots {
+  display: flex;
+  gap: 4px;
+}
+.wtm-counter__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  transition: background 0.3s, transform 0.3s;
+}
+.wtm-counter__dot.revealed {
+  background: var(--gold, #c9a84c);
+  transform: scale(1.2);
+  box-shadow: 0 0 6px rgba(201,168,76,0.7);
+}
+
+/* Card in reveal */
+.wtm-card-area {
+  perspective: 1400px;
+  animation: wtm-card-in 0.5s ease-out both;
+}
+.wtm-card-wrapper {
+  width: 210px;
+  height: 294px;
+  perspective: 1000px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.wtm-card-wrapper:not(.is-flipped):hover {
+  transform: translateY(-4px) scale(1.03);
+}
+.wtm-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.75s cubic-bezier(0.4,0,0.2,1);
+}
+.wtm-card-wrapper.is-flipped .wtm-card-inner {
+  transform: rotateY(180deg);
+}
+
+/* Card faces */
+.wtm-card-back,
+.wtm-card-front {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.wtm-card-back {
+  background: linear-gradient(135deg, #0f1428 0%, #1a1040 100%);
+  border: 1px solid rgba(201,168,76,0.25);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.wtm-card-back__pattern {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(201,168,76,0.04) 0px, rgba(201,168,76,0.04) 1px,
+    transparent 1px, transparent 14px
+  );
+}
+.wtm-card-back__inner {
+  position: relative;
+  z-index: 1;
+  width: 75%;
+  height: 75%;
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+}
+.wtm-card-back__logo {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: rgba(201,168,76,0.3);
+  letter-spacing: 0.1em;
+}
+.wtm-card-back__tap {
+  position: absolute;
+  bottom: 12px;
+  font-size: 0.55rem;
+  color: rgba(255,255,255,0.25);
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+
+/* Front face */
+.wtm-card-front {
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  border-width: 1.5px;
+  border-style: solid;
+}
+
+/* ── Rarities (same palette as PackOpeningModal) ── */
+.wtm-rarity-legend {
+  background: linear-gradient(145deg, #3b0764, #6d28d9, #4c1d95);
+  border-color: #d8b4fe;
+  box-shadow: 0 0 70px rgba(168,85,247,0.9), 0 0 35px rgba(168,85,247,0.5), 0 8px 32px rgba(0,0,0,0.8);
+}
+.wtm-rarity-gold {
+  background: linear-gradient(145deg, #78350f, #b45309, #d97706);
+  border-color: #fef08a;
+  box-shadow: 0 0 70px rgba(234,179,8,0.9), 0 0 35px rgba(250,204,21,0.5), 0 8px 32px rgba(0,0,0,0.8);
+}
+.wtm-rarity-silver {
+  background: linear-gradient(145deg, #1e293b, #334155, #475569);
+  border-color: #e2e8f0;
+  box-shadow: 0 0 40px rgba(148,163,184,0.4), 0 8px 32px rgba(0,0,0,0.8);
+}
+.wtm-rarity-bronze {
+  background: linear-gradient(145deg, #431407, #7c2d12, #9a3412);
+  border-color: #fdba74;
+  box-shadow: 0 0 40px rgba(249,115,22,0.5), 0 8px 32px rgba(0,0,0,0.8);
+}
+.wtm-rarity-common {
+  background: linear-gradient(145deg, #0f172a, #1e293b);
+  border-color: rgba(255,255,255,0.12);
+  box-shadow: 0 0 20px rgba(99,102,241,0.2), 0 8px 32px rgba(0,0,0,0.8);
+}
+
+.wtm-card-holo {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  border-radius: 10px;
+  mix-blend-mode: screen;
+  opacity: 0.8;
+  transition: background 0.1s;
+}
+.wtm-card-rarity-banner {
+  padding: 4px 8px;
+  text-align: center;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+}
+.wtm-card-rarity-label {
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  font-family: 'Inter', sans-serif;
+}
+.wtm-rarity-legend .wtm-card-rarity-label { color: #e9d5ff; animation: wtm-text-glow 2s infinite; }
+.wtm-rarity-gold   .wtm-card-rarity-label { color: #fef08a; animation: wtm-text-glow 2s infinite; }
+.wtm-rarity-silver .wtm-card-rarity-label { color: #e2e8f0; }
+.wtm-rarity-bronze .wtm-card-rarity-label { color: #fdba74; }
+.wtm-rarity-common .wtm-card-rarity-label { color: rgba(255,255,255,0.5); }
+
+.wtm-card-ovr {
+  position: absolute;
+  top: 26px;
+  left: 10px;
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+  line-height: 1;
+  z-index: 6;
+}
+.wtm-card-image-area {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 4px;
+  background: radial-gradient(ellipse at 50% 90%, rgba(255,255,255,0.08), transparent 70%);
+}
+.wtm-card-image-area img {
+  width: 85%;
+  height: 85%;
+  object-fit: contain;
+  object-position: bottom;
+  filter: drop-shadow(0 8px 14px rgba(0,0,0,0.8));
+  z-index: 2;
+}
+.wtm-card-info {
+  padding: 8px 10px;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  position: relative;
+  z-index: 10;
+}
+.wtm-card-name {
+  font-size: 1rem;
+  font-weight: 900;
+  color: #fff;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.wtm-card-pos {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+  background: rgba(0,0,0,0.4);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.12em;
+}
+
+/* Lineup badge */
+.wtm-lineup-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: linear-gradient(135deg, #c9a84c, #9a7a2e);
+  color: #09090f;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.55rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  z-index: 7;
+  letter-spacing: 0.1em;
+  animation: wtm-badge-in 0.4s ease-out both;
+}
+
+/* Reveal controls */
+.wtm-reveal-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.wtm-reveal-hint {
+  color: rgba(255,255,255,0.4);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  animation: wtm-float 1.8s ease-in-out infinite;
+}
+.wtm-reveal-skip {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.25);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  transition: color 0.2s;
+}
+.wtm-reveal-skip:hover {
+  color: rgba(255,255,255,0.5);
+}
+
+/* ─────────────────────────────────
+   SUMMARY PHASE — Squad grid
+───────────────────────────────── */
+.wtm-summary {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 700px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 16px 32px;
+  animation: wtm-summary-in 0.6s ease-out both;
+  overflow-y: auto;
+  max-height: 100vh;
+}
+.wtm-summary__title {
+  color: var(--gold, #c9a84c);
+  font-size: clamp(1.6rem, 5vw, 2.8rem);
+  letter-spacing: 0.05em;
+  text-align: center;
+  line-height: 1;
+  text-shadow: 0 0 30px rgba(201,168,76,0.5);
+}
+.wtm-summary__subtitle {
+  color: rgba(255,255,255,0.5);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  margin-top: -8px;
+}
+.wtm-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+@media (max-width: 480px) {
+  .wtm-summary-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+}
+.wtm-mini-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  animation: wtm-card-in 0.4s ease-out both;
+  transition: transform 0.2s;
+}
+.wtm-mini-card:hover { transform: translateY(-3px); }
+.wtm-mini-card.starter {
+  border-color: rgba(201,168,76,0.3);
+  background: rgba(201,168,76,0.05);
+}
+.wtm-mini-card img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  object-position: bottom;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.7));
+}
+.wtm-mini-card__name {
+  font-size: 0.5rem;
+  font-weight: 900;
+  color: rgba(255,255,255,0.85);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 70px;
+}
+.wtm-mini-card__pos {
+  font-size: 0.5rem;
+  color: rgba(255,255,255,0.5);
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+.wtm-mini-card__ovr {
+  font-size: 0.9rem;
+  color: #fff;
+  font-weight: 900;
+  line-height: 1;
+}
+.wtm-mini-rarity-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.wtm-mini-rarity-dot.legend { background: #a78bfa; box-shadow: 0 0 6px #a78bfa; }
+.wtm-mini-rarity-dot.gold   { background: #fcd34d; box-shadow: 0 0 6px #fcd34d; }
+.wtm-mini-rarity-dot.silver { background: #e2e8f0; }
+.wtm-mini-rarity-dot.bronze { background: #fdba74; }
+.wtm-mini-rarity-dot.common { background: rgba(255,255,255,0.2); }
+
+.wtm-summary__cta {
+  padding: 14px 48px;
+  background: linear-gradient(135deg, #c9a84c, #9a7a2e);
+  color: #09090f;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  border: none;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 24px rgba(201,168,76,0.5);
+}
+.wtm-summary__cta:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 36px rgba(201,168,76,0.7);
+}

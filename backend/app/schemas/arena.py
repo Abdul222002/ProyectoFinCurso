@@ -57,6 +57,8 @@ class BattleHistoryResponse(BaseModel):
     my_score: int
     opponent_score: int
     result: str  # "victory", "defeat", "draw"
+    rating_change: int
+    global_rating_change: int
     simulated_at: datetime
 
     class Config:

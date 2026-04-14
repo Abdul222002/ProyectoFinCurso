@@ -219,6 +219,9 @@ async def simulate_pvp(
     my_global_change = _calculate_rating_change(current_user.global_elo, opp_team.user.global_elo, won, draw)
     opp_global_change = _calculate_rating_change(opp_team.user.global_elo, current_user.global_elo, lost, draw)
 
+    battle.rating_change = my_change
+    battle.global_rating_change = my_global_change
+
     my_team.arena_rating += my_change
     opp_team.arena_rating += opp_change
     
@@ -301,6 +304,8 @@ async def battle_history(
             my_score=my_score,
             opponent_score=opp_score,
             result=match_result,
+            rating_change=b.rating_change if is_team1 else -(b.rating_change or 0),
+            global_rating_change=b.global_rating_change if is_team1 else -(b.global_rating_change or 0),
             simulated_at=b.simulated_at
         ))
 

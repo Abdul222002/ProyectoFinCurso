@@ -11,6 +11,8 @@ export const authAPI = {
   updateProfile: (data) => api.put('/auth/profile', data, {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
   }),
+  verifyEmail: (token) => api.get('/auth/verify-email', { params: { token } }),
+  resendVerification: (email) => api.post('/auth/resend-verification', null, { params: { email } }),
 };
 
 // ==========================================

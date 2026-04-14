@@ -34,6 +34,10 @@ services:
       - MYSQL_USER=root
       - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-fantasyleague2026}
       - MYSQL_DATABASE=ultimate_fantasy_legends
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - SPORTMONKS_API_KEY=${SPORTMONKS_API_KEY}
+      - BYPASS_EMAIL_VERIFICATION=${BYPASS_EMAIL_VERIFICATION:-false}
     volumes:
       - ./backend/static/players:/backend/static/players
 

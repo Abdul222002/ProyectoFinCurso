@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { leaguesAPI, authAPI } from '../services/endpoints';
 import { toast } from 'sonner';
 import AppLayout from '../components/AppLayout';
+import WelcomeTeamModal from '../components/WelcomeTeamModal';
 import './LeaguesPage.css';
 
 export default function LeaguesPage() {
@@ -12,6 +13,7 @@ export default function LeaguesPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('my'); // my, create, join, invitations
   const [message, setMessage] = useState('');
+  const [welcomeData, setWelcomeData] = useState(null); // { leagueName, players }  →  shows modal
 
   // Create form
   const [newName, setNewName] = useState('');
@@ -70,17 +72,20 @@ export default function LeaguesPage() {
     setCreating(true);
     setMessage('');
     try {
-      await leaguesAPI.create({
+      const res = await leaguesAPI.create({
         name: newName,
         description: newDesc,
         max_members: newMax,
         is_public: false
       });
-      setMessage('✅ ¡Liga creada!');
       setNewName('');
       setNewDesc('');
       setActiveTab('my');
       await loadData();
+      // Mostrar animación de bienvenida
+      if (res.data?.assigned_players?.length > 0) {
+        setWelcomeData({ leagueName: res.data.name, players: res.data.assigned_players });
+      }
     } catch (err) {
       setMessage(`❌ ${err.response?.data?.detail || 'Error al crear liga'}`);
     }
@@ -92,11 +97,14 @@ export default function LeaguesPage() {
     setJoining(true);
     setMessage('');
     try {
-      await leaguesAPI.joinByCode(joinCode);
-      setMessage('✅ ¡Te has unido a la liga!');
+      const res = await leaguesAPI.joinByCode(joinCode);
       setJoinCode('');
       setActiveTab('my');
       await loadData();
+      // Mostrar animación de bienvenida
+      if (res.data?.assigned_players?.length > 0) {
+        setWelcomeData({ leagueName: res.data.name, players: res.data.assigned_players });
+      }
     } catch (err) {
       setMessage(`❌ ${err.response?.data?.detail || 'Código inválido'}`);
     }
@@ -105,9 +113,12 @@ export default function LeaguesPage() {
 
   const handleAccept = async (id) => {
     try {
-      await leaguesAPI.acceptInvitation(id);
-      setMessage('✅ Invitación aceptada');
+      const res = await leaguesAPI.acceptInvitation(id);
       await loadData();
+      // Mostrar animación de bienvenida
+      if (res.data?.assigned_players?.length > 0) {
+        setWelcomeData({ leagueName: res.data.name, players: res.data.assigned_players });
+      }
     } catch (err) {
       setMessage(`❌ ${err.response?.data?.detail || 'Error'}`);
     }
@@ -162,6 +173,7 @@ export default function LeaguesPage() {
   };
 
   return (
+    <>
     <AppLayout title="🏆 Ligas" backTo="/dashboard">
       <div className="leagues-container">
         {/* Message */}
@@ -395,5 +407,15 @@ export default function LeaguesPage() {
         )}
       </div>
     </AppLayout>
+
+    {/* ── Animación de bienvenida al unirse/crear liga ── */}
+    {welcomeData && (
+      <WelcomeTeamModal
+        leagueName={welcomeData.leagueName}
+        players={welcomeData.players}
+        onClose={() => setWelcomeData(null)}
+      />
+    )}
+    </>
   );
 }

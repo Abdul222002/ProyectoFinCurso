@@ -45,6 +45,12 @@ class CardInLineup(BaseModel):
     dribbling: int = 50
     defending: int = 50
     physical: int = 50
+    
+    # Icon attributes
+    is_legend: Optional[bool] = False
+    scoring_profile: Optional[str] = None
+    min_fantasy: Optional[int] = None
+    max_fantasy: Optional[int] = None
 
     class Config:
         from_attributes = True

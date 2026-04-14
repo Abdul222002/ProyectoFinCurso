@@ -63,6 +63,11 @@ class User(Base):
     # Rol y permisos
     role = Column(Enum(UserRole), default=UserRole.FREE)
     
+    # Email Verification
+    email_verified = Column(Boolean, default=False)
+    verification_token = Column(String(255), nullable=True)
+    verification_token_expires = Column(DateTime, nullable=True)
+    
     # Arena PvP Global
     global_elo = Column(Integer, default=1000)
     arena_tickets = Column(Integer, default=5)
@@ -571,6 +576,15 @@ class ArenaBattle(Base):
     team1_score = Column(Integer, nullable=False)
     team2_score = Column(Integer, nullable=False)
     winner_id = Column(Integer, ForeignKey("teams.id"), nullable=True)  # NULL = empate
+    
+    team1_rating_change = Column(Integer, default=0)
+    team2_rating_change = Column(Integer, default=0)
+    team1_global_change = Column(Integer, default=0)
+    team2_global_change = Column(Integer, default=0)
+    
+    # ELO Changes relative to the battle
+    rating_change = Column(Integer, default=0)
+    global_rating_change = Column(Integer, default=0)
     
     # Metadatos
     simulated_at = Column(DateTime, default=datetime.utcnow)

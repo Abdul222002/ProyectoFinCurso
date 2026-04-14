@@ -40,6 +40,10 @@ def _team_to_response(team: Team) -> dict:
             "dribbling": card.player.dribbling,
             "defending": card.player.defending,
             "physical": card.player.physical,
+            "is_legend": card.player.is_legend,
+            "scoring_profile": card.player.scoring_profile,
+            "min_fantasy": card.player.min_fantasy,
+            "max_fantasy": card.player.max_fantasy,
         })
 
     return {

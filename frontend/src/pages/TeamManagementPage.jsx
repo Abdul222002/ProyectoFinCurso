@@ -407,7 +407,7 @@ export default function TeamManagementPage() {
             )}
           </div>
 
-          <h2 className="tm-section-title">⚽ Titulares ({lineup.length}/11)</h2>
+          <h2 className="tm-section-title">⚽ Titulares ({lineup.length}/{(() => { const s = getFormationSlots(selectedTeam?.active_formation || '4-3-3'); return 1 + (s.DEF||0) + (s.MID||0) + (s.FWD||0); })()})</h2>
           
           <div className="tm-pitch-wrapper">
             <div className="tm-pitch-container">

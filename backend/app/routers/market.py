@@ -720,19 +720,32 @@ async def accept_offer(
         LeagueMember.league_id == league_id,
         LeagueMember.user_id == current_user.id
     ).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="No eres miembro de esta liga")
 
-    # Give coins
+    # Give coins to seller
     member.coins += offer.offer_price
 
-    # Delete card
+    # Get card info before modifying
     card = offer.card
-    player_name = card.player.name
-    db.delete(card)
+    if not card:
+        raise HTTPException(status_code=404, detail="La carta ya no existe o ya fue vendida")
 
-    # Close offer and listing
+    player_name = card.player.name if card.player else "Jugador desconocido"
+
+    # Cannot hard-delete the card because system_offers.card_id has a NOT NULL FK.
+    # Instead, detach the card from the user's team — it leaves their possession.
+    card.is_in_lineup = False
+    card.is_tradeable = False
+    card.team_id = None
+    card.league_id = None
+
+    # Mark offer as accepted
     offer.is_accepted = True
-    offer.listing.is_active = False
-    offer.listing.sold_at = datetime.utcnow()
+    # Close listing only if it still exists and is active
+    if offer.listing and offer.listing.is_active:
+        offer.listing.is_active = False
+        offer.listing.sold_at = datetime.utcnow()
 
     db.commit()
 

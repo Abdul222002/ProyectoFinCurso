@@ -8,6 +8,25 @@ from datetime import datetime
 from enum import Enum
 
 
+# ==========================================
+# ASSIGNED PLAYERS (para animación de bienvenida)
+# ==========================================
+
+class AssignedPlayerCard(BaseModel):
+    """Datos de cada jugador asignado al unirse a una liga"""
+    id: int                    # UserCard.id
+    player_id: int
+    player_name: str
+    position: str
+    overall_rating: float
+    base_rarity: str
+    image_url: Optional[str] = None
+    is_in_lineup: bool
+
+    class Config:
+        from_attributes = True
+
+
 class InvitationStatusEnum(str, Enum):
     PENDING = "pending"
     ACCEPTED = "accepted"
@@ -74,6 +93,20 @@ class LeagueListResponse(BaseModel):
     member_count: int
     max_members: int
     is_public: bool
+
+    class Config:
+        from_attributes = True
+
+
+class LeagueJoinResponse(BaseModel):
+    """Respuesta al crear o unirse a una liga — incluye jugadores asignados."""
+    id: int
+    name: str
+    owner_username: str
+    member_count: int
+    max_members: int
+    is_public: bool
+    assigned_players: List[AssignedPlayerCard] = []
 
     class Config:
         from_attributes = True

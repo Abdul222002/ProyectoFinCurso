@@ -20,7 +20,8 @@ from app.models.models import (
 from app.schemas.league import (
     LeagueCreate, LeagueUpdate, LeagueResponse, LeagueListResponse,
     LeagueDetailResponse, LeagueMemberResponse,
-    InvitationCreate, InvitationResponse
+    InvitationCreate, InvitationResponse,
+    LeagueJoinResponse, AssignedPlayerCard
 )
 from app.routers.auth import get_current_user
 
@@ -89,6 +90,7 @@ def _create_team_for_league(user: User, league: League, db: Session) -> Team:
     # Crear cartas — los 11 primeros son titulares
     total_ovr = 0
     lineup_count = 0
+    assigned_cards = []
     for i, player in enumerate(all_players):
         is_lineup = i < 11  # Primeros 11 = titulares
         card = UserCard(
@@ -101,6 +103,17 @@ def _create_team_for_league(user: User, league: League, db: Session) -> Team:
             is_tradeable=True
         )
         db.add(card)
+        db.flush()  # para obtener card.id
+        assigned_cards.append(AssignedPlayerCard(
+            id=card.id,
+            player_id=player.id,
+            player_name=player.name,
+            position=player.position.value if hasattr(player.position, 'value') else str(player.position),
+            overall_rating=player.overall_rating,
+            base_rarity=player.base_rarity or 'common',
+            image_url=player.image_url,
+            is_in_lineup=is_lineup
+        ))
         if is_lineup:
             total_ovr += player.overall_rating
             lineup_count += 1
@@ -109,7 +122,7 @@ def _create_team_for_league(user: User, league: League, db: Session) -> Team:
     if lineup_count > 0:
         team.overall_rating = total_ovr / lineup_count
 
-    return team
+    return team, assigned_cards
 
 
 def _league_to_response(league: League) -> LeagueResponse:
@@ -201,18 +214,19 @@ async def accept_invitation(
     db.add(member)
 
     # Auto-crear equipo con 15 jugadores aleatorios
-    _create_team_for_league(current_user, league, db)
+    _, assigned_cards = _create_team_for_league(current_user, league, db)
 
     db.commit()
     db.refresh(league)
 
-    return LeagueListResponse(
+    return LeagueJoinResponse(
         id=league.id,
         name=league.name,
         owner_username=league.owner.username,
         member_count=league.member_count,
         max_members=league.max_members,
-        is_public=league.is_public
+        is_public=league.is_public,
+        assigned_players=assigned_cards
     )
 
 
@@ -265,18 +279,19 @@ async def join_by_code(
     db.add(member)
 
     # Auto-crear equipo con 15 jugadores aleatorios
-    _create_team_for_league(current_user, league, db)
+    _, assigned_cards = _create_team_for_league(current_user, league, db)
 
     db.commit()
     db.refresh(league)
 
-    return LeagueListResponse(
+    return LeagueJoinResponse(
         id=league.id,
         name=league.name,
         owner_username=league.owner.username,
         member_count=league.member_count,
         max_members=league.max_members,
-        is_public=league.is_public
+        is_public=league.is_public,
+        assigned_players=assigned_cards
     )
 
 
@@ -284,7 +299,7 @@ async def join_by_code(
 # CRUD DE LIGAS
 # ==========================================
 
-@router.post("/", response_model=LeagueResponse, status_code=201)
+@router.post("/", response_model=LeagueJoinResponse, status_code=201)
 async def create_league(
     data: LeagueCreate,
     current_user: User = Depends(get_current_user),
@@ -311,12 +326,20 @@ async def create_league(
     db.add(member)
 
     # Auto-crear equipo con 15 jugadores aleatorios
-    _create_team_for_league(current_user, league, db)
+    _, assigned_cards = _create_team_for_league(current_user, league, db)
 
     db.commit()
     db.refresh(league)
 
-    return _league_to_response(league)
+    return LeagueJoinResponse(
+        id=league.id,
+        name=league.name,
+        owner_username=league.owner.username,
+        member_count=league.member_count,
+        max_members=league.max_members,
+        is_public=league.is_public,
+        assigned_players=assigned_cards
+    )
 
 
 @router.get("/", response_model=List[LeagueListResponse])

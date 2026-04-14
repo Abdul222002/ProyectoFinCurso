@@ -216,9 +216,9 @@ export default function PlayerDetailModal({ playerId, playerObj, onClose, isRead
                                 <tbody>
                                     {history.map((h, idx) => {
                                         const isHome = team === h.home_team;
-                                        const resultText = h.status === 'FINISHED'
+                                        const resultText = h.status === 'FINISHED' && h.home_score != null && h.away_score != null
                                             ? `${h.home_score}-${h.away_score}`
-                                            : 'vs';
+                                            : h.status === 'FINISHED' ? '-' : 'vs';
                                         return (
                                             <tr key={idx}>
                                                 <td>{h.gameweek_number > 0 ? h.gameweek_number : '-'}</td>

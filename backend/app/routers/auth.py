@@ -16,6 +16,7 @@ from app.core.database import get_db
 from app.core.config import settings
 from app.models.models import User
 from app.schemas.user import UserCreate, UserLogin, UserResponse, TokenResponse
+from app.services.email_service import generate_verification_token, send_verification_email
 
 router = APIRouter()
 
@@ -81,6 +82,14 @@ async def get_current_user(
             detail="Usuario no encontrado",
             headers={"WWW-Authenticate": "Bearer"},
         )
+        
+    # Validar verificación de email (bloqueo global)
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email no verificado. Revisa tu bandeja de entrada."
+        )
+        
     return user
 
 
@@ -109,15 +118,32 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
             detail="Este nombre de usuario ya está en uso"
         )
 
-    # Crear usuario
+    # Crear usuario y token de verificacion
+    token, expires = generate_verification_token()
+    
+    # Bypass para desarrollo local
+    import os
+    bypass = os.getenv("BYPASS_EMAIL_VERIFICATION", "false").lower() == "true"
+    
     new_user = User(
         username=user_data.username,
         email=user_data.email,
         password_hash=hash_password(user_data.password),
+        verification_token=None if bypass else token,
+        verification_token_expires=None if bypass else expires,
+        email_verified=True if bypass else False
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    # Enviar email (solo si no hay bypass)
+    if not bypass:
+        try:
+            send_verification_email(new_user.email, new_user.username, token)
+        except Exception as e:
+            # No bloqueamos el registro si falla el envío, solo logueamos
+            print(f"ERROR: No se pudo enviar el email de verificación a {new_user.email}: {e}")
 
     # Generar token — sub DEBE ser string
     access_token = create_access_token(data={"sub": str(new_user.id)})
@@ -147,6 +173,12 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email o contraseña incorrectos"
         )
+        
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Debes verificar tu email antes de iniciar sesión. Revisa tu bandeja de entrada."
+        )
 
     # Actualizar last_login
     user.last_login = datetime.utcnow()
@@ -160,6 +192,41 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db)):
         user=UserResponse.model_validate(user)
     )
 
+
+@router.get("/verify-email")
+async def verify_email(token: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(
+        User.verification_token == token,
+        User.verification_token_expires > datetime.utcnow()
+    ).first()
+    
+    if not user:
+        raise HTTPException(status_code=400, detail="Token inválido o expirado")
+    
+    user.email_verified = True
+    user.verification_token = None
+    user.verification_token_expires = None
+    db.commit()
+    
+    return {"message": "Email verificado correctamente"}
+
+@router.post("/resend-verification")
+async def resend_verification(email: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == email).first()
+    if not user or user.email_verified:
+        return {"message": "Si el email existe y no está verificado, recibirás un nuevo enlace"}
+    
+    token, expires = generate_verification_token()
+    user.verification_token = token
+    user.verification_token_expires = expires
+    db.commit()
+    
+    try:
+        send_verification_email(user.email, user.username, token)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error al enviar el email")
+    
+    return {"message": "Email de verificación reenviado"}
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
