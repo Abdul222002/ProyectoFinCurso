@@ -18,7 +18,11 @@ def create_database():
     Crea la base de datos si no existe
     """
     # Conexión sin especificar la base de datos
-    engine_url = f"mysql+pymysql://{settings.MYSQL_USER}:{settings.MYSQL_PASSWORD}@{settings.MYSQL_HOST}:{settings.MYSQL_PORT}"
+    engine_url = (
+        f"mysql+pymysql://{settings.MYSQL_USER}:{settings.MYSQL_PASSWORD}"
+        f"@{settings.MYSQL_HOST}:{settings.MYSQL_PORT}"
+        "?charset=utf8mb4"
+    )
     engine = create_engine(engine_url)
     
     try:

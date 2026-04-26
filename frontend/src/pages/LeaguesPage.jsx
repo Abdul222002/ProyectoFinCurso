@@ -84,7 +84,7 @@ export default function LeaguesPage() {
       await loadData();
       // Mostrar animación de bienvenida
       if (res.data?.assigned_players?.length > 0) {
-        setWelcomeData({ leagueName: res.data.name, players: res.data.assigned_players });
+        setWelcomeData({ leagueName: res.data.name, leagueId: res.data.id, players: res.data.assigned_players });
       }
     } catch (err) {
       setMessage(`❌ ${err.response?.data?.detail || 'Error al crear liga'}`);
@@ -103,7 +103,7 @@ export default function LeaguesPage() {
       await loadData();
       // Mostrar animación de bienvenida
       if (res.data?.assigned_players?.length > 0) {
-        setWelcomeData({ leagueName: res.data.name, players: res.data.assigned_players });
+        setWelcomeData({ leagueName: res.data.name, leagueId: res.data.id, players: res.data.assigned_players });
       }
     } catch (err) {
       setMessage(`❌ ${err.response?.data?.detail || 'Código inválido'}`);
@@ -117,7 +117,7 @@ export default function LeaguesPage() {
       await loadData();
       // Mostrar animación de bienvenida
       if (res.data?.assigned_players?.length > 0) {
-        setWelcomeData({ leagueName: res.data.name, players: res.data.assigned_players });
+        setWelcomeData({ leagueName: res.data.name, leagueId: res.data.id, players: res.data.assigned_players });
       }
     } catch (err) {
       setMessage(`❌ ${err.response?.data?.detail || 'Error'}`);
@@ -412,6 +412,7 @@ export default function LeaguesPage() {
     {welcomeData && (
       <WelcomeTeamModal
         leagueName={welcomeData.leagueName}
+        leagueId={welcomeData.leagueId}
         players={welcomeData.players}
         onClose={() => setWelcomeData(null)}
       />

@@ -15,6 +15,7 @@ from app.routers.market import router as market_router
 from app.routers.arena import router as arena_router
 from app.routers.packs import router as packs_router
 from app.routers.admin import router as admin_router
+from app.routers.notifications import router as notifications_router
 
 from contextlib import asynccontextmanager
 import sys
@@ -110,6 +111,7 @@ app.include_router(market_router, prefix="/api/market", tags=["Mercado"])
 app.include_router(arena_router, prefix="/api/arena", tags=["Arena PvP"])
 app.include_router(packs_router, prefix="/api/packs", tags=["Sobres"])
 app.include_router(admin_router, prefix="/api/admin", tags=["Admin"])
+app.include_router(notifications_router, prefix="/api/notifications", tags=["Notificaciones"])
 
 
 if __name__ == "__main__":

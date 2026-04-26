@@ -40,10 +40,11 @@ class AuctionSlotResponse(BaseModel):
     physical: int = 50
     
     base_price: int
-    current_bid: int
-    bid_count: int = 0
-    user_has_bid: bool = False
-    
+    # current_bid is intentionally NOT exposed — blind auction
+    bid_count: int = 0         # How many distinct users have bid
+    user_has_bid: bool = False  # Whether the calling user has a bid
+    my_bid_amount: Optional[int] = None  # Only the calling user's own bid
+
     class Config:
         from_attributes = True
 

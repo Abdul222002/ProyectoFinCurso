@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { playersAPI } from '../services/endpoints';
+import { resolvePlayerImageUrl } from '../utils/mediaUrl';
 import './PlayerDetailModal.css';
 
 export default function PlayerDetailModal({ playerId, playerObj, onClose, isReadOnly, onClausulazo, onBlindar, onSell, onRelease }) {
@@ -106,7 +107,7 @@ export default function PlayerDetailModal({ playerId, playerObj, onClose, isRead
                         {/* Player image */}
                         <div className="pdm-card-img-wrap">
                             <img
-                                src={img || '/images/placeholder.png'}
+                                src={resolvePlayerImageUrl(img)}
                                 alt={name}
                                 className="pdm-card-img"
                                 onError={(e) => { e.target.src = '/images/placeholder.png'; }}

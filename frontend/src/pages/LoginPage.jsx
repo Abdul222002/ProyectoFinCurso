@@ -36,7 +36,9 @@ export default function LoginPage() {
         </div>
         <div className="auth-left__content">
           <div className="auth-left__badge">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish Premiership</div>
-          <div className="auth-left__logo-wrap">⚽</div>
+          <div className="auth-left__logo-wrap">
+            <img src="/logo-premium.png" alt="UFL Logo" />
+          </div>
           <h1 className="auth-left__title">Ultimate Fantasy<br /><span>Legends</span></h1>
           <p className="auth-left__desc">
             Construye tu equipo ideal, ficha estrellas en el mercado y compite en ligas privadas con tus amigos.
@@ -75,7 +77,9 @@ export default function LoginPage() {
         <div className="auth-container">
           {/* Mobile brand */}
           <div className="auth-mobile-brand">
-            <span className="auth-mobile-brand__icon">⚽</span>
+            <span className="auth-mobile-brand__icon">
+              <img src="/logo-premium.png" alt="UFL" />
+            </span>
             <div className="auth-mobile-brand__title">Ultimate Fantasy Legends</div>
             <div className="auth-mobile-brand__sub">Scottish Premiership Fantasy</div>
           </div>
@@ -139,7 +143,12 @@ export default function LoginPage() {
                     <span className="auth-spinner" />
                     Entrando...
                   </span>
-                ) : '⚽ Entrar al Juego'}
+                ) : (
+                  <>
+                    <img src="/logo-premium.png" alt="" style={{ width: '24px', height: '24px' }} />
+                    Entrar al Juego
+                  </>
+                )}
               </button>
             </form>
 

@@ -320,6 +320,7 @@ def gameweek_lifecycle_tick():
                             # Jugador real: puntos de Sportmonks
                             pts = player_points.get(card.player_id, 0)
 
+                        lp.points_earned = pts
                         team_points += pts
                     gw_lineup.points_earned = team_points
 

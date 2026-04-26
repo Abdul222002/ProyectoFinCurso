@@ -134,8 +134,11 @@
 
 /* Common Card style for sections */
 .tm-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
+  background: rgba(14, 22, 40, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 8px;
@@ -198,10 +201,12 @@
 }
 
 .tm-gw-total {
-  background: var(--bg-hover);
+  background: rgba(28, 42, 69, 0.5);
+  backdrop-filter: blur(8px);
   padding: 16px;
   border-radius: 8px;
   text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
 .tm-gw-total-label {
@@ -224,8 +229,9 @@
 }
 
 .tm-gw-point-row {
-  background: var(--bg-hover);
-  border: 1px solid var(--border);
+  background: rgba(28, 42, 69, 0.5);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
   padding: 8px 12px;
   border-radius: 6px;
   display: flex;
@@ -265,8 +271,9 @@
 .tm-bench-card {
   display: flex;
   align-items: center;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
+  background: rgba(14, 22, 40, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   padding: 12px;
   gap: 16px;

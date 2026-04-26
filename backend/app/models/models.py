@@ -385,6 +385,7 @@ class GameweekLineupPlayer(Base):
     
     position = Column(String(10), nullable=True)  # Posición específica en esa alineación
     is_captain = Column(Integer, default=0)       # 1 si es capitán
+    points_earned = Column(Float, default=0.0)    # Puntos que ganó EXACTAMENTE en esta jornada
 
     # Relaciones
     lineup = relationship("GameweekLineup", back_populates="players")
@@ -842,9 +843,30 @@ class MarketListing(Base):
     seller = relationship("User", foreign_keys=[seller_id])
     buyer = relationship("User", foreign_keys=[buyer_id])
     league = relationship("League")
+    bids = relationship("ListingBid", back_populates="listing", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<MarketListing Card:{self.card_id} Price:{self.asking_price}>"
+
+
+class ListingBid(Base):
+    """
+    Puja de un miembro de la liga por un jugador en venta (listado entre usuarios).
+    Las monedas quedan bloqueadas hasta que el vendedor acepte una puja, cancele o venza la venta.
+    """
+    __tablename__ = "listing_bids"
+
+    id = Column(Integer, primary_key=True, index=True)
+    listing_id = Column(Integer, ForeignKey("market_listings.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    amount = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    listing = relationship("MarketListing", back_populates="bids")
+    user = relationship("User")
+
+    def __repr__(self):
+        return f"<ListingBid Listing:{self.listing_id} User:{self.user_id} {self.amount}>"
 
 
 # ==========================================
@@ -880,6 +902,35 @@ class SystemOffer(Base):
 
     def __repr__(self):
         return f"<SystemOffer Listing:{self.listing_id} Price:{self.offer_price}>"
+
+
+# ==========================================
+# MODELO: NOTIFICATION (Notificaciones de Subasta)
+# ==========================================
+
+class Notification(Base):
+    """
+    Notificaciones del sistema para los usuarios.
+    Usada principalmente para informar del resultado de las subastas.
+    """
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    league_id = Column(Integer, ForeignKey("leagues.id"), nullable=True)
+
+    # Tipo: "auction_won", "auction_lost"
+    type = Column(String(50), nullable=False)
+    title = Column(String(200), nullable=False)
+    message = Column(Text, nullable=False)
+
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+
+    def __repr__(self):
+        return f"<Notification User:{self.user_id} Type:{self.type}>"
 
 
 # ==========================================

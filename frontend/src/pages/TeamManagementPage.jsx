@@ -6,6 +6,7 @@ import TeamCustomizerModal from '../components/TeamCustomizerModal';
 import PlayerDetailModal from '../components/PlayerDetailModal';
 import FormationPitch, { getFormationSlots } from '../components/FormationPitch';
 import AppLayout from '../components/AppLayout';
+import { resolvePlayerImageUrl } from '../utils/mediaUrl';
 import { toast } from 'sonner';
 import './TeamManagementPage.css';
 
@@ -42,6 +43,10 @@ export default function TeamManagementPage() {
   
   // Gameweek points state
   const [gwPoints, setGwPoints] = useState(null);
+
+  // Breakdown modal state
+  const [gwBreakdown, setGwBreakdown] = useState(null);
+  const [loadingBreakdown, setLoadingBreakdown] = useState(false);
 
   const FORMATIONS = ['4-4-2', '4-3-3', '3-5-2', '4-2-3-1', '3-4-3', '5-3-2', '5-4-1'];
 
@@ -121,27 +126,56 @@ export default function TeamManagementPage() {
     loadPoints();
   }, [selectedTeam, isReadOnly, userIdParam]);
 
+  const handleGwClick = async (gwNumber) => {
+    if (!selectedTeam) return;
+    setLoadingBreakdown(true);
+    try {
+      const res = await teamsAPI.getGameweekLineupBreakdown(selectedTeam.league_id, gwNumber, isReadOnly ? userIdParam : null);
+      setGwBreakdown({ gameweek_number: gwNumber, ...res.data });
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Error al cargar desglose');
+    }
+    setLoadingBreakdown(false);
+  };
+
   const handleAddToLineup = async (cardId) => {
     if (!selectedTeam || !selectedTeam.players) return;
     const cardToAdd = selectedTeam.players.find(p => p.id === cardId);
     if (!cardToAdd) return;
-    const currentLineup = selectedTeam.players.filter(p => p.is_in_lineup);
-    if (currentLineup.length >= 11) {
+
+    // Auto-corregir alineación actual: solo contar los que realmente caben
+    const formation = selectedTeam.active_formation || '4-3-3';
+    const slotsLimit = getFormationSlots(formation);
+    const counts = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
+    const validLineup = [];
+    
+    // Filtrar los que están en la base de datos como titulares, pero respetando límites
+    for (const p of selectedTeam.players.filter(p => p.is_in_lineup)) {
+      const pos = p.position || p.player?.position;
+      if (!pos) continue;
+      const maxAllowed = pos === 'GK' ? 1 : (slotsLimit[pos] || 0);
+      if (counts[pos] < maxAllowed) {
+        counts[pos]++;
+        validLineup.push(p);
+      }
+    }
+
+    if (validLineup.length >= 11) {
       setError('Ya tienes 11 titulares. Quita uno primero.');
       setTimeout(() => setError(''), 3000);
       return;
     }
-    const slotsLimit = getFormationSlots(selectedTeam.active_formation || '4-3-3');
-    const pos = cardToAdd.position;
-    const samePosInLineup = currentLineup.filter(p => p.position === pos).length;
+    
+    const pos = cardToAdd.position || cardToAdd.player?.position;
     const maxAllowed = pos === 'GK' ? 1 : (slotsLimit[pos] || 0);
 
-    if (samePosInLineup >= maxAllowed) {
+    if (counts[pos] >= maxAllowed) {
       setError(`Tu formación ya tiene el máximo de jugadores en la posición ${pos}.`);
       setTimeout(() => setError(''), 3000);
       return;
     }
-    const currentIds = currentLineup.map(p => p.id);
+    
+    const currentIds = validLineup.map(p => p.id);
     try {
       await teamsAPI.setLineup(selectedTeam.league_id, [...currentIds, cardId]);
       await loadData();
@@ -156,9 +190,24 @@ export default function TeamManagementPage() {
 
   const handleRemoveFromLineup = async (cardId) => {
     if (!selectedTeam || !selectedTeam.players) return;
-    const newIds = selectedTeam.players
-      .filter(p => p.is_in_lineup && p.id !== cardId)
-      .map(p => p.id);
+    
+    // Auto-corregir al quitar: enviar solo los válidos excluyendo el que queremos quitar
+    const formation = selectedTeam.active_formation || '4-3-3';
+    const slotsLimit = getFormationSlots(formation);
+    const counts = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
+    const newIds = [];
+    
+    for (const p of selectedTeam.players.filter(p => p.is_in_lineup)) {
+      if (p.id === cardId) continue; // Excluir el que quitamos
+      
+      const pos = p.position || p.player?.position;
+      if (!pos) continue;
+      const maxAllowed = pos === 'GK' ? 1 : (slotsLimit[pos] || 0);
+      if (counts[pos] < maxAllowed) {
+        counts[pos]++;
+        newIds.push(p.id);
+      }
+    }
     try {
       await teamsAPI.setLineup(selectedTeam.league_id, newIds);
       await loadData();
@@ -215,10 +264,23 @@ export default function TeamManagementPage() {
   const handleSaveLineup = async () => {
     if (!selectedTeam) return;
     try {
-      const currentLineup = selectedTeam.players.filter(p => p.is_in_lineup);
-      const currentIds = currentLineup.map(p => p.id);
-      await teamsAPI.update(selectedTeam.league_id, { formation: selectedTeam.active_formation });
-      await teamsAPI.setLineup(selectedTeam.league_id, currentIds);
+      const formation = selectedTeam.active_formation || '4-3-3';
+      const slotsLimit = getFormationSlots(formation);
+      const counts = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
+      const validIds = [];
+      
+      for (const p of selectedTeam.players.filter(p => p.is_in_lineup)) {
+        const pos = p.position || p.player?.position;
+        if (!pos) continue;
+        const maxAllowed = pos === 'GK' ? 1 : (slotsLimit[pos] || 0);
+        if (counts[pos] < maxAllowed) {
+          counts[pos]++;
+          validIds.push(p.id);
+        }
+      }
+      
+      await teamsAPI.update(selectedTeam.league_id, { formation });
+      await teamsAPI.setLineup(selectedTeam.league_id, validIds);
       setSuccess('✅ Alineación guardada para la próxima jornada.');
       setTimeout(() => setSuccess(''), 4000);
       if (gameweek && new Date() < new Date(gameweek.start_date)) setGwLineup(true);
@@ -339,25 +401,25 @@ export default function TeamManagementPage() {
           </div>
         )}
 
-        {/* 2. Customize / Select League Bar */}
+        {/* 2. Customize Bar */}
         <div className="tm-actions-bar">
-          {!isReadOnly && (
-            <button className="btn-secondary" onClick={() => setShowCustomizer(true)}>
-              ✏️ Personalizar
-            </button>
-          )}
           {teams.length > 1 && (
             <div className="tm-league-selector">
               {teams.map(t => (
                 <button
                   key={t.id}
                   className={`tm-league-btn ${selectedTeam?.id === t.id ? 'active' : ''}`}
-                  onClick={() => setSelectedTeam(t)}
+                  onClick={() => navigate(`/team?league_id=${t.league_id}`)}
                 >
                   {t.league_name || 'Liga'}
                 </button>
               ))}
             </div>
+          )}
+          {!isReadOnly && (
+            <button className="btn-secondary" onClick={() => setShowCustomizer(true)}>
+              ✏️ Personalizar
+            </button>
           )}
         </div>
 
@@ -433,7 +495,7 @@ export default function TeamManagementPage() {
               </div>
               <div className="tm-gw-points-list">
                 {gwPoints.gameweek_points.map(gw => (
-                  <div key={gw.gameweek_number} className="tm-gw-point-row">
+                  <div key={gw.gameweek_number} className="tm-gw-point-row" onClick={() => handleGwClick(gw.gameweek_number)} style={{ cursor: 'pointer', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
                     <span>J{gw.gameweek_number}</span>
                     <strong style={{ color: gw.points_earned > 0 ? 'var(--success)' : 'inherit' }}>
                       {gw.points_earned.toFixed(1)} pts
@@ -460,7 +522,7 @@ export default function TeamManagementPage() {
                 return (
                   <div key={card.id} className="tm-bench-card" onClick={() => setSelectedPlayerForDetail({ ...card, name: card.player_name })}>
                     <div className="tm-bench-img-wrap">
-                      <img src={card.image_url || '/images/placeholder.png'} alt={card.player_name} />
+                      <img src={resolvePlayerImageUrl(card.image_url)} alt={card.player_name} loading="lazy" decoding="async" />
                       <div className="tm-bench-pos">{card.position}</div>
                     </div>
                     
@@ -544,7 +606,16 @@ export default function TeamManagementPage() {
                   {pickerPlayers.map(card => (
                     <div key={card.id} className="tm-picker-card" onClick={() => handleAddToLineup(card.id)}>
                       <div className="tm-picker-card-img-wrap">
-                        <img src={card.image_url || '/images/placeholder.png'} alt={card.player_name} onError={(e) => { e.target.src = '/images/placeholder.png'; }} />
+                        <img 
+                          src={resolvePlayerImageUrl(card.image_url, card.player_name)} 
+                          alt={card.player_name} 
+                          loading="lazy" 
+                          decoding="async" 
+                          onError={(e) => { 
+                            e.target.onerror = null; 
+                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(card.player_name||'UFL')}&background=152e20&color=25f478&bold=true`; 
+                          }} 
+                        />
                       </div>
                       <div className="tm-picker-card-info">
                         <span className="tm-picker-card-name" style={{ color: 'var(--text-primary)', fontWeight: 800 }}>{card.player_name}</span>
@@ -624,6 +695,56 @@ export default function TeamManagementPage() {
                     {releasing ? '...' : 'Confirmar'}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Breakdown Modal */}
+        {gwBreakdown && (
+          <div className="tm-picker-overlay" onClick={() => setGwBreakdown(null)}>
+            <div className="tm-picker-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '95%' }}>
+              <div className="tm-picker-header">
+                <h3>Resumen Jornada {gwBreakdown.gameweek_number}</h3>
+                <button className="tm-picker-close" onClick={() => setGwBreakdown(null)}>✕</button>
+              </div>
+              <div style={{ padding: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', background: 'var(--surface-light)', padding: '12px', borderRadius: '8px' }}>
+                  <span>Formación: <strong>{gwBreakdown.formation}</strong></span>
+                  <span>Total Puntos: <strong style={{ color: 'var(--success)' }}>{gwBreakdown.total_points.toFixed(1)}</strong></span>
+                </div>
+                
+                {gwBreakdown.lineup_players.length === 0 ? (
+                  <div className="tm-empty">No hay datos de jugadores para esta alineación.</div>
+                ) : (
+                  <div className="tm-picker-list" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                    {gwBreakdown.lineup_players.map(card => (
+                      <div key={card.id} className="tm-picker-card" style={{ cursor: 'default', display: 'flex', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div className="tm-picker-card-img-wrap" style={{ width: '50px', height: '60px' }}>
+                            <img 
+                              src={resolvePlayerImageUrl(card.image_url, card.player_name)} 
+                              alt={card.player_name} 
+                              loading="lazy" 
+                              decoding="async" 
+                              onError={(e) => { 
+                                e.target.onerror = null; 
+                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(card.player_name||'UFL')}&background=1b2a47&color=f1c40f&bold=true`; 
+                              }} 
+                            />
+                          </div>
+                          <div className="tm-picker-card-info">
+                            <span className="tm-picker-card-name" style={{ color: 'var(--text-primary)', fontWeight: 800 }}>{card.player_name}</span>
+                            <span className="tm-picker-card-pos" style={{ color: 'var(--text-secondary)' }}>{card.position} {card.is_legend ? '🌟' : ''}</span>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '1.2rem', color: card.points_earned > 0 ? 'var(--success)' : 'var(--text-primary)' }}>
+                          {card.points_earned.toFixed(1)} pts
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

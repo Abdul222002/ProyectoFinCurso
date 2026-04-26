@@ -80,10 +80,14 @@ const AppLayout = ({ title, backTo, rightContent, children }) => {
       {(title || backTo || rightContent) && (
         <header className="app-header">
           <div className="header-left">
-            {backTo !== null && (
+            {backTo !== null ? (
               <button className="back-btn" onClick={handleBack}>
                 ← Volver
               </button>
+            ) : (
+              <div className="app-brand-logo" onClick={() => navigate('/dashboard')} style={{ cursor: 'pointer' }}>
+                <img src="/logo-premium.png" alt="UFL" style={{ height: '32px', width: 'auto' }} />
+              </div>
             )}
           </div>
           <div className="header-center">

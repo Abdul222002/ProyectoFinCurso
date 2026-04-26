@@ -114,7 +114,7 @@ export default function CardDetailPage() {
 
       {/* Actions */}
       <div className="cd-actions">
-        <button className="cd-action-btn buy" onClick={() => navigate('/market')}>
+        <button className="cd-action-btn market-btn" onClick={() => navigate('/market')}>
           📈 Ver en Mercado
         </button>
         <button className="cd-action-btn analysis" onClick={() => navigate(`/analysis/${playerId}`)}>

@@ -15,7 +15,7 @@ from app.models.models import (
     User, League, LeagueMember, LeagueInvitation, InvitationStatus,
     Team, Player, UserCard, Position,
     SystemOffer, MarketListing, MarketAuction, AuctionSlot, AuctionBid,
-    PackOpening, GameweekLineup
+    ListingBid, PackOpening, GameweekLineup
 )
 from app.schemas.league import (
     LeagueCreate, LeagueUpdate, LeagueResponse, LeagueListResponse,
@@ -183,7 +183,7 @@ async def my_invitations(
     return [_invitation_to_response(inv) for inv in invitations]
 
 
-@router.post("/invitations/{invitation_id}/accept", response_model=LeagueListResponse)
+@router.post("/invitations/{invitation_id}/accept", response_model=LeagueJoinResponse)
 async def accept_invitation(
     invitation_id: int,
     current_user: User = Depends(get_current_user),
@@ -481,11 +481,27 @@ def _remove_user_from_league(user_id: int, league_id: int, db: Session):
         SystemOffer.league_id == league_id
     ).delete()
 
-    # 2. Eliminar jugadores que el usuario tenía en venta en esta liga
-    db.query(MarketListing).filter(
+    # 2. Devolver pujas del usuario en listados de otros y limpiar pujas en sus propias ventas
+    for bid in db.query(ListingBid).join(MarketListing).filter(
+        ListingBid.user_id == user_id,
+        MarketListing.league_id == league_id
+    ).all():
+        membership.locked_coins -= bid.amount
+        db.delete(bid)
+
+    for lst in db.query(MarketListing).filter(
         MarketListing.seller_id == user_id,
         MarketListing.league_id == league_id
-    ).delete()
+    ).all():
+        for bid in db.query(ListingBid).filter(ListingBid.listing_id == lst.id).all():
+            bm = db.query(LeagueMember).filter(
+                LeagueMember.league_id == league_id,
+                LeagueMember.user_id == bid.user_id
+            ).first()
+            if bm:
+                bm.locked_coins -= bid.amount
+            db.delete(bid)
+        db.delete(lst)
 
     # 3. Eliminar equipo asociado y sus alineaciones (FK constraint)
     team = db.query(Team).filter(
@@ -516,8 +532,19 @@ def _delete_league_completely(league: League, db: Session):
     
     # 1. SystemOffers
     db.query(SystemOffer).filter(SystemOffer.league_id == league_id).delete()
-    
-    # 2. MarketListings
+
+    # 2. Pujas de mercado entre usuarios (antes de borrar listados)
+    for bid in db.query(ListingBid).join(MarketListing).filter(
+        MarketListing.league_id == league_id
+    ).all():
+        m = db.query(LeagueMember).filter(
+            LeagueMember.league_id == league_id,
+            LeagueMember.user_id == bid.user_id
+        ).first()
+        if m:
+            m.locked_coins -= bid.amount
+        db.delete(bid)
+
     db.query(MarketListing).filter(MarketListing.league_id == league_id).delete()
     
     # 3. Auctions

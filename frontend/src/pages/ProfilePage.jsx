@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { leaguesAPI } from '../services/endpoints';
 import { toast } from 'sonner';
 import AppLayout from '../components/AppLayout';
+import WelcomeTeamModal from '../components/WelcomeTeamModal';
 import './ProfilePage.css';
 
 export default function ProfilePage() {
@@ -11,6 +12,7 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const [leagues, setLeagues] = useState([]);
   const [invitations, setInvitations] = useState([]);
+  const [welcomeData, setWelcomeData] = useState(null);
   const [activeTab, setActiveTab] = useState('info');
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
@@ -39,11 +41,19 @@ export default function ProfilePage() {
 
   const handleAccept = async (id) => {
     try {
-      await leaguesAPI.acceptInvitation(id);
-      toast.success('✅ ¡Te has unido a la liga!');
+      const res = await leaguesAPI.acceptInvitation(id);
       setInvitations(prev => prev.filter(inv => inv.id !== id));
-      const res = await leaguesAPI.myLeagues();
-      setLeagues(Array.isArray(res.data) ? res.data : []);
+      const leaguesRes = await leaguesAPI.myLeagues();
+      setLeagues(Array.isArray(leaguesRes.data) ? leaguesRes.data : []);
+      if (res.data?.assigned_players?.length > 0) {
+        setWelcomeData({
+          leagueName: res.data.name,
+          leagueId: res.data.id,
+          players: res.data.assigned_players,
+        });
+      } else {
+        toast.success('✅ ¡Te has unido a la liga!');
+      }
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Error al aceptar invitación');
     }
@@ -91,6 +101,7 @@ export default function ProfilePage() {
   }
 
   return (
+    <>
     <AppLayout title="Mi Perfil" backTo="/dashboard">
       <div className="profile-container">
         
@@ -230,7 +241,7 @@ export default function ProfilePage() {
                           Invitación a <strong>{inv.league_name}</strong>
                         </h3>
                         <p className="profile-invitation-from">
-                          De: {inv.invited_by_name || 'Admin'} · {formatDate(inv.created_at)}
+                          De: {inv.invited_by_username || 'Admin'} · {formatDate(inv.created_at)}
                         </p>
                       </div>
                     </div>
@@ -258,5 +269,15 @@ export default function ProfilePage() {
         </main>
       </div>
     </AppLayout>
+
+    {welcomeData && (
+      <WelcomeTeamModal
+        leagueName={welcomeData.leagueName}
+        leagueId={welcomeData.leagueId}
+        players={welcomeData.players}
+        onClose={() => setWelcomeData(null)}
+      />
+    )}
+    </>
   );
 }

@@ -9,13 +9,16 @@ export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [teams, setTeams] = useState([]);
+  const [selectedDashboardTeamId, setSelectedDashboardTeamId] = useState(null);
   const [loadingTeam, setLoadingTeam] = useState(true);
 
   useEffect(() => {
     const loadTeams = async () => {
       try {
         const res = await teamsAPI.getMy();
-        setTeams(Array.isArray(res.data) ? res.data : [res.data]);
+        const loadedTeams = Array.isArray(res.data) ? res.data : [res.data];
+        setTeams(loadedTeams);
+        if (loadedTeams.length > 0) setSelectedDashboardTeamId(loadedTeams[0].id);
       } catch {
         setTeams([]);
       } finally {
@@ -56,12 +59,28 @@ export default function Dashboard() {
             </div>
             <p>Gestiona tu plantilla, ficha estrellas y compite.</p>
           </div>
+          <div className="dash-hero-league-logo">
+            <img src="/spfl-logo.png" alt="SPFL" />
+          </div>
         </section>
 
         {/* My Leagues / Teams Summary */}
         <section className="dash-section">
           <div className="dash-section-header">
-            <h2 className="dash-section-title">Tu Club</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h2 className="dash-section-title">Tu Club</h2>
+              {teams.length > 1 && (
+                <select 
+                  className="dash-team-selector"
+                  value={selectedDashboardTeamId || ''}
+                  onChange={e => setSelectedDashboardTeamId(Number(e.target.value))}
+                >
+                  {teams.map(t => (
+                    <option key={t.id} value={t.id}>{t.name} ({t.league_name})</option>
+                  ))}
+                </select>
+              )}
+            </div>
             <button className="dash-section-link" onClick={() => navigate('/leagues')}>
               Mis Ligas ›
             </button>
@@ -80,7 +99,10 @@ export default function Dashboard() {
               </div>
             </div>
           ) : (
-            teams.slice(0, 1).map(team => (
+            teams
+              .filter(team => team.id === selectedDashboardTeamId || !selectedDashboardTeamId)
+              .slice(0, 1)
+              .map(team => (
               <div className="dash-squad-card premium" key={team.id} onClick={() => navigate(`/team?league_id=${team.league_id}`)}>
                 <div className="dash-squad-content">
                   <div className="dash-squad-overall">
@@ -123,13 +145,6 @@ export default function Dashboard() {
         <section className="dash-section">
           <h2 className="dash-section-title">Accesos Rápidos</h2>
           <div className="dash-actions-grid">
-            <button className="dash-action-card" onClick={() => navigate('/team')}>
-              <div className="dash-action-icon">👕</div>
-              <div className="dash-action-info">
-                <h3>Mi Equipo</h3>
-              </div>
-            </button>
-
             <button className="dash-action-card" onClick={() => navigate('/market')}>
               <div className="dash-action-icon">💸</div>
               <div className="dash-action-info">

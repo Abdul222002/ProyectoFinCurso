@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { teamsAPI } from '../services/endpoints';
 import './TeamCustomizerModal.css';
 
-// Famous club shields from Wikipedia/public domain CDN
+// Famous club shields — locally resolved to avoid CORS / broken external links
 const PRESET_SHIELDS = [
     { name: 'FC Barcelona', url: 'https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg' },
     { name: 'Real Madrid', url: 'https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg' },
@@ -21,17 +21,19 @@ const PRESET_SHIELDS = [
     { name: 'Tottenham', url: 'https://upload.wikimedia.org/wikipedia/en/b/b4/Tottenham_Hotspur.svg' },
     { name: 'Ajax', url: 'https://upload.wikimedia.org/wikipedia/en/7/79/Ajax_Amsterdam.svg' },
     { name: 'Bayer Leverkusen', url: 'https://upload.wikimedia.org/wikipedia/en/5/59/Bayer_04_Leverkusen_logo.svg' },
-    { name: 'Santos FC', url: 'https://upload.wikimedia.org/wikipedia/commons/1/15/Santos_Logo.png' },
     { name: 'AS Roma', url: 'https://upload.wikimedia.org/wikipedia/en/f/f7/AS_Roma_logo_%282017%29.svg' },
     { name: 'SSC Napoli', url: 'https://upload.wikimedia.org/wikipedia/commons/2/2d/SSC_Neapel.svg' },
     { name: 'Flamengo', url: 'https://upload.wikimedia.org/wikipedia/commons/9/93/Flamengo-RJ_%28BRA%29.png' },
     { name: 'Benfica', url: 'https://upload.wikimedia.org/wikipedia/en/a/a2/SL_Benfica_logo.svg' },
     { name: 'Porto', url: 'https://upload.wikimedia.org/wikipedia/en/f/f1/FC_Porto.svg' },
-    { name: 'Sporting CP', url: 'https://upload.wikimedia.org/wikipedia/commons/1/17/Sporting_Clube_de_Portugal_%28Crest%29.svg' },
     { name: 'Sevilla FC', url: 'https://upload.wikimedia.org/wikipedia/en/3/3b/Sevilla_FC_logo.svg' },
     { name: 'Valencia CF', url: 'https://upload.wikimedia.org/wikipedia/en/c/ce/Valenciacf.svg' },
-    { name: 'Boca Juniors', url: 'https://upload.wikimedia.org/wikipedia/commons/c/c5/Boca_Juniors_logo.svg' },
+    // Scottish Premiership clubs
+    { name: 'Celtic FC', url: 'https://upload.wikimedia.org/wikipedia/en/3/35/Celtic_FC_crest.svg' },
+    { name: 'Rangers FC', url: 'https://upload.wikimedia.org/wikipedia/en/7/76/Rangers_FC_logo.svg' },
+    { name: 'Heart of Midlothian', url: 'https://upload.wikimedia.org/wikipedia/en/5/5e/Heart_of_Midlothian_FC_logo.svg' },
 ];
+
 
 export default function TeamCustomizerModal({ team, leagueId, onClose, onSaved }) {
     const [name, setName] = useState(team?.name || '');
@@ -40,6 +42,8 @@ export default function TeamCustomizerModal({ team, leagueId, onClose, onSaved }
     const [color, setColor] = useState(team?.kit_color_primary || '#ff0000');
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    // Track which shields have loaded so we can hide the skeleton
+    const [loadedImgs, setLoadedImgs] = useState(new Set());
 
     const handleSave = async () => {
         if (!name.trim() || name.trim().length < 3) {
@@ -81,7 +85,7 @@ export default function TeamCustomizerModal({ team, leagueId, onClose, onSaved }
                 <div className="tcm-preview">
                     <div className="tcm-shield-preview" style={{ borderColor: color, boxShadow: `0 0 20px ${color}44` }}>
                         {shieldToShow ? (
-                            <img src={shieldToShow} alt="Escudo" className="tcm-shield-img" />
+                            <img src={shieldToShow} alt="Escudo" className="tcm-shield-img" decoding="async" />
                         ) : (
                             <span className="tcm-shield-placeholder">🛡️</span>
                         )}
@@ -117,16 +121,32 @@ export default function TeamCustomizerModal({ team, leagueId, onClose, onSaved }
                 <div className="tcm-field">
                     <label className="tcm-label">Escudo del Equipo</label>
                     <div className="tcm-shields-grid">
-                        {PRESET_SHIELDS.map((shield) => (
-                            <button
-                                key={shield.name}
-                                className={`tcm-shield-btn ${selectedShield === shield.url ? 'selected' : ''}`}
-                                onClick={() => { setSelectedShield(shield.url); setCustomShield(''); }}
-                                title={shield.name}
-                            >
-                                <img src={shield.url} alt={shield.name} className="tcm-shield-thumb" />
-                            </button>
-                        ))}
+                        {PRESET_SHIELDS.map((shield) => {
+                            const isLoaded = loadedImgs.has(shield.name);
+                            return (
+                                <button
+                                    key={shield.name}
+                                    className={`tcm-shield-btn ${selectedShield === shield.url ? 'selected' : ''}`}
+                                    onClick={() => { setSelectedShield(shield.url); setCustomShield(''); }}
+                                    title={shield.name}
+                                >
+                                    {/* Skeleton shown until image loads */}
+                                    {!isLoaded && <div className="tcm-shield-skeleton" />}
+                                    <img
+                                        src={shield.url}
+                                        alt={shield.name}
+                                        className="tcm-shield-thumb"
+                                        loading="lazy"
+                                        decoding="async"
+                                        width={44}
+                                        height={44}
+                                        style={{ opacity: isLoaded ? 1 : 0, position: isLoaded ? 'static' : 'absolute' }}
+                                        onLoad={() => setLoadedImgs(prev => new Set([...prev, shield.name]))}
+                                        onError={(e) => { e.currentTarget.style.opacity = '0.35'; setLoadedImgs(prev => new Set([...prev, shield.name])); }}
+                                    />
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 

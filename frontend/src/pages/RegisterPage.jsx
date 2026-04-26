@@ -49,7 +49,9 @@ export default function RegisterPage() {
         </div>
         <div className="auth-left__content">
           <div className="auth-left__badge">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish Premiership</div>
-          <div className="auth-left__logo-wrap">🏆</div>
+          <div className="auth-left__logo-wrap">
+            <img src="/logo-premium.png" alt="UFL Logo" />
+          </div>
           <h1 className="auth-left__title">Únete a la<br /><span>Liga</span></h1>
           <p className="auth-left__desc">
             Crea tu cuenta en segundos y recibe tu plantilla inicial de 15 jugadores de la Scottish Premiership.
@@ -88,7 +90,9 @@ export default function RegisterPage() {
         <div className="auth-container">
           {/* Mobile brand */}
           <div className="auth-mobile-brand">
-            <span className="auth-mobile-brand__icon">🏆</span>
+            <span className="auth-mobile-brand__icon">
+              <img src="/logo-premium.png" alt="UFL" />
+            </span>
             <div className="auth-mobile-brand__title">Ultimate Fantasy Legends</div>
             <div className="auth-mobile-brand__sub">Crea tu cuenta y empieza a jugar</div>
           </div>
@@ -195,7 +199,12 @@ export default function RegisterPage() {
                     <span className="auth-spinner" />
                     Creando cuenta...
                   </span>
-                ) : '🏆 Crear Cuenta y Jugar'}
+                ) : (
+                  <>
+                    <img src="/logo-premium.png" alt="" style={{ width: '24px', height: '24px' }} />
+                    Crear Cuenta y Jugar
+                  </>
+                )}
               </button>
             </form>
 

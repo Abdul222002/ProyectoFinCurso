@@ -21,14 +21,20 @@
   z-index: 50;
 }
 
-.header-left, .header-right {
+.header-left {
   display: flex;
   align-items: center;
-  min-width: 60px;
+  min-width: 80px;
 }
 
 .header-right {
+  display: flex;
+  align-items: center;
   justify-content: flex-end;
+  min-width: 80px;
+  max-width: 280px;
+  flex: 1;
+  overflow: visible;
 }
 
 .header-center {
@@ -58,6 +64,22 @@
   border-color: var(--border-strong);
   color: var(--text-primary);
   background-color: var(--bg-hover);
+}
+
+.app-brand-logo {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.app-brand-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 /* Main content */

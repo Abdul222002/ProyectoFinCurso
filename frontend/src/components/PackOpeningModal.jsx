@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { resolvePlayerImageUrl } from '../utils/mediaUrl';
 import './PackOpeningModal.css';
 
 /* ─────────────────────────────────────────────
@@ -210,8 +211,10 @@ function RevealCard({ card, isFlipped, onClick }) {
                             }}
                         >
                             <img
-                                src={card.image_url || '/images/placeholder.png'}
+                                src={resolvePlayerImageUrl(card.image_url)}
                                 alt={card.player_name}
+                                loading="lazy"
+                                decoding="async"
                                 onError={(e) => { e.target.src = '/images/placeholder.png'; }}
                             />
                         </div>

@@ -23,7 +23,13 @@
   color: var(--gold);
 }
 
-.ld-coins-wrap {
+.ld-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ld-coins-column {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -539,3 +545,199 @@
   color: var(--text-primary);
   margin-bottom: 12px;
 }
+
+/* ========================================== */
+/* NOTIFICATION BELL & PANEL                  */
+/* ========================================== */
+.ld-coins-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ld-notif-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ld-notif-btn {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  width: 44px;
+}
+
+.ld-notif-btn:hover {
+  border-color: var(--gold);
+  background: var(--bg-hover);
+}
+
+.ld-notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--danger);
+  color: #fff;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 0.65rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-base);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.ld-notif-panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 320px;
+  max-height: 450px;
+  overflow-y: auto;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+}
+
+.ld-notif-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  position: sticky;
+  top: 0;
+  background: var(--bg-elevated);
+}
+
+.ld-notif-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.ld-notif-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.ld-notif-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: all 0.2s;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.ld-notif-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ld-notif-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ld-notif-item:last-child { border-bottom: none; }
+
+.ld-notif-item.won { border-left: 4px solid #22c55e; background: rgba(34, 197, 94, 0.05); }
+.ld-notif-item.lost { border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.05); }
+.ld-notif-item.read { opacity: 0.5; filter: grayscale(0.5); }
+
+.ld-notif-title {
+  font-weight: 900;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.ld-notif-item.won .ld-notif-title {
+  color: #4ade80; /* Stronger Green */
+}
+
+.ld-notif-item.lost .ld-notif-title {
+  color: #f87171; /* Stronger Red */
+}
+
+.ld-notif-msg {
+  font-size: 0.85rem;
+  color: #fff; /* Maximum contrast */
+  line-height: 1.4;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.ld-notif-time {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.ld-notif-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  opacity: 0.3;
+  transition: all 0.2s;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.ld-notif-delete-btn:hover {
+  opacity: 1;
+  background: rgba(239, 68, 68, 0.1);
+  transform: scale(1.1);
+}
+
+.ld-notif-clear-all {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ld-notif-clear-all:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* My bid display in auction rows */
+.ld-market-row-mybid {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #60a5fa; /* blue-400 */
+  margin-top: 2px;
+}

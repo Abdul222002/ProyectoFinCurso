@@ -1,3 +1,4 @@
+import { resolvePlayerImageUrl } from '../utils/mediaUrl';
 import './FormationPitch.css';
 
 /* ── Formation slot counts (for position validation) ── */
@@ -153,9 +154,11 @@ function PlayerNode({ player, onPlayerClick, onRemove }) {
                 onClick={() => onPlayerClick && onPlayerClick(player)}
             >
                 <img
-                    src={player.image_url || '/images/placeholder.png'}
+                    src={resolvePlayerImageUrl(player.image_url)}
                     alt={name}
                     className="pitch-player-img"
+                    loading="lazy"
+                    decoding="async"
                     onError={(e) => { e.target.src = '/images/placeholder.png'; }}
                 />
             </div>

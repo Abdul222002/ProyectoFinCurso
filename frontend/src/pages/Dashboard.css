@@ -91,6 +91,25 @@
   line-height: 1.4;
 }
 
+.dash-hero-league-logo {
+  width: 50px;
+  height: 50px;
+  background-color: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.dash-hero-league-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
 .dash-xp-bar {
   width: 100%;
   max-width: 150px;
@@ -314,4 +333,25 @@
 
 .btn-primary:hover {
   opacity: 0.9;
+}
+
+/* Team Selector Dropdown */
+.dash-team-selector {
+  background-color: rgba(14, 22, 40, 0.6);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  margin-left: auto;
+  max-width: 250px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.dash-team-selector:focus {
+  border-color: var(--gold);
 }

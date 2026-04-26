@@ -17,7 +17,7 @@ from app.core.database import get_db
 from app.models.models import (
     User, Player, UserCard, LeagueMember, League, Team,
     MarketAuction, AuctionSlot, AuctionBid,
-    MarketListing, SystemOffer
+    MarketListing, ListingBid, SystemOffer
 )
 from app.schemas.market import (
     AuctionResponse, AuctionSlotResponse, BidRequest, 
@@ -45,8 +45,8 @@ def reconcile_locked_coins(db: Session, league_id: int = None):
     fixed = 0
     
     for member in members:
-        # Calcular lo que debería tener bloqueado (pujas en subastas ACTIVAS)
-        real_locked = db.query(func.coalesce(func.sum(AuctionBid.amount), 0)).join(
+        # Pujas en subastas ACTIVAS + pujas en ventas entre usuarios ACTIVAS
+        auction_locked = db.query(func.coalesce(func.sum(AuctionBid.amount), 0)).join(
             AuctionSlot, AuctionSlot.id == AuctionBid.slot_id
         ).join(
             MarketAuction, MarketAuction.id == AuctionSlot.auction_id
@@ -54,7 +54,17 @@ def reconcile_locked_coins(db: Session, league_id: int = None):
             AuctionBid.user_id == member.user_id,
             MarketAuction.league_id == member.league_id,
             MarketAuction.is_active == True
-        ).scalar()
+        ).scalar() or 0
+
+        listing_locked = db.query(func.coalesce(func.sum(ListingBid.amount), 0)).join(
+            MarketListing, MarketListing.id == ListingBid.listing_id
+        ).filter(
+            ListingBid.user_id == member.user_id,
+            MarketListing.league_id == member.league_id,
+            MarketListing.is_active == True
+        ).scalar() or 0
+
+        real_locked = auction_locked + listing_locked
         
         if member.locked_coins != real_locked:
             # logs básicos para auditoría en el contenedor
@@ -68,42 +78,98 @@ def reconcile_locked_coins(db: Session, league_id: int = None):
     return fixed
 
 
+def _refund_all_bids_on_listing(db: Session, listing: MarketListing):
+    """Libera retenciones y elimina todas las pujas asociadas a un listado."""
+    for bid in db.query(ListingBid).filter(ListingBid.listing_id == listing.id).all():
+        mem = db.query(LeagueMember).filter(
+            LeagueMember.league_id == listing.league_id,
+            LeagueMember.user_id == bid.user_id
+        ).first()
+        if mem:
+            mem.locked_coins -= bid.amount
+        db.delete(bid)
+
+
 def _resolve_auction(auction: MarketAuction, db: Session):
     """
-    Cierra una subasta, genera las cartas para los ganadores
-    y marca la subasta como resuelta.
+    Cierra una subasta ciega:
+    - Determina el ganador de cada slot (mayor puja en AuctionBid).
+    - Descuenta monedas al ganador, libera retención a todos los perdedores.
+    - Crea la carta del ganador.
+    - Crea notificaciones de victoria/derrota.
     """
-    # 0. Reconciliación preventiva para asegurar que locked_coins es correcto antes de restar
-    reconcile_locked_coins(db, auction.league_id)
-
     if auction.is_resolved:
         return
 
-    # Procesar cada slot
+    from app.models.models import Notification
+
     for slot in auction.slots:
-        if slot.highest_bidder_id:
-            # Crear la carta para el ganador
-            # Restar definitivamente el dinero garantizado (locked_coins y coins)
-            member = db.query(LeagueMember).filter(
+        # Obtener todas las pujas del slot ordenadas de mayor a menor
+        all_bids = db.query(AuctionBid).filter(
+            AuctionBid.slot_id == slot.id
+        ).order_by(AuctionBid.amount.desc()).all()
+
+        if not all_bids:
+            continue  # Nadie pujó por este jugador
+
+        winning_bid = all_bids[0]
+        losing_bids = all_bids[1:]
+
+        winner_member = db.query(LeagueMember).filter(
+            LeagueMember.league_id == auction.league_id,
+            LeagueMember.user_id == winning_bid.user_id
+        ).first()
+
+        if winner_member:
+            # Descontar definitivamente al ganador
+            winner_member.locked_coins -= winning_bid.amount
+            winner_member.coins -= winning_bid.amount
+
+        # Crear carta para el ganador
+        player = slot.player
+        
+        winner_team = db.query(Team).filter(
+            Team.user_id == winning_bid.user_id,
+            Team.league_id == auction.league_id
+        ).first()
+
+        card = UserCard(
+            user_id=winning_bid.user_id,
+            player_id=slot.player_id,
+            league_id=auction.league_id,
+            team_id=winner_team.id if winner_team else None,
+            current_overall=player.overall_rating,
+            is_tradeable=True,
+            is_in_lineup=False
+        )
+        db.add(card)
+
+        # Notificación al ganador
+        db.add(Notification(
+            user_id=winning_bid.user_id,
+            league_id=auction.league_id,
+            type="auction_won",
+            title="¡Subasta ganada! 🏆",
+            message=f"Has ganado la puja por {player.name} con {winning_bid.amount:,} monedas. ¡La carta ya está en tu plantilla!"
+        ))
+
+        # Liberar retención y notificar a los perdedores
+        for losing_bid in losing_bids:
+            loser_member = db.query(LeagueMember).filter(
                 LeagueMember.league_id == auction.league_id,
-                LeagueMember.user_id == slot.highest_bidder_id
+                LeagueMember.user_id == losing_bid.user_id
             ).first()
-            if member:
-                member.locked_coins -= slot.current_bid
-                member.coins -= slot.current_bid
-            
-            # Obtener overall actual del jugador
-            player = slot.player
-            
-            card = UserCard(
-                user_id=slot.highest_bidder_id,
-                player_id=slot.player_id,
+            if loser_member:
+                loser_member.locked_coins = max(0, loser_member.locked_coins - losing_bid.amount)
+
+            db.add(Notification(
+                user_id=losing_bid.user_id,
                 league_id=auction.league_id,
-                current_overall=player.overall_rating,
-                is_tradeable=True
-            )
-            db.add(card)
-    
+                type="auction_lost",
+                title="Subasta perdida",
+                message=f"No has ganado la puja por {player.name}. Tus monedas han sido devueltas."
+            ))
+
     auction.is_active = False
     auction.is_resolved = True
     db.commit()
@@ -112,19 +178,10 @@ def _resolve_auction(auction: MarketAuction, db: Session):
 def _create_new_auction(league_id: int, db: Session) -> MarketAuction:
     """Genera una nueva subasta con 12 jugadores aleatorios (NO LEGENDS)"""
     
-    # 1. Crear la subasta
     now = datetime.utcnow()
-    
-    league = db.query(League).filter(League.id == league_id).first()
-    if league and league.created_at:
-        elapsed = now - league.created_at
-        cycles = int(elapsed.total_seconds() // (AUCTION_DURATION_HOURS * 3600))
-        ends_at = league.created_at + timedelta(hours=AUCTION_DURATION_HOURS * (cycles + 1))
-        # Salvaguarda por si acaso
-        while ends_at <= now:
-            ends_at += timedelta(hours=AUCTION_DURATION_HOURS)
-    else:
-        ends_at = now + timedelta(hours=AUCTION_DURATION_HOURS)
+    # Siempre: la nueva subasta dura exactamente AUCTION_DURATION_HOURS desde ahora.
+    # Esto evita que la subasta nazca ya "expirada" por desajuste de relojes.
+    ends_at = now + timedelta(hours=AUCTION_DURATION_HOURS)
     
     auction = MarketAuction(
         league_id=league_id,
@@ -196,15 +253,20 @@ async def get_auction(
     if not auction:
         auction = _create_new_auction(league_id, db)
         
-    # Construir respuesta
+    # Construir respuesta (subasta ciega: no se expone quién va ganando ni cuánto)
     slots_resp = []
     for slot in auction.slots:
-        bid_count = db.query(func.count(AuctionBid.id)).filter(AuctionBid.slot_id == slot.id).scalar()
-        user_has_bid = db.query(AuctionBid).filter(
+        # Número total de usuarios únicos que han pujado
+        bid_count = db.query(func.count(func.distinct(AuctionBid.user_id))).filter(
+            AuctionBid.slot_id == slot.id
+        ).scalar() or 0
+
+        # La puja propia del usuario (solo visible para él)
+        my_bid = db.query(AuctionBid).filter(
             AuctionBid.slot_id == slot.id,
             AuctionBid.user_id == current_user.id
-        ).first() is not None
-        
+        ).order_by(AuctionBid.created_at.desc()).first()
+
         slots_resp.append(AuctionSlotResponse(
             id=slot.id,
             player_id=slot.player_id,
@@ -222,13 +284,11 @@ async def get_auction(
             defending=slot.player.defending,
             physical=slot.player.physical,
             base_price=slot.base_price,
-            current_bid=slot.current_bid,
-            highest_bidder_id=None, # Ocultar quién va ganando para subastas ciegas
-            highest_bidder_username=None,
             bid_count=bid_count,
-            user_has_bid=user_has_bid
+            user_has_bid=my_bid is not None,
+            my_bid_amount=my_bid.amount if my_bid else None,
         ))
-        
+
     return AuctionResponse(
         id=auction.id,
         league_id=auction.league_id,
@@ -248,79 +308,79 @@ async def place_bid(
     db: Session = Depends(get_db)
 ):
     """
-    Pujar por un jugador en la subasta.
-    - Se descuentan las monedas de la liga inmediatamente.
-    - Si alguien supera tu puja, se te devuelven las monedas.
+    Subasta ciega: coloca o actualiza la puja secreta del usuario.
+    - Nadie puede ver la puja de otro usuario — solo el recuento total.
+    - El usuario puede subir o bajar su propia puja.
+    - El dinero queda retenido hasta la resolución de la subasta.
     """
     amount = bid_data.amount
-    
-    # 1. Validaciones
+
     member = db.query(LeagueMember).filter(
         LeagueMember.league_id == league_id,
         LeagueMember.user_id == current_user.id
     ).first()
     if not member:
         raise HTTPException(status_code=403, detail="No perteneces a esta liga")
-        
+
     slot = db.query(AuctionSlot).join(MarketAuction).filter(
         AuctionSlot.id == slot_id,
         MarketAuction.league_id == league_id,
         MarketAuction.is_active == True
     ).first()
-    
     if not slot:
         raise HTTPException(status_code=404, detail="Subasta no encontrada o finalizada")
-        
+
     if slot.auction.ends_at < datetime.utcnow():
-        # Auto resolver si intentan pujar fuera de tiempo
         _resolve_auction(slot.auction, db)
         raise HTTPException(status_code=400, detail="La subasta ha finalizado")
 
-    # Validar montos
-    min_bid = max(slot.base_price, slot.current_bid + 1_000_000) # Mínimo incremento 1M? O solo superar?
-    # Vamos a decir que hay que superar al mayor postor. Si no hay pujas, base_price.
-    # Si hay puja, superar.
-    
-    required_bid = slot.base_price
-    if slot.current_bid > 0:
-        required_bid = slot.current_bid + 1 # Al menos 1 moneda más
-        
-    if amount < required_bid:
-        raise HTTPException(status_code=400, detail=f"La puja debe ser al menos {required_bid:,}")
-        
-    if (member.coins - member.locked_coins) < amount:
-        raise HTTPException(status_code=400, detail=f"Solo dispones de {(member.coins - member.locked_coins):,} monedas libres")
+    if amount < slot.base_price:
+        raise HTTPException(
+            status_code=400,
+            detail=f"La puja mínima es {slot.base_price:,} monedas (precio base)"
+        )
 
-    # 2. Gestión de economía
-    
-    # Devolver monedas (liberar retención) al anterior ganador (si existe y no es el mismo usuario)
-    if slot.highest_bidder_id:
-        prev_bidder_member = db.query(LeagueMember).filter(
-            LeagueMember.league_id == league_id,
-            LeagueMember.user_id == slot.highest_bidder_id
-        ).first()
-        if prev_bidder_member:
-            prev_bidder_member.locked_coins -= slot.current_bid
-    
-    # Retener monedas al nuevo pujador
-    member.locked_coins += amount
-    
-    # 3. Actualizar Slot
-    slot.current_bid = amount
-    slot.highest_bidder_id = current_user.id
-    
-    # 4. Registrar historial
-    bid = AuctionBid(
-        slot_id=slot.id,
-        user_id=current_user.id,
-        amount=amount
-    )
-    db.add(bid)
-    
+    # ¿Ya tiene una puja activa en este slot?
+    existing_bid = db.query(AuctionBid).filter(
+        AuctionBid.slot_id == slot_id,
+        AuctionBid.user_id == current_user.id
+    ).first()
+
+    if existing_bid:
+        # Ajustar la retención: liberar la anterior y retener la nueva
+        delta = amount - existing_bid.amount  # Puede ser positivo (sube) o negativo (baja)
+        free_coins = member.coins - member.locked_coins
+        if delta > 0 and free_coins < delta:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Solo dispones de {free_coins:,} monedas libres adicionales"
+            )
+        member.locked_coins += delta
+        existing_bid.amount = amount
+        existing_bid.created_at = datetime.utcnow()  # Actualizar timestamp
+        message = "Puja actualizada con éxito"
+    else:
+        # Nueva puja — verificar fondos disponibles
+        free_coins = member.coins - member.locked_coins
+        if free_coins < amount:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Solo dispones de {free_coins:,} monedas libres"
+            )
+        member.locked_coins += amount
+        new_bid = AuctionBid(
+            slot_id=slot.id,
+            user_id=current_user.id,
+            amount=amount
+        )
+        db.add(new_bid)
+        message = "Puja realizada con éxito"
+
     db.commit()
-    
+    db.refresh(member)
+
     return BidResponse(
-        message="Puja realizada con éxito",
+        message=message,
         slot_id=slot.id,
         new_bid=amount,
         remaining_coins=member.coins - member.locked_coins
@@ -333,75 +393,42 @@ async def withdraw_bid(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Retirar una puja y buscar al postor anterior, si lo hay"""
+    """
+    Retirar la puja propia de una subasta ciega.
+    Libera inmediatamente las monedas retenidas.
+    """
     member = db.query(LeagueMember).filter(
         LeagueMember.league_id == league_id,
         LeagueMember.user_id == current_user.id
     ).first()
     if not member:
         raise HTTPException(status_code=403, detail="No perteneces a esta liga")
-        
+
     slot = db.query(AuctionSlot).join(MarketAuction).filter(
         AuctionSlot.id == slot_id,
         MarketAuction.league_id == league_id,
         MarketAuction.is_active == True
     ).first()
-    
     if not slot:
         raise HTTPException(status_code=404, detail="Subasta no encontrada o finalizada")
-        
+
     if slot.auction.ends_at < datetime.utcnow():
         raise HTTPException(status_code=400, detail="La subasta ha finalizado")
 
-    user_bids = db.query(AuctionBid).filter(
+    user_bid = db.query(AuctionBid).filter(
         AuctionBid.slot_id == slot_id,
         AuctionBid.user_id == current_user.id
-    ).all()
+    ).first()
 
-    if not user_bids:
-        raise HTTPException(status_code=400, detail="No has pujado por este jugador.")
+    if not user_bid:
+        raise HTTPException(status_code=400, detail="No tienes ninguna puja activa en este jugador")
 
-    # Si va ganando, le devolvemos el dinero de la puja actual (liberar retención)
-    if slot.highest_bidder_id == current_user.id:
-        member.locked_coins -= slot.current_bid
-
-        # Borrar las pujas de este usuario en este slot
-        for b in user_bids:
-            db.delete(b)
-            
-        # Forzar sincronización con DB para que la siguiente query no vea la puja borrada
-        db.flush()
-
-        # Buscar el siguiente máximo postor
-        next_bid = db.query(AuctionBid).filter(
-            AuctionBid.slot_id == slot_id,
-            AuctionBid.user_id != current_user.id # Asegurar que no somos nosotros
-        ).order_by(AuctionBid.amount.desc()).first()
-
-        if next_bid:
-            slot.current_bid = next_bid.amount
-            slot.highest_bidder_id = next_bid.user_id
-            # Volver a retenerle al nuevo ganador
-            next_member = db.query(LeagueMember).filter(
-                LeagueMember.league_id == league_id,
-                LeagueMember.user_id == next_bid.user_id
-            ).first()
-            if next_member:
-                next_member.locked_coins += next_bid.amount
-        else:
-            slot.current_bid = 0
-            slot.highest_bidder_id = None
-            
-        message = "Puja retirada. Monedas liberadas."
-    else:
-        # Si no iba ganando, su dinero ya fue devuelto en el momento que alguien lo superó.
-        # Simplemente borramos sus pujas para que no pueda ser el "siguiente" si el ganador se retira.
-        for b in user_bids:
-            db.delete(b)
-        message = "Puja retirada del historial."
-
+    # Liberar retención y borrar la puja
+    member.locked_coins = max(0, member.locked_coins - user_bid.amount)
+    db.delete(user_bid)
     db.commit()
-    return {"message": message, "remaining_coins": member.coins - member.locked_coins}
+
+    return {"message": "Puja retirada. Monedas liberadas.", "remaining_coins": member.coins - member.locked_coins}
 
 
 
@@ -552,6 +579,7 @@ async def cancel_listing(
     if not listing:
         raise HTTPException(status_code=404, detail="Listado no encontrado")
 
+    _refund_all_bids_on_listing(db, listing)
     listing.is_active = False
     db.commit()
     return {"message": "Listado cancelado"}
@@ -580,9 +608,14 @@ async def get_listings(
     for l in listings:
         player = l.card.player
         seller = l.seller
-        result.append({
+        bids = db.query(ListingBid).filter(ListingBid.listing_id == l.id).order_by(ListingBid.amount.desc()).all()
+        max_bid = max((b.amount for b in bids), default=0)
+        my_bid = next((b for b in bids if b.user_id == current_user.id), None)
+
+        row = {
             "id": l.id,
             "card_id": l.card_id,
+            "player_id": player.id,
             "player_name": player.name,
             "position": player.position.value,
             "overall_rating": player.overall_rating,
@@ -599,20 +632,42 @@ async def get_listings(
             "asking_price": l.asking_price,
             "seller_username": seller.username,
             "is_mine": l.seller_id == current_user.id,
-            "listed_at": l.listed_at.isoformat()
-        })
+            "listed_at": l.listed_at.isoformat(),
+            "highest_bid": max_bid,
+            "bid_count": len(bids),
+            "my_bid_amount": my_bid.amount if my_bid else None,
+            "my_bid_id": my_bid.id if my_bid else None,
+            "bids": None,
+        }
+        if l.seller_id == current_user.id:
+            row["bids"] = [
+                {
+                    "id": b.id,
+                    "user_id": b.user_id,
+                    "username": b.user.username,
+                    "amount": b.amount,
+                    "created_at": b.created_at.isoformat() if b.created_at else None,
+                }
+                for b in sorted(bids, key=lambda x: x.amount, reverse=True)
+            ]
+        result.append(row)
 
     return result
 
 
-@router.post("/{league_id}/buy-listing/{listing_id}")
-async def buy_listing(
+@router.post("/{league_id}/listing-bid/{listing_id}", response_model=BidResponse)
+async def place_listing_bid(
     league_id: int,
     listing_id: int,
+    bid_data: BidRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Comprar una carta de otro usuario."""
+    """
+    Pujar por un jugador en venta entre usuarios de la liga.
+    El vendedor elige a qué postor venderle desde sus listados.
+    """
+    amount = bid_data.amount
     member = db.query(LeagueMember).filter(
         LeagueMember.league_id == league_id,
         LeagueMember.user_id == current_user.id
@@ -626,37 +681,186 @@ async def buy_listing(
         MarketListing.is_active == True
     ).first()
     if not listing:
-        raise HTTPException(status_code=404, detail="Listado no encontrado o ya vendido")
+        raise HTTPException(status_code=404, detail="Listado no encontrado o cerrado")
     if listing.seller_id == current_user.id:
-        raise HTTPException(status_code=400, detail="No puedes comprar tu propia carta")
-    if member.coins < listing.asking_price:
-        raise HTTPException(status_code=400, detail="No tienes suficientes monedas")
+        raise HTTPException(status_code=400, detail="No puedes pujar por tu propia venta")
 
-    # Transfer money
-    member.coins -= listing.asking_price
+    max_other = db.query(func.coalesce(func.max(ListingBid.amount), 0)).filter(
+        ListingBid.listing_id == listing.id,
+        ListingBid.user_id != current_user.id
+    ).scalar() or 0
+
+    existing = db.query(ListingBid).filter(
+        ListingBid.listing_id == listing.id,
+        ListingBid.user_id == current_user.id
+    ).first()
+
+    min_required = max(listing.asking_price, max_other + 1)
+    if existing:
+        min_required = max(min_required, existing.amount + 1)
+
+    if amount < min_required:
+        raise HTTPException(
+            status_code=400,
+            detail=f"La puja debe ser al menos {min_required:,} monedas"
+        )
+
+    if existing:
+        delta = amount - existing.amount
+        if (member.coins - member.locked_coins) < delta:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Solo dispones de {(member.coins - member.locked_coins):,} monedas libres"
+            )
+        member.locked_coins += delta
+        existing.amount = amount
+        slot_id = existing.id
+    else:
+        if (member.coins - member.locked_coins) < amount:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Solo dispones de {(member.coins - member.locked_coins):,} monedas libres"
+            )
+        member.locked_coins += amount
+        nb = ListingBid(listing_id=listing.id, user_id=current_user.id, amount=amount)
+        db.add(nb)
+        db.flush()
+        slot_id = nb.id
+
+    db.commit()
+
+    return BidResponse(
+        message="Puja registrada",
+        slot_id=slot_id,
+        new_bid=amount,
+        remaining_coins=member.coins - member.locked_coins
+    )
+
+
+@router.delete("/{league_id}/listing-bid/{listing_id}")
+async def withdraw_listing_bid(
+    league_id: int,
+    listing_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Retirar la puja propia sobre un listado activo."""
+    member = db.query(LeagueMember).filter(
+        LeagueMember.league_id == league_id,
+        LeagueMember.user_id == current_user.id
+    ).first()
+    if not member:
+        raise HTTPException(status_code=403, detail="No perteneces a esta liga")
+
+    listing = db.query(MarketListing).filter(
+        MarketListing.id == listing_id,
+        MarketListing.league_id == league_id,
+        MarketListing.is_active == True
+    ).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listado no encontrado o cerrado")
+
+    bid = db.query(ListingBid).filter(
+        ListingBid.listing_id == listing.id,
+        ListingBid.user_id == current_user.id
+    ).first()
+    if not bid:
+        raise HTTPException(status_code=400, detail="No tienes ninguna puja en este listado")
+
+    member.locked_coins -= bid.amount
+    db.delete(bid)
+    db.commit()
+
+    return {
+        "message": "Puja retirada",
+        "remaining_coins": member.coins - member.locked_coins
+    }
+
+
+@router.post("/{league_id}/listing-accept/{listing_id}/{bid_id}")
+async def accept_listing_bid(
+    league_id: int,
+    listing_id: int,
+    bid_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """El vendedor acepta una puja concreta y transfiere la carta al comprador."""
+    listing = db.query(MarketListing).filter(
+        MarketListing.id == listing_id,
+        MarketListing.league_id == league_id,
+        MarketListing.is_active == True
+    ).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listado no encontrado o cerrado")
+    if listing.seller_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Solo el vendedor puede aceptar pujas")
+
+    winning = db.query(ListingBid).filter(
+        ListingBid.id == bid_id,
+        ListingBid.listing_id == listing.id
+    ).first()
+    if not winning:
+        raise HTTPException(status_code=404, detail="Puja no encontrada")
+
+    winner_member = db.query(LeagueMember).filter(
+        LeagueMember.league_id == league_id,
+        LeagueMember.user_id == winning.user_id
+    ).first()
+    if not winner_member:
+        raise HTTPException(status_code=400, detail="El postor ya no es miembro de la liga")
+
     seller_member = db.query(LeagueMember).filter(
         LeagueMember.league_id == league_id,
         LeagueMember.user_id == listing.seller_id
     ).first()
+
+    # Devolver pujas de los demás postores
+    for bid in db.query(ListingBid).filter(
+        ListingBid.listing_id == listing.id,
+        ListingBid.user_id != winning.user_id
+    ).all():
+        mem = db.query(LeagueMember).filter(
+            LeagueMember.league_id == league_id,
+            LeagueMember.user_id == bid.user_id
+        ).first()
+        if mem:
+            mem.locked_coins -= bid.amount
+        db.delete(bid)
+
+    # Cobrar al ganador (misma lógica que subasta: locked + coins)
+    winner_member.locked_coins -= winning.amount
+    winner_member.coins -= winning.amount
     if seller_member:
-        seller_member.coins += listing.asking_price
+        seller_member.coins += winning.amount
 
-    # Transfer card
     card = listing.card
-    card.user_id = current_user.id
-    card.team_id = None  # Remove from seller's team, buyer assigns manually
+    sale_amount = winning.amount
+    buyer_username = winning.user.username
+    buyer_id = winning.user_id
+    pname = card.player.name
 
-    # Close listing
+    buyer_team = db.query(Team).filter(
+        Team.user_id == buyer_id,
+        Team.league_id == league_id
+    ).first()
+
+    card.user_id = buyer_id
+    card.team_id = buyer_team.id if buyer_team else None
+    card.is_in_lineup = False
+
+    db.delete(winning)
+
     listing.is_active = False
     listing.sold_at = datetime.utcnow()
-    listing.buyer_id = current_user.id
+    listing.buyer_id = buyer_id
 
     db.commit()
 
     return {
-        "message": f"Has comprado a {card.player.name} por {listing.asking_price:,}",
-        "player_name": card.player.name,
-        "remaining_coins": member.coins
+        "message": f"Has vendido a {pname} a @{buyer_username} por {sale_amount:,}",
+        "player_name": pname,
+        "remaining_coins": seller_member.coins if seller_member else 0,
     }
 
 
@@ -722,6 +926,9 @@ async def accept_offer(
     ).first()
     if not member:
         raise HTTPException(status_code=404, detail="No eres miembro de esta liga")
+
+    if offer.listing and offer.listing.is_active:
+        _refund_all_bids_on_listing(db, offer.listing)
 
     # Give coins to seller
     member.coins += offer.offer_price
@@ -808,6 +1015,7 @@ async def pay_release_clause(
     # Remove actively listed card if any
     active_listing = db.query(MarketListing).filter(MarketListing.card_id == card.id, MarketListing.is_active == True).first()
     if active_listing:
+        _refund_all_bids_on_listing(db, active_listing)
         active_listing.is_active = False
         active_listing.sold_at = datetime.utcnow()
         active_listing.buyer_id = current_user.id

@@ -1,11 +1,12 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { leaguesAPI, auctionAPI, packsAPI, authAPI } from '../services/endpoints';
+import { leaguesAPI, auctionAPI, packsAPI, authAPI, notificationsAPI } from '../services/endpoints';
 import PackOpeningModal from '../components/PackOpeningModal';
 import PlayerDetailModal from '../components/PlayerDetailModal';
 import { toast } from 'sonner';
 import AppLayout from '../components/AppLayout';
+import { resolvePlayerImageUrl } from '../utils/mediaUrl';
 import './LeagueDetailPage.css';
 
 export default function LeagueDetailPage() {
@@ -24,6 +25,11 @@ export default function LeagueDetailPage() {
   const [timeLeft, setTimeLeft] = useState('');
   const [bidAmounts, setBidAmounts] = useState({});
   const [bidding, setBidding] = useState(null);
+  const [listingBidAmounts, setListingBidAmounts] = useState({});
+  const [listingBidding, setListingBidding] = useState(null);
+  const auctionRollRef = useRef(false);
+  // Offset between server UTC time and local Date.now() — fixes timezone issues
+  const serverTimeOffsetRef = useRef(0); // server_time_ms - Date.now()
   const [selectedPlayerForDetail, setSelectedPlayerForDetail] = useState(null);
 
   // User listings state
@@ -32,6 +38,11 @@ export default function LeagueDetailPage() {
 
   // System offers state
   const [offers, setOffers] = useState([]);
+
+  // Notifications state
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Invite state
   const [inviteUsername, setInviteUsername] = useState('');
@@ -90,21 +101,34 @@ export default function LeagueDetailPage() {
 
   useEffect(() => { loadLeague(); }, [loadLeague]);
 
-  const loadAuction = useCallback(async () => {
-    setAuctionLoading(true);
+  const loadAuction = useCallback(async (opts = {}) => {
+    const silent = opts.silent === true;
+    if (!silent) setAuctionLoading(true);
     try {
       const res = await auctionAPI.getAuction(leagueId);
-      setAuction(res.data);
+      const data = res.data;
+      // Calcular offset entre hora del servidor (UTC) y reloj local
+      // server_time viene como ISO string UTC del servidor
+      if (data.server_time) {
+        const serverMs = new Date(data.server_time + 'Z').getTime();
+        serverTimeOffsetRef.current = serverMs - Date.now();
+      }
+      setAuction(data);
     } catch {
       setAuction(null);
     }
-    setAuctionLoading(false);
+    if (!silent) setAuctionLoading(false);
   }, [leagueId]);
 
   const pollAuction = useCallback(async () => {
     try {
       const res = await auctionAPI.getAuction(leagueId);
-      setAuction(res.data);
+      const data = res.data;
+      if (data.server_time) {
+        const serverMs = new Date(data.server_time + 'Z').getTime();
+        serverTimeOffsetRef.current = serverMs - Date.now();
+      }
+      setAuction(data);
     } catch { /* silently fail */ }
   }, [leagueId]);
 
@@ -141,25 +165,103 @@ export default function LeagueDetailPage() {
     return () => clearInterval(interval);
   }, [activeTab, loadAuction, loadListings, loadOffers, pollAuction, pollListings]);
 
-  useEffect(() => {
-    if (!auction?.ends_at) return;
-    const interval = setInterval(() => {
-      const now = new Date().getTime();
-      const end = new Date(auction.ends_at).getTime();
-      const distance = end - now;
+  // Load notifications on mount and after auction loads
+  const loadNotifications = useCallback(async () => {
+    try {
+      const [notifRes, countRes] = await Promise.all([
+        notificationsAPI.getAll(),
+        notificationsAPI.getUnreadCount(),
+      ]);
+      setNotifications(notifRes.data || []);
+      setUnreadCount(countRes.data?.unread_count || 0);
+    } catch { /* silent */ }
+  }, []);
 
-      if (distance < 0) {
-        setTimeLeft('SUBASTA FINALIZADA');
-        if (auction.is_active) loadAuction();
+  useEffect(() => { loadNotifications(); }, [loadNotifications]);
+
+  const handleMarkAllRead = async () => {
+    try {
+      await notificationsAPI.markAllRead();
+      setUnreadCount(0);
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    } catch { /* silent */ }
+  };
+
+  const handleDeleteNotification = async (id) => {
+    try {
+      await notificationsAPI.delete(id);
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      // Refresh unread count just in case
+      const countRes = await notificationsAPI.getUnreadCount();
+      setUnreadCount(countRes.data?.unread_count || 0);
+    } catch { /* silent */ }
+  };
+
+  const handleDeleteAllNotifications = async () => {
+    if (!window.confirm('¿Estás seguro de que quieres eliminar todas las notificaciones?')) return;
+    try {
+      await notificationsAPI.deleteAll();
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch { /* silent */ }
+  };
+
+
+  useEffect(() => {
+    if (!auction?.ends_at) {
+      setTimeLeft('');
+      return;
+    }
+    
+    // El servidor devuelve ends_at sin 'Z', añadirlo para parseo UTC correcto
+    const endTimestamp = new Date(auction.ends_at + 'Z').getTime();
+    
+    const tick = async () => {
+      // Usar el tiempo del servidor corregido (compensa desajuste de zona horaria)
+      const nowAdjusted = Date.now() + serverTimeOffsetRef.current;
+      const distance = endTimestamp - nowAdjusted;
+
+      if (distance <= 0) {
+        setTimeLeft('⏳ Preparando siguiente subasta…');
+        
+        if (auctionRollRef.current) return;
+        auctionRollRef.current = true;
+
+        try {
+          const res = await auctionAPI.getAuction(leagueId);
+          const data = res.data;
+          // Actualizar offset de servidor con la nueva respuesta
+          if (data.server_time) {
+            const serverMs = new Date(data.server_time + 'Z').getTime();
+            serverTimeOffsetRef.current = serverMs - Date.now();
+          }
+          const newEndMs = new Date(data.ends_at + 'Z').getTime();
+          const nowAdj2 = Date.now() + serverTimeOffsetRef.current;
+          
+          if (newEndMs - nowAdj2 <= 0) {
+            // El servidor aún está procesando la nueva subasta, reintentamos
+            setTimeout(() => { auctionRollRef.current = false; }, 2000);
+          } else {
+            setAuction(data);
+            setTimeLeft('');
+            auctionRollRef.current = false;
+          }
+        } catch (err) {
+          setTimeout(() => { auctionRollRef.current = false; }, 3000);
+        }
       } else {
         const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
         setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
       }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [auction, loadAuction]);
+    };
+
+    const timerId = setInterval(tick, 1000);
+    tick();
+    
+    return () => clearInterval(timerId);
+  }, [auction?.ends_at, auction?.id, leagueId]);
 
   const loadPackHistory = useCallback(async () => {
     try {
@@ -319,14 +421,52 @@ export default function LeagueDetailPage() {
     }
   };
 
-  const handleBuyListing = async (listingId) => {
+  const minListingBid = (listing) => {
+    const ask = listing.asking_price;
+    const high = listing.highest_bid || 0;
+    const mine = listing.my_bid_amount || 0;
+    const floorAgainstOthers = high > 0 ? Math.max(ask, high + 1) : ask;
+    if (mine) return Math.max(floorAgainstOthers, mine + 1);
+    return floorAgainstOthers;
+  };
+
+  const handlePlaceListingBid = async (listingId) => {
+    const amount = parseInt(listingBidAmounts[listingId], 10);
+    if (!amount) return;
+    setListingBidding(listingId);
     try {
-      const res = await auctionAPI.buyListing(leagueId, listingId);
+      const res = await auctionAPI.placeListingBid(leagueId, listingId, amount);
       showMessage(`✅ ${res.data.message}`);
-      loadListings();
-    } catch (err) { 
-      showMessage(`❌ ${err.response?.data?.detail || 'Error'}`); 
+      await Promise.all([loadListings(), loadLeague()]);
+      setListingBidAmounts(prev => ({ ...prev, [listingId]: '' }));
+    } catch (err) {
+      showMessage(`❌ ${err.response?.data?.detail || 'Error al pujar'}`);
     }
+    setListingBidding(null);
+  };
+
+  const handleWithdrawListingBid = async (listingId) => {
+    setListingBidding(listingId);
+    try {
+      const res = await auctionAPI.withdrawListingBid(leagueId, listingId);
+      showMessage(`✅ ${res.data.message}`);
+      await Promise.all([loadListings(), loadLeague()]);
+    } catch (err) {
+      showMessage(`❌ ${err.response?.data?.detail || 'Error'}`);
+    }
+    setListingBidding(null);
+  };
+
+  const handleAcceptListingBid = async (listingId, bidId) => {
+    setListingBidding(`acc-${listingId}`);
+    try {
+      const res = await auctionAPI.acceptListingBid(leagueId, listingId, bidId);
+      showMessage(`✅ ${res.data.message}`);
+      await Promise.all([loadListings(), loadLeague()]);
+    } catch (err) {
+      showMessage(`❌ ${err.response?.data?.detail || 'Error'}`);
+    }
+    setListingBidding(null);
   };
 
   const handleCancelListing = async (listingId) => {
@@ -363,11 +503,60 @@ export default function LeagueDetailPage() {
   }
 
   const headerRight = (
-    <div className="ld-coins-wrap">
-      <div className="ld-coins">🪙 {formatPrice(displayAvailable)}</div>
-      {myLockedCoins > 0 && (
-        <div className="ld-coins-locked" title="Monedas bloqueadas en pujas activas">🔒 {formatPrice(myLockedCoins)} Retenidas</div>
-      )}
+    <div className="ld-header-right">
+      {/* Notification Bell */}
+      <div className="ld-notif-wrap">
+        <button
+          className="ld-notif-btn"
+          onClick={() => { setShowNotifications(v => !v); if (unreadCount > 0) handleMarkAllRead(); }}
+          title="Notificaciones"
+        >
+          🔔
+          {unreadCount > 0 && (
+            <span className="ld-notif-badge">{unreadCount}</span>
+          )}
+        </button>
+        {showNotifications && (
+          <div className="ld-notif-panel">
+            <div className="ld-notif-header">
+              <span>Notificaciones</span>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                {notifications.length > 0 && (
+                  <button className="ld-notif-clear-all" onClick={handleDeleteAllNotifications}>Borrar todo</button>
+                )}
+                <button className="ld-notif-close" onClick={() => setShowNotifications(false)}>✕</button>
+              </div>
+            </div>
+            {notifications.length === 0 ? (
+              <div className="ld-notif-empty">Sin notificaciones</div>
+            ) : (
+              notifications.slice(0, 10).map(n => (
+                <div key={n.id} className={`ld-notif-item ${n.type === 'auction_won' ? 'won' : 'lost'} ${n.is_read ? 'read' : ''}`}>
+                  <div className="ld-notif-item-content">
+                    <div className="ld-notif-title">{n.title}</div>
+                    <div className="ld-notif-msg">{n.message}</div>
+                    <div className="ld-notif-time">{new Date(n.created_at).toLocaleString()}</div>
+                  </div>
+                  <button 
+                    className="ld-notif-delete-btn" 
+                    onClick={(e) => { e.stopPropagation(); handleDeleteNotification(n.id); }}
+                    title="Eliminar"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="ld-coins-column">
+        <div className="ld-coins">🪙 {formatPrice(displayAvailable)}</div>
+        {myLockedCoins > 0 && (
+          <div className="ld-coins-locked" title="Monedas bloqueadas en pujas activas">🔒 {formatPrice(myLockedCoins)} Retenidas</div>
+        )}
+      </div>
     </div>
   );
 
@@ -508,10 +697,10 @@ export default function LeagueDetailPage() {
                         <div className="ld-market-row-info-col">
                           <div className="ld-market-row-img-wrap" style={{ borderColor: getRarityColor(slot.base_rarity) }}>
                             <img
-                              src={slot.image_url || '/images/placeholder.png'}
+                              src={resolvePlayerImageUrl(slot.image_url, slot.player_name)}
                               alt={slot.player_name}
                               className="ld-market-row-img"
-                              onError={(e) => { e.target.src = '/images/placeholder.png'; }}
+                              onError={(e) => { e.target.onerror=null; e.target.src=`https://ui-avatars.com/api/?name=${encodeURIComponent(slot.player_name||'UFL')}&background=152e20&color=25f478&bold=true`; }}
                             />
                             <div className="ld-market-row-pos">{slot.position}</div>
                           </div>
@@ -528,19 +717,29 @@ export default function LeagueDetailPage() {
                         </div>
 
                         <div className="ld-market-row-price-col">
-                          <div className={`ld-market-row-price ${slot.current_bid > 0 ? 'highlight' : ''}`}>
-                            {formatPrice(slot.current_bid > 0 ? slot.current_bid : slot.base_price)}
+                          <div className={`ld-market-row-price ${slot.bid_count > 0 ? 'highlight' : ''}`}>
+                            {formatPrice(slot.base_price)}
                           </div>
                           <div className="ld-market-row-subprice">
-                            {slot.current_bid > 0 ? `Base: ${formatPrice(slot.base_price)}` : 'Precio Base'}
+                            Base
+                            {slot.bid_count > 0 && (
+                              <span style={{ marginLeft: 6, color: 'var(--gold)' }}>
+                                · {slot.bid_count} {slot.bid_count === 1 ? 'puja' : 'pujas'}
+                              </span>
+                            )}
                           </div>
+                          {slot.my_bid_amount > 0 && (
+                            <div className="ld-market-row-mybid">
+                              Mi puja: {formatPrice(slot.my_bid_amount)}
+                            </div>
+                          )}
                         </div>
 
                         <div className="ld-market-row-action-col" onClick={(e) => e.stopPropagation()}>
                           <div className="ld-market-row-bid-wrap">
                             <input
                               type="number"
-                              placeholder={hasBid ? 'Subir a...' : `Mín: ${formatPrice(minBid)}`}
+                              placeholder={slot.user_has_bid ? `Cambiar (actual: ${formatPrice(slot.my_bid_amount)})` : `Mín: ${formatPrice(slot.base_price)}`}
                               value={bidAmounts[slot.id] || ''}
                               onChange={(e) => setBidAmounts({ ...bidAmounts, [slot.id]: e.target.value })}
                               className="ld-market-row-input"
@@ -548,12 +747,12 @@ export default function LeagueDetailPage() {
                             <button
                               className="btn-primary"
                               style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-                              onClick={() => handleBid(slot.id, slot.current_bid, slot.base_price)}
+                              onClick={() => handleBid(slot.id, slot.my_bid_amount || 0, slot.base_price)}
                               disabled={bidding === slot.id}
                             >
-                              {bidding === slot.id ? '...' : (hasBid ? 'Actualizar' : 'Pujar')}
+                              {bidding === slot.id ? '...' : (slot.user_has_bid ? 'Actualizar' : 'Pujar')}
                             </button>
-                            {hasBid && (
+                            {slot.user_has_bid && (
                               <button
                                 className="lg-btn-danger"
                                 style={{ padding: '8px 12px', fontSize: '0.85rem' }}
@@ -626,7 +825,7 @@ export default function LeagueDetailPage() {
             {/* ═══ USER LISTINGS ═══ */}
             <div style={{ marginTop: 24 }}>
               <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12 }}>🏷️ Fichajes Recientes & En Venta</h2>
-              <p className="ld-auction-desc">Jugadores puestos a la venta por usuarios de la liga.</p>
+              <p className="ld-auction-desc">Pujas entre managers: el vendedor elige a qué postor vender. Pasadas 24h sin venta, el sistema puede ofertar (ver arriba).</p>
 
               {listingsLoading ? (
                 <div className="ld-loading-small">Cargando listados...</div>
@@ -653,12 +852,12 @@ export default function LeagueDetailPage() {
 
                       <div className="ld-market-row-info-col">
                         <div className="ld-market-row-img-wrap" style={{ borderColor: getRarityColor(listing.base_rarity) }}>
-                          <img
-                            src={listing.image_url || '/images/placeholder.png'}
-                            alt={listing.player_name}
-                            className="ld-market-row-img"
-                            onError={(e) => { e.target.src = '/images/placeholder.png'; }}
-                          />
+                            <img
+                              src={resolvePlayerImageUrl(listing.image_url, listing.player_name)}
+                              alt={listing.player_name}
+                              className="ld-market-row-img"
+                              onError={(e) => { e.target.onerror=null; e.target.src=`https://ui-avatars.com/api/?name=${encodeURIComponent(listing.player_name||'UFL')}&background=152e20&color=25f478&bold=true`; }}
+                            />
                           <div className="ld-market-row-pos">{listing.position}</div>
                         </div>
                         <div className="ld-market-row-details">
@@ -673,31 +872,74 @@ export default function LeagueDetailPage() {
 
                       <div className="ld-market-row-price-col">
                         <div className="ld-market-row-price highlight">
-                          {formatPrice(listing.asking_price)}
+                          {formatPrice(listing.highest_bid > 0 ? listing.highest_bid : listing.asking_price)}
                         </div>
                         <div className="ld-market-row-subprice">
-                          Precio Solicitado
+                          {listing.highest_bid > 0
+                            ? `Mín. vendedor: ${formatPrice(listing.asking_price)} · ${listing.bid_count} ${listing.bid_count === 1 ? 'puja' : 'pujas'}`
+                            : `Precio mínimo · ${listing.bid_count || 0} pujas`}
                         </div>
                       </div>
 
                       <div className="ld-market-row-action-col" onClick={e => e.stopPropagation()}>
-                        <div className="ld-market-row-bid-wrap">
+                        <div className="ld-market-row-bid-wrap" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8, minWidth: 0 }}>
                           {listing.is_mine ? (
-                            <button
-                              className="lg-btn-danger"
-                              style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-                              onClick={() => handleCancelListing(listing.id)}
-                            >
-                              Retirar
-                            </button>
+                            <>
+                              <button
+                                className="lg-btn-danger"
+                                style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                                onClick={() => handleCancelListing(listing.id)}
+                              >
+                                Quitar del mercado
+                              </button>
+                              {(listing.bids || []).length === 0 ? (
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Sin pujas todavía</span>
+                              ) : (
+                                (listing.bids || []).map(b => (
+                                  <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                    <span style={{ fontSize: '0.78rem', color: 'var(--text-primary)' }}>@{b.username} · {formatPrice(b.amount)}</span>
+                                    <button
+                                      className="btn-primary"
+                                      style={{ padding: '6px 10px', fontSize: '0.8rem' }}
+                                      onClick={() => handleAcceptListingBid(listing.id, b.id)}
+                                      disabled={listingBidding != null}
+                                    >
+                                      Vender aquí
+                                    </button>
+                                  </div>
+                                ))
+                              )}
+                            </>
                           ) : (
-                            <button
-                              className="btn-primary"
-                              style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-                              onClick={() => handleBuyListing(listing.id)}
-                            >
-                              Comprar
-                            </button>
+                            <>
+                              <input
+                                type="number"
+                                placeholder={`Mín ${formatPrice(minListingBid(listing))}`}
+                                value={listingBidAmounts[listing.id] || ''}
+                                onChange={(e) => setListingBidAmounts({ ...listingBidAmounts, [listing.id]: e.target.value })}
+                                className="ld-market-row-input"
+                              />
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                <button
+                                  className="btn-primary"
+                                  style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                                  onClick={() => handlePlaceListingBid(listing.id)}
+                                  disabled={listingBidding === listing.id}
+                                >
+                                  {listingBidding === listing.id ? '…' : (listing.my_bid_amount ? 'Subir puja' : 'Pujar')}
+                                </button>
+                                {listing.my_bid_amount ? (
+                                  <button
+                                    className="lg-btn-danger"
+                                    style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                                    onClick={() => handleWithdrawListingBid(listing.id)}
+                                    disabled={listingBidding === listing.id}
+                                  >
+                                    Retirar
+                                  </button>
+                                ) : null}
+                              </div>
+                            </>
                           )}
                         </div>
                       </div>

@@ -12,6 +12,7 @@ from app.core.config import settings
 engine = create_engine(
     settings.database_url,
     echo=settings.DEBUG,
+    connect_args={"charset": "utf8mb4"},
     pool_pre_ping=True,  # Verifica la conexión antes de usarla
     pool_recycle=3600,   # Recicla conexiones cada hora
 )

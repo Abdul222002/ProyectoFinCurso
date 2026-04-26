@@ -32,6 +32,7 @@ export const teamsAPI = {
   releasePlayer: (leagueId, cardId) => api.post(`/teams/my/release/${cardId}`, {}, { params: { league_id: leagueId } }),
   getGameweekPoints: (leagueId) => api.get('/teams/my/gameweek-points', { params: { league_id: leagueId } }),
   getUserGameweekPoints: (leagueId, userId) => api.get(`/teams/${leagueId}/user/${userId}/gameweek-points`),
+  getGameweekLineupBreakdown: (leagueId, gameweekNumber, userId = null) => api.get(`/teams/${leagueId}/gameweek/${gameweekNumber}/breakdown`, { params: userId ? { user_id: userId } : {} }),
 };
 
 // ==========================================
@@ -43,16 +44,6 @@ export const playersAPI = {
   getDetail: (id) => api.get(`/players/${id}`),
   myCards: () => api.get('/players/my-cards/all'),
   getHistory: (id) => api.get(`/players/${id}/history`),
-};
-
-// ==========================================
-// MARKET
-// ==========================================
-
-export const marketAPI = {
-  list: (params = {}) => api.get('/market/', { params: { limit: 200, ...params } }),
-  buy: (playerId) => api.post(`/market/buy/${playerId}`),
-  sell: (cardId) => api.post(`/market/sell/${cardId}`),
 };
 
 // ==========================================
@@ -115,7 +106,13 @@ export const auctionAPI = {
   getListings: (leagueId) => api.get(`/market/${leagueId}/listings`, {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
   }),
-  buyListing: (leagueId, listingId) => api.post(`/market/${leagueId}/buy-listing/${listingId}`, {}, {
+  placeListingBid: (leagueId, listingId, amount) => api.post(`/market/${leagueId}/listing-bid/${listingId}`, { amount }, {
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }),
+  withdrawListingBid: (leagueId, listingId) => api.delete(`/market/${leagueId}/listing-bid/${listingId}`, {
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  }),
+  acceptListingBid: (leagueId, listingId, bidId) => api.post(`/market/${leagueId}/listing-accept/${listingId}/${bidId}`, {}, {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
   }),
   getOffers: (leagueId) => api.get(`/market/${leagueId}/my-offers`, {
@@ -163,3 +160,17 @@ export const adminAPI = {
   getUserLeagueCoins: (userId) => api.get(`/admin/users/${userId}/league-coins`),
   updateUserLeagueCoins: (userId, data) => api.put(`/admin/users/${userId}/league-coins`, data),
 };
+
+// ==========================================
+// NOTIFICATIONS
+// ==========================================
+
+export const notificationsAPI = {
+  getAll: (unreadOnly = false) => api.get('/notifications/', { params: { unread_only: unreadOnly } }),
+  getUnreadCount: () => api.get('/notifications/unread-count'),
+  markRead: (id) => api.post(`/notifications/${id}/read`),
+  markAllRead: () => api.post('/notifications/read-all'),
+  delete: (id) => api.delete(`/notifications/${id}`),
+  deleteAll: () => api.delete('/notifications/clear-all'),
+};
+

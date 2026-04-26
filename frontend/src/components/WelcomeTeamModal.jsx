@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { resolvePlayerImageUrl } from '../utils/mediaUrl';
 import './WelcomeTeamModal.css';
 
 /* ─────────────────────────────────────────────
@@ -62,10 +63,7 @@ function RevealCard({ card, isFlipped, onClick }) {
   const tiltX = isFlipped ? (mousePos.y - 0.5) * 12 : 0;
   const tiltY = isFlipped ? (mousePos.x - 0.5) * -12 : 0;
 
-  // Image URL — normalize backend path
-  const imgSrc = card.image_url
-    ? (card.image_url.startsWith('http') ? card.image_url : `/api${card.image_url}`)
-    : '/images/placeholder.png';
+  const imgSrc = resolvePlayerImageUrl(card.image_url, card.player_name);
 
   return (
     <div className="wtm-card-area">
@@ -109,7 +107,10 @@ function RevealCard({ card, isFlipped, onClick }) {
               <img
                 src={imgSrc}
                 alt={card.player_name}
-                onError={e => { e.target.src = '/images/placeholder.png'; }}
+                onError={e => { 
+                  e.target.onerror = null;
+                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(card.player_name || 'UFL')}&background=152e20&color=25f478&bold=true`; 
+                }}
               />
             </div>
             <div className="wtm-card-info">
@@ -128,9 +129,7 @@ function RevealCard({ card, isFlipped, onClick }) {
 ───────────────────────────────────────────── */
 function MiniCard({ card, idx }) {
   const m = meta(card.base_rarity);
-  const imgSrc = card.image_url
-    ? (card.image_url.startsWith('http') ? card.image_url : `/api${card.image_url}`)
-    : '/images/placeholder.png';
+  const imgSrc = resolvePlayerImageUrl(card.image_url);
 
   return (
     <div className={`wtm-mini-card${card.is_in_lineup ? ' starter' : ''}`} style={{ animationDelay: `${idx * 0.04}s` }}>
@@ -138,7 +137,10 @@ function MiniCard({ card, idx }) {
       <img
         src={imgSrc}
         alt={card.player_name}
-        onError={e => { e.target.src = '/images/placeholder.png'; }}
+        onError={e => { 
+          e.target.onerror = null;
+          e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(card.player_name || 'UFL')}&background=152e20&color=25f478&bold=true`; 
+        }}
       />
       <div className="wtm-mini-card__ovr">{Math.round(card.overall_rating)}</div>
       <div className="wtm-mini-card__name">{card.player_name}</div>
@@ -150,7 +152,7 @@ function MiniCard({ card, idx }) {
 /* ─────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────── */
-export default function WelcomeTeamModal({ leagueName, leagueId, players = [], onClose = () => {} }) {
+export default function WelcomeTeamModal({ leagueName, leagueId, players = [], onClose = () => { } }) {
   const navigate = useNavigate();
 
   // Phase: 'intro' → 'flash' → 'reveal' → 'summary'
@@ -209,11 +211,10 @@ export default function WelcomeTeamModal({ leagueName, leagueId, players = [], o
 
   /* Close + navigate to team management */
   const handleGoToTeam = () => {
+    const path = leagueId ? `/team?league_id=${leagueId}` : '/team';
+    // Navigate first, then close — avoids navigating from a unmounted component
+    navigate(path);
     onClose();
-    // Small delay so the modal unmounts cleanly before navigation
-    setTimeout(() => {
-      navigate('/teams');
-    }, 50);
   };
 
   return (

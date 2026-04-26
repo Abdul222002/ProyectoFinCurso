@@ -44,6 +44,7 @@ class Settings(BaseSettings):
         return (
             f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}"
             f"@{self.MYSQL_HOST}:{self.MYSQL_PORT}/{self.MYSQL_DATABASE}"
+            "?charset=utf8mb4"
         )
     
     class Config:

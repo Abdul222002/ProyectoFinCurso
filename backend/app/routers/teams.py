@@ -174,6 +174,24 @@ async def set_lineup(
         if card_id not in team_card_ids:
             raise HTTPException(status_code=400, detail=f"La carta {card_id} no pertenece a tu equipo")
 
+    # ─── VALIDACIÓN DE POSICIONES ────────────────────────────────────────────
+    # Contar posiciones en el lineup propuesto y rechazar combinaciones inválidas
+    if data.lineup_card_ids:
+        proposed_cards = [c for c in team.players if c.id in data.lineup_card_ids]
+        position_counts: dict[str, int] = {}
+        for card in proposed_cards:
+            pos = card.player.position.value if card.player else None
+            if pos:
+                position_counts[pos] = position_counts.get(pos, 0) + 1
+
+        # Nunca más de 1 portero
+        if position_counts.get("GK", 0) > 1:
+            raise HTTPException(
+                status_code=400,
+                detail="Solo puede haber 1 portero en la alineación"
+            )
+    # ────────────────────────────────────────────────────────────────────────
+
     # Resetear todos a suplentes
     for card in team.players:
         card.is_in_lineup = card.id in data.lineup_card_ids
@@ -218,6 +236,7 @@ async def set_lineup(
 
     db.refresh(team)
     return _team_to_response(team)
+
 
 
 @router.get("/my/gameweek-lineup", response_model=GameweekLineupResponse)
@@ -343,6 +362,65 @@ async def get_user_gameweek_points(
         raise HTTPException(status_code=404, detail="El usuario no tiene equipo en esta liga")
     
     return _get_team_gameweek_points(team.id, db)
+
+
+@router.get("/{league_id}/gameweek/{gameweek_number}/breakdown")
+async def get_gameweek_lineup_breakdown(
+    league_id: int,
+    gameweek_number: int,
+    user_id: int = Query(None, description="ID del usuario (opcional, por defecto tú)"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Obtener el listado exacto de los 11 jugadores y sus puntos en una jornada pasada"""
+    target_id = user_id if user_id else current_user.id
+    
+    # Check league membership
+    membership = db.query(LeagueMember).filter(
+        LeagueMember.league_id == league_id,
+        LeagueMember.user_id == current_user.id
+    ).first()
+    if not membership:
+        raise HTTPException(status_code=403, detail="No perteneces a esta liga")
+        
+    team = db.query(Team).filter(
+        Team.user_id == target_id,
+        Team.league_id == league_id
+    ).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Equipo no encontrado")
+
+    gameweek = db.query(Gameweek).filter(Gameweek.number == gameweek_number).first()
+    if not gameweek:
+        raise HTTPException(status_code=404, detail="Jornada no encontrada")
+
+    gw_lineup = db.query(GameweekLineup).filter(
+        GameweekLineup.team_id == team.id,
+        GameweekLineup.gameweek_id == gameweek.id
+    ).first()
+
+    if not gw_lineup:
+        return {"lineup_players": [], "total_points": 0.0, "formation": team.active_formation}
+
+    players_data = []
+    for lp in gw_lineup.players:
+        if lp.card and lp.card.player:
+            player = lp.card.player
+            players_data.append({
+                "id": lp.card.id,
+                "player_id": player.id,
+                "player_name": player.name,
+                "image_url": player.image_url,
+                "position": player.position.value if hasattr(player.position, "value") else player.position,
+                "is_legend": player.is_legend,
+                "points_earned": lp.points_earned or 0.0
+            })
+
+    return {
+        "lineup_players": players_data,
+        "total_points": sum(p["points_earned"] for p in players_data),
+        "formation": gw_lineup.active_formation or team.active_formation
+    }
 
 
 @router.post("/my/release/{card_id}")
