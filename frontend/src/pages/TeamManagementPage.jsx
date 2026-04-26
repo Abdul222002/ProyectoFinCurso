@@ -388,7 +388,14 @@ export default function TeamManagementPage() {
 
   return (
     <AppLayout 
-      title={selectedTeam?.name || 'Mi Equipo'} 
+      title={(
+        <div className="tm-header-title">
+          {selectedTeam?.shield_url && (
+            <img src={selectedTeam.shield_url} alt="" className="tm-header-logo" />
+          )}
+          <span>{selectedTeam?.name || 'Mi Equipo'}</span>
+        </div>
+      )} 
       backTo={leagueIdParam ? `/leagues/${leagueIdParam}` : '/dashboard'}
       rightContent={headerRight}
     >

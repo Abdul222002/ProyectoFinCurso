@@ -140,7 +140,7 @@ def _league_to_response(league: League) -> LeagueResponse:
     )
 
 
-def _member_to_response(member: LeagueMember) -> LeagueMemberResponse:
+def _member_to_response(member: LeagueMember, team: Team = None) -> LeagueMemberResponse:
     return LeagueMemberResponse(
         id=member.id,
         user_id=member.user_id,
@@ -149,7 +149,9 @@ def _member_to_response(member: LeagueMember) -> LeagueMemberResponse:
         coins=member.coins,
         locked_coins=member.locked_coins,
         is_admin=member.is_admin,
-        joined_at=member.joined_at
+        joined_at=member.joined_at,
+        team_name=team.name if team else None,
+        team_logo=team.shield_url if team else None
     )
 
 
@@ -386,6 +388,10 @@ async def get_league_detail(
 
     members_sorted = sorted(league.members, key=lambda m: m.league_points, reverse=True)
 
+    # Obtener equipos de la liga para incluir nombres y logos
+    teams = db.query(Team).filter(Team.league_id == league_id).all()
+    team_map = {t.user_id: t for t in teams}
+
     return LeagueDetailResponse(
         id=league.id,
         name=league.name,
@@ -397,7 +403,7 @@ async def get_league_detail(
         is_public=league.is_public,
         invite_code=league.invite_code,
         created_at=league.created_at,
-        members=[_member_to_response(m) for m in members_sorted]
+        members=[_member_to_response(m, team_map.get(m.user_id)) for m in members_sorted]
     )
 
 

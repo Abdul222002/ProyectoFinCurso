@@ -63,6 +63,8 @@ class LeagueMemberResponse(BaseModel):
     locked_coins: int
     is_admin: bool
     joined_at: datetime
+    team_name: Optional[str] = None
+    team_logo: Optional[str] = None
 
     class Config:
         from_attributes = True

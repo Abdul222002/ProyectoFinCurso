@@ -164,12 +164,28 @@
 
 .ld-member-info {
   flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ld-member-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ld-member-team-logo {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(0,0,0,0.4));
+  border-radius: 6px;
 }
 
 .ld-member-name {
   font-weight: 800;
   font-size: 1.05rem;
-  display: block;
   color: var(--text-primary);
 }
 

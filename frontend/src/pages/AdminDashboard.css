@@ -1,68 +1,15 @@
 /* ==========================================
-   ADMIN DASHBOARD — Premium Dark Panel
+   ADMIN DASHBOARD — Unified App Design
    ========================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 .adm {
     min-height: 100vh;
-    background: linear-gradient(160deg, #060612 0%, #0d0e1e 50%, #08090f 100%);
-    color: #e2e8f0;
+    background: var(--bg-base);
+    color: var(--text-primary);
     font-family: 'Inter', sans-serif;
     padding-bottom: 40px;
-}
-
-/* Header */
-.adm-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px 24px 16px;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.adm-back {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.04);
-    color: #94a3b8;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.adm-back:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-}
-
-.adm-header-center {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.adm-header-badge {
-    font-size: 0.6rem;
-    font-weight: 900;
-    color: #ef4444;
-    background: rgba(239, 68, 68, 0.15);
-    padding: 4px 10px;
-    border-radius: 6px;
-    letter-spacing: 0.15em;
-    border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-.adm-header-center h1 {
-    font-size: 1.3rem;
-    font-weight: 800;
-    margin: 0;
-    color: #fff;
 }
 
 /* Message */
@@ -93,16 +40,18 @@
     gap: 6px;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 24px 20px;
+    padding: 8px 16px 20px;
     overflow-x: auto;
+    scrollbar-width: none;
 }
+.adm-tabs::-webkit-scrollbar { display: none; }
 
 .adm-tab {
-    padding: 10px 20px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 10px 18px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
     border-radius: 10px;
-    color: #94a3b8;
+    color: var(--text-secondary);
     font-weight: 700;
     font-size: 0.85rem;
     cursor: pointer;
@@ -112,13 +61,14 @@
 }
 
 .adm-tab:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: #fff;
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border-color: var(--border-strong);
 }
 
 .adm-tab.active {
     background: rgba(239, 68, 68, 0.12);
-    border-color: rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.4);
     color: #ef4444;
 }
 
@@ -126,57 +76,84 @@
 .adm-content {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 24px;
+    padding: 0 16px;
 }
 
 .adm-loading {
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
     padding: 60px;
-    color: #64748b;
+    color: var(--text-secondary);
     font-weight: 600;
 }
+
+.adm-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--border);
+    border-top-color: #ef4444;
+    border-radius: 50%;
+    animation: admSpin 0.7s linear infinite;
+}
+
+@keyframes admSpin { to { transform: rotate(360deg); } }
 
 /* Stats Grid */
 .adm-stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 16px;
 }
 
 .adm-stat-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 24px 20px;
+    padding: 28px 20px;
     text-align: center;
-    transition: all 0.2s;
+    transition: all 0.25s;
+    cursor: default;
+    position: relative;
+    overflow: hidden;
+}
+
+.adm-stat-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(239,68,68,0.04) 0%, transparent 60%);
+    pointer-events: none;
 }
 
 .adm-stat-card:hover {
-    background: rgba(255, 255, 255, 0.06);
-    transform: translateY(-2px);
+    background: var(--bg-elevated);
+    border-color: var(--border-strong);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
 }
 
 .adm-stat-icon {
-    font-size: 2rem;
+    font-size: 2.5rem;
     display: block;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
 .adm-stat-value {
-    font-size: 2rem;
+    font-size: 2.5rem;
     font-weight: 900;
-    color: #fff;
+    color: var(--text-primary);
     line-height: 1;
 }
 
 .adm-stat-label {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #64748b;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-top: 8px;
+    letter-spacing: 0.12em;
+    margin-top: 10px;
 }
 
 /* Search Bar */
@@ -190,10 +167,10 @@
 .adm-search-input {
     flex: 1;
     padding: 12px 16px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
     border-radius: 10px;
-    color: #fff;
+    color: var(--text-primary);
     font-size: 0.9rem;
     font-family: inherit;
     outline: none;
@@ -201,7 +178,7 @@
 }
 
 .adm-search-input:focus {
-    border-color: rgba(239, 68, 68, 0.4);
+    border-color: rgba(239, 68, 68, 0.5);
 }
 
 .adm-search-btn {
@@ -224,19 +201,24 @@
 .adm-count-badge {
     font-size: 0.75rem;
     font-weight: 800;
-    color: #64748b;
-    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-muted);
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
     padding: 6px 12px;
     border-radius: 8px;
     white-space: nowrap;
 }
 
 /* Table */
+.adm-table-section {
+    position: relative;
+}
+
 .adm-table-wrap {
     overflow-x: auto;
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
 }
 
 .adm-table {
@@ -246,18 +228,18 @@
 }
 
 .adm-table thead {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--bg-elevated);
 }
 
 .adm-table th {
     padding: 14px 16px;
     text-align: left;
     font-weight: 800;
-    color: #94a3b8;
-    font-size: 0.72rem;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid var(--border);
     white-space: nowrap;
 }
 
@@ -265,14 +247,17 @@
     padding: 12px 16px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.03);
     vertical-align: middle;
+    color: var(--text-primary);
 }
 
 .adm-table tbody tr {
     transition: background 0.15s;
 }
 
+.adm-table tbody tr:last-child td { border-bottom: none; }
+
 .adm-table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--bg-hover);
 }
 
 .adm-table tbody tr.admin-row {
@@ -281,49 +266,53 @@
 
 /* Role Badge */
 .adm-role-badge {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 800;
     padding: 3px 10px;
     border-radius: 6px;
     text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .role-admin {
     color: #ef4444;
     background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.25);
 }
 
 .role-premium {
-    color: #fbbf24;
-    background: rgba(251, 191, 36, 0.15);
+    color: var(--gold);
+    background: rgba(201, 168, 76, 0.15);
+    border: 1px solid rgba(201, 168, 76, 0.25);
 }
 
 .role-free {
-    color: #64748b;
-    background: rgba(100, 116, 139, 0.15);
+    color: var(--text-muted);
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
 }
 
 /* League count */
 .adm-league-count {
     color: #60a5fa;
-    font-weight: 700;
+    font-weight: 800;
 }
 
 .adm-date {
-    color: #64748b;
+    color: var(--text-muted);
     font-size: 0.8rem;
 }
 
 .adm-code {
     font-family: 'Courier New', monospace;
-    color: #fbbf24;
+    color: var(--gold);
     font-weight: 700;
     font-size: 0.8rem;
 }
 
-/* Delete */
+/* Buttons */
 .adm-delete-btn {
-    background: rgba(239, 68, 68, 0.1);
+    background: rgba(239, 68, 68, 0.08);
     border: 1px solid rgba(239, 68, 68, 0.2);
     border-radius: 8px;
     padding: 6px 10px;
@@ -339,7 +328,7 @@
 
 .adm-protected {
     font-size: 0.7rem;
-    color: #64748b;
+    color: var(--text-muted);
     font-weight: 600;
 }
 
@@ -349,7 +338,8 @@
     height: 36px;
     border-radius: 8px;
     object-fit: cover;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
 }
 
 .adm-ovr {
@@ -358,14 +348,14 @@
 }
 
 .adm-legend-star {
-    color: #fbbf24;
+    color: var(--gold);
 }
 
 /* Rarity badge */
 .adm-rarity-badge {
     font-size: 0.68rem;
     font-weight: 800;
-    padding: 2px 8px;
+    padding: 3px 8px;
     border-radius: 4px;
     text-transform: uppercase;
 }
@@ -373,49 +363,68 @@
 .rarity-legend {
     color: #d8b4fe;
     background: rgba(168, 85, 247, 0.15);
+    border: 1px solid rgba(168, 85, 247, 0.25);
 }
 
 .rarity-gold {
-    color: #fbbf24;
-    background: rgba(251, 191, 36, 0.15);
+    color: var(--gold);
+    background: rgba(201, 168, 76, 0.15);
+    border: 1px solid rgba(201, 168, 76, 0.25);
 }
 
 .rarity-silver {
     color: #94a3b8;
-    background: rgba(148, 163, 184, 0.15);
+    background: rgba(148, 163, 184, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
 .rarity-bronze {
     color: #f97316;
-    background: rgba(249, 115, 22, 0.15);
+    background: rgba(249, 115, 22, 0.12);
+    border: 1px solid rgba(249, 115, 22, 0.2);
 }
 
 .adm-empty {
     text-align: center;
-    padding: 40px;
-    color: #475569;
+    padding: 48px;
+    color: var(--text-muted);
     font-weight: 600;
 }
 
 /* User cell */
 .adm-user-cell strong {
     color: #60a5fa;
+    font-weight: 700;
 }
+
+/* Position badge */
+.adm-pos-badge {
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.pos-GK { background: rgba(139,92,246,0.15); color: #a78bfa; }
+.pos-DEF { background: rgba(34,197,94,0.12); color: #4ade80; }
+.pos-MID { background: rgba(251,191,36,0.12); color: #fbbf24; }
+.pos-FWD { background: rgba(239,68,68,0.12); color: #f87171; }
 
 /* ====== FILTER BAR ====== */
 .adm-filters-bar {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     margin-bottom: 16px;
     flex-wrap: wrap;
 }
 
 .adm-filter-select {
     padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
     border-radius: 8px;
-    color: #e2e8f0;
+    color: var(--text-primary);
     font-size: 0.85rem;
     font-family: inherit;
     outline: none;
@@ -425,11 +434,12 @@
 }
 
 .adm-filter-select:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--bg-elevated);
+    border-color: var(--border-strong);
 }
 
 .adm-filter-select:focus {
-    border-color: rgba(59, 130, 246, 0.4);
+    border-color: rgba(239, 68, 68, 0.4);
 }
 
 .adm-filter-select option {
@@ -447,6 +457,7 @@
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s;
+    font-family: inherit;
 }
 
 .adm-clear-filters:hover {
@@ -455,8 +466,8 @@
 
 /* Edit button */
 .adm-edit-btn {
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    background: rgba(96, 165, 250, 0.1);
+    border: 1px solid rgba(96, 165, 250, 0.2);
     border-radius: 8px;
     padding: 6px 10px;
     cursor: pointer;
@@ -465,16 +476,17 @@
 }
 
 .adm-edit-btn:hover {
-    background: rgba(59, 130, 246, 0.2);
+    background: rgba(96, 165, 250, 0.2);
     transform: scale(1.1);
 }
 
-/* ====== PLAYER EDIT MODAL ====== */
+/* ====== MODAL ====== */
 .adm-modal-overlay {
     position: fixed;
     inset: 0;
     z-index: 9000;
     background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -483,29 +495,25 @@
 }
 
 @keyframes modalFadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
 }
 
 .adm-modal {
-    background: #0f1225;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
     border-radius: 20px;
     width: 100%;
     max-width: 700px;
-    max-height: 85vh;
+    max-height: 88vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
 }
 
 .adm-modal-lg {
-    max-width: 850px;
+    max-width: 860px;
 }
 
 .adm-modal-header {
@@ -513,13 +521,20 @@
     align-items: center;
     justify-content: space-between;
     padding: 20px 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-surface);
+}
+
+.adm-modal-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .adm-modal-header h2 {
     font-size: 1.2rem;
     font-weight: 800;
-    color: #fff;
+    color: var(--text-primary);
     margin: 0;
 }
 
@@ -527,20 +542,22 @@
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.04);
-    color: #94a3b8;
+    border: 1px solid var(--border);
+    background: var(--bg-hover);
+    color: var(--text-secondary);
     font-size: 1rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
+    flex-shrink: 0;
 }
 
 .adm-modal-close:hover {
     background: rgba(239, 68, 68, 0.15);
     color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.3);
 }
 
 .adm-modal-body {
@@ -553,11 +570,11 @@
 .adm-edit-top {
     display: flex;
     gap: 30px;
-    margin-bottom: 30px;
-    background: rgba(255, 255, 255, 0.02);
+    margin-bottom: 28px;
+    background: var(--bg-surface);
     padding: 20px;
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
 }
 
 .adm-edit-img-section {
@@ -578,33 +595,33 @@
     height: 110px;
     border-radius: 50%;
     object-fit: cover;
-    background: rgba(255, 255, 255, 0.05);
-    border: 3px solid rgba(255, 255, 255, 0.1);
+    background: var(--bg-hover);
+    border: 3px solid var(--border-strong);
 }
 
 .adm-edit-ovr-badge {
     position: absolute;
     bottom: 0;
     right: -5px;
-    background: #0f1225;
+    background: var(--bg-elevated);
     padding: 4px 8px;
     border-radius: 8px;
     font-weight: 900;
     font-size: 1.1rem;
-    border: 2px solid rgba(255, 255, 255, 0.1);
+    border: 2px solid var(--border-strong);
 }
 
 .adm-edit-player-name {
     font-size: 1.1rem;
     font-weight: 800;
-    color: #fff;
+    color: var(--text-primary);
     text-align: center;
 }
 
 .adm-edit-player-meta {
     font-size: 0.75rem;
     font-weight: 600;
-    color: #94a3b8;
+    color: var(--text-secondary);
     text-align: center;
     margin-top: 4px;
 }
@@ -624,16 +641,16 @@
 }
 
 .adm-stat-bar-label {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 800;
-    color: #94a3b8;
+    color: var(--text-secondary);
     width: 32px;
 }
 
 .adm-stat-bar-track {
     flex: 1;
     height: 6px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--bg-hover);
     border-radius: 4px;
     overflow: hidden;
 }
@@ -657,12 +674,14 @@
 }
 
 .adm-edit-section h3 {
-    font-size: 0.85rem;
+    font-size: 0.78rem;
     font-weight: 800;
-    color: #94a3b8;
-    margin: 0 0 12px;
+    color: var(--text-secondary);
+    margin: 0 0 14px;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
 }
 
 .adm-edit-grid {
@@ -682,9 +701,9 @@
 }
 
 .adm-edit-grid label span {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 700;
-    color: #64748b;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
@@ -693,10 +712,10 @@
 .adm-edit-grid input[type="number"],
 .adm-edit-grid select {
     padding: 10px 12px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
     border-radius: 8px;
-    color: #fff;
+    color: var(--text-primary);
     font-size: 0.85rem;
     font-family: inherit;
     outline: none;
@@ -705,7 +724,7 @@
 
 .adm-edit-grid input:focus,
 .adm-edit-grid select:focus {
-    border-color: rgba(59, 130, 246, 0.4);
+    border-color: rgba(239, 68, 68, 0.4);
 }
 
 .adm-edit-grid select {
@@ -734,7 +753,7 @@
     height: 6px;
     -webkit-appearance: none;
     appearance: none;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--bg-hover);
     border-radius: 3px;
     outline: none;
 }
@@ -764,15 +783,16 @@
     justify-content: flex-end;
     gap: 10px;
     padding: 16px 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--border);
+    background: var(--bg-surface);
 }
 
 .adm-cancel-btn {
     padding: 10px 20px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
     border-radius: 10px;
-    color: #94a3b8;
+    color: var(--text-secondary);
     font-weight: 700;
     font-size: 0.85rem;
     cursor: pointer;
@@ -781,14 +801,14 @@
 }
 
 .adm-cancel-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #fff;
+    background: var(--bg-elevated);
+    color: var(--text-primary);
 }
 
 .adm-save-btn {
     padding: 10px 24px;
     background: rgba(34, 197, 94, 0.15);
-    border: 1px solid rgba(34, 197, 94, 0.3);
+    border: 1px solid rgba(34, 197, 94, 0.35);
     border-radius: 10px;
     color: #22c55e;
     font-weight: 800;
@@ -800,29 +820,19 @@
 
 .adm-save-btn:hover {
     background: rgba(34, 197, 94, 0.25);
+    transform: translateY(-1px);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .adm-stats-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .adm-edit-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .adm-modal {
-        max-height: 90vh;
-    }
-
-    .adm-edit-top {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .adm-edit-stats-visual {
-        grid-template-columns: 1fr;
-        width: 100%;
-    }
+/* Coin editor per-league rows */
+.adm-coin-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s;
 }
+.adm-coin-row:hover { border-color: var(--border-strong); }

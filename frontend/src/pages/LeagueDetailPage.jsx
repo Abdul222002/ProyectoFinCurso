@@ -631,10 +631,15 @@ export default function LeagueDetailPage() {
                   >
                     <span className="ld-rank">{idx + 1}</span>
                     <div className="ld-member-info">
-                      <span className="ld-member-name">
-                        @{member.username}
-                        {member.is_admin && ' 👑'}
-                      </span>
+                      <div className="ld-member-main">
+                        {member.team_logo && (
+                          <img src={member.team_logo} alt="" className="ld-member-team-logo" />
+                        )}
+                        <span className="ld-member-name">
+                          @{member.username}
+                          {member.is_admin && ' 👑'}
+                        </span>
+                      </div>
                       <span className="ld-member-pts">{member.league_points} pts</span>
                     </div>
                     {isAdmin && !isOwner && !isSelf && (

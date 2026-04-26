@@ -455,3 +455,25 @@
 .tm-picker-card-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
 .tm-picker-card-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .tm-picker-empty { padding: 32px; text-align: center; color: var(--text-secondary); }
+
+/* Header Title with Logo */
+.tm-header-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.tm-header-logo {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(0,0,0,0.4));
+}
+
+@media (max-width: 600px) {
+  .tm-header-logo {
+    width: 32px;
+    height: 32px;
+  }
+}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { adminAPI } from '../services/endpoints';
 import { toast } from 'sonner';
+import AppLayout from '../components/AppLayout';
 import './AdminDashboard.css';
 
 const parseCoinInput = (val) => {
@@ -263,15 +264,19 @@ export default function AdminDashboard() {
     };
 
     return (
+        <AppLayout
+            title={<span>🛡️ Administración</span>}
+            backTo="/dashboard"
+            rightContent={
+                <span style={{
+                    fontSize: '0.6rem', fontWeight: 900, color: '#ef4444',
+                    background: 'rgba(239,68,68,0.15)', padding: '4px 10px',
+                    borderRadius: 6, border: '1px solid rgba(239,68,68,0.3)',
+                    letterSpacing: '0.15em'
+                }}>ADMIN</span>
+            }
+        >
         <div className="adm">
-            <header className="adm-header">
-                <button className="adm-back" onClick={() => navigate('/dashboard')}>←</button>
-                <div className="adm-header-center">
-                    <span className="adm-header-badge">ADMIN</span>
-                    <h1>Panel de Administración</h1>
-                </div>
-                <div style={{ width: 40 }} />
-            </header>
 
             {message && <div className={`adm-message ${message.startsWith('✅') ? 'success' : 'error'}`}>{message}</div>}
 
@@ -602,5 +607,6 @@ export default function AdminDashboard() {
                 </div>
             )}
         </div>
+        </AppLayout>
     );
 }
