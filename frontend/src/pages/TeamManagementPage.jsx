@@ -416,8 +416,16 @@ export default function TeamManagementPage() {
                 <button
                   key={t.id}
                   className={`tm-league-btn ${selectedTeam?.id === t.id ? 'active' : ''}`}
-                  onClick={() => navigate(`/team?league_id=${t.league_id}`)}
+                  onClick={() => setSelectedTeam(t)}
                 >
+                  {t.shield_url && (
+                    <img
+                      src={t.shield_url}
+                      alt=""
+                      className="tm-league-btn-shield"
+                      onError={e => { e.target.style.display = 'none'; }}
+                    />
+                  )}
                   {t.league_name || 'Liga'}
                 </button>
               ))}

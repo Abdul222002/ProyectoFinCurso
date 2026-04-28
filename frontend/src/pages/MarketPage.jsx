@@ -134,7 +134,7 @@ export default function MarketPage() {
                 <button
                   key={league.id}
                   className="mkt-league-card"
-                  onClick={() => navigate(`/leagues/${league.id}`)}
+                  onClick={() => navigate(`/leagues/${league.id}?tab=market`)}
                 >
                   <div className="mkt-league-icon-wrap">
                     <span className="mkt-league-icon">🏆</span>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220">
+  <defs><clipPath id="shield"><path d="M100 10 L185 50 L185 140 Q185 195 100 215 Q15 195 15 140 L15 50 Z"/></clipPath></defs>
+  <path d="M100 10 L185 50 L185 140 Q185 195 100 215 Q15 195 15 140 L15 50 Z" fill="#00438a"/>
+  <rect x="15" y="105" width="170" height="45" fill="#fff" clip-path="url(#shield)"/>
+  <text x="100" y="170" text-anchor="middle" font-family="Arial Black" font-weight="900" font-size="22" fill="#00438a">RANGERS</text>
+  <text x="100" y="95" text-anchor="middle" font-family="Arial Black" font-weight="900" font-size="30" fill="#fff">RFC</text>
+</svg>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220">
+  <defs><clipPath id="shield"><path d="M100 10 L185 50 L185 140 Q185 195 100 215 Q15 195 15 140 L15 50 Z"/></clipPath></defs>
+  <path d="M100 10 L185 50 L185 140 Q185 195 100 215 Q15 195 15 140 L15 50 Z" fill="#7b1c3e"/>
+  <text x="100" y="125" text-anchor="middle" font-family="Arial Black" font-weight="900" font-size="30" fill="#fff">❤️</text>
+  <text x="100" y="170" text-anchor="middle" font-family="Arial Black" font-weight="900" font-size="16" fill="#fff">HEARTS</text>
+</svg>

@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { leaguesAPI, auctionAPI, packsAPI, authAPI, notificationsAPI } from '../services/endpoints';
@@ -14,9 +14,11 @@ export default function LeagueDetailPage() {
   const { leagueId } = useParams();
   const { user, refreshUser } = useAuth();
 
+  const [searchParams] = useSearchParams();
+
   const [league, setLeague] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('standings');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'standings');
   const [message, setMessage] = useState('');
 
   // Auction state

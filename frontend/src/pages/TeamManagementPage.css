@@ -61,23 +61,46 @@
   display: flex;
   gap: 8px;
   overflow-x: auto;
+  scrollbar-width: none;
+  flex-wrap: wrap;
 }
+.tm-league-selector::-webkit-scrollbar { display: none; }
 
 .tm-league-btn {
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  padding: 6px 12px;
-  border-radius: 8px;
+  padding: 7px 14px;
+  border-radius: 10px;
   color: var(--text-secondary);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.tm-league-btn:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
 }
 
 .tm-league-btn.active {
   background: var(--gold);
   color: #000;
   border-color: var(--gold);
+  font-weight: 800;
+}
+
+.tm-league-btn-shield {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .tm-message {
