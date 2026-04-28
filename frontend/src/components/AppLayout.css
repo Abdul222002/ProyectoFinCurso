@@ -148,3 +148,17 @@
   border-radius: 50%;
   background-color: var(--gold);
 }
+
+/* Responsive Adjustments */
+@media (max-width: 600px) {
+  .app-header {
+    padding: 0 8px;
+  }
+  .header-title {
+    font-size: 1.1rem;
+  }
+  .back-btn {
+    padding: 3px 8px;
+    font-size: 0.75rem;
+  }
+}

@@ -20,6 +20,11 @@ export default function LoginPage() {
       await login(email, password);
       navigate('/dashboard');
     } catch (err) {
+      // 403 = email no verificado → redirigir a la pantalla de verificación OTP
+      if (err.response?.status === 403) {
+        navigate(`/verify-email?email=${encodeURIComponent(email)}`);
+        return;
+      }
       setError(err.response?.data?.detail || 'Credenciales incorrectas. Revisa tu email y contraseña.');
     } finally {
       setLoading(false);

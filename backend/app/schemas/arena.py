@@ -37,10 +37,10 @@ class ArenaStatusResponse(BaseModel):
 class LeaderboardEntry(BaseModel):
     """Entrada del ranking"""
     rank: int
-    team_id: int
+    user_id: int
     team_name: str
     username: str
-    arena_rating: int
+    arena_rating: int      # = user.global_elo (nombre mantenido para compatibilidad con frontend)
     arena_wins: int
     arena_losses: int
     arena_draws: int

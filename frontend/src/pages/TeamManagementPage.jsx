@@ -18,6 +18,9 @@ export default function TeamManagementPage() {
   const userIdParam = searchParams.get('user_id');
   const isReadOnly = !!userIdParam && userIdParam !== String(user?.id);
 
+  // Modal para blindar
+  const [blindarModalData, setBlindarModalData] = useState(null);
+  const [blindarAmount, setBlindarAmount] = useState('');
   const [teams, setTeams] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -339,14 +342,19 @@ export default function TeamManagementPage() {
   };
 
   const handleBlindar = (playerObj) => {
-    const amountStr = window.prompt(`¿Cuántas monedas quieres quemar para subir la cláusula de ${playerObj.player_name}?`);
-    if (!amountStr) return;
-    const amount = parseInt(amountStr, 10);
-    if (isNaN(amount) || amount <= 0) { toast.error('Cantidad inválida'); return; }
+    setBlindarAmount('');
+    setBlindarModalData(playerObj);
+  };
 
-    toast.warning(`¿Seguro que quieres quemar ${formatPrice(amount)} para blindar a ${playerObj.player_name}?`, {
+  const confirmBlindar = () => {
+    if (!blindarModalData) return;
+    const amount = parseInt(blindarAmount, 10);
+    if (isNaN(amount) || amount <= 0) { toast.error('Cantidad inválida'); return; }
+    
+    setBlindarModalData(null);
+    toast.warning(`¿Seguro que quieres quemar ${formatPrice(amount)} para blindar a ${blindarModalData.player_name}?`, {
       cancel: { label: 'Cancelar' },
-      action: { label: 'Blindar', onClick: () => executeBlindar(playerObj, amount) }
+      action: { label: 'Blindar', onClick: () => executeBlindar(blindarModalData, amount) }
     });
   };
 
@@ -760,6 +768,52 @@ export default function TeamManagementPage() {
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Blindar Jugador */}
+        {blindarModalData && (
+          <div className="tm-picker-overlay" onClick={() => setBlindarModalData(null)}>
+            <div className="tm-picker-modal" onClick={e => e.stopPropagation()} style={{maxWidth: '400px', textAlign: 'center'}}>
+              <h3 style={{marginBottom: '10px', fontSize: '1.4rem', color: 'var(--text-primary)'}}>🛡️ Blindar Jugador</h3>
+              <p style={{marginBottom: '20px', color: 'var(--text-secondary)'}}>
+                ¿Cuántas monedas quieres quemar para subir la cláusula de <strong>{blindarModalData.player_name}</strong>?
+              </p>
+              
+              <div style={{marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                <label style={{alignSelf: 'flex-start', fontSize: '0.9rem', color: 'var(--text-secondary)'}}>Cantidad a quemar (🪙)</label>
+                <input
+                  type="number"
+                  min="1"
+                  className="tm-picker-input"
+                  placeholder="Ej: 50000"
+                  value={blindarAmount}
+                  onChange={(e) => setBlindarAmount(e.target.value)}
+                  style={{
+                    width: '100%', padding: '12px', borderRadius: '8px',
+                    background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                    color: 'var(--text-primary)', fontSize: '1.1rem'
+                  }}
+                  autoFocus
+                  onKeyDown={(e) => { if(e.key === 'Enter') confirmBlindar() }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  onClick={() => setBlindarModalData(null)} 
+                  style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={confirmBlindar} 
+                  style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'var(--gold)', color: '#000', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  Confirmar
+                </button>
               </div>
             </div>
           </div>

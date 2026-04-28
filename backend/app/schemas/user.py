@@ -51,3 +51,9 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+class VerifyEmailRequest(BaseModel):
+    """Schema para verificar OTP"""
+    email: EmailStr
+    code: str
+

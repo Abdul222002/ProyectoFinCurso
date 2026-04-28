@@ -72,6 +72,9 @@ class User(Base):
     global_elo = Column(Integer, default=1000)
     arena_tickets = Column(Integer, default=5)
     last_tickets_reset = Column(DateTime, default=datetime.utcnow)
+    arena_wins = Column(Integer, default=0)
+    arena_losses = Column(Integer, default=0)
+    arena_draws = Column(Integer, default=0)
     
     # Estadísticas
     total_points = Column(Integer, default=0)  # Puntos Fantasy totales

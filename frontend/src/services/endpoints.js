@@ -12,6 +12,7 @@ export const authAPI = {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
   }),
   verifyEmail: (token) => api.get('/auth/verify-email', { params: { token } }),
+  verifyEmailOtp: (data) => api.post('/auth/verify-email', data),
   resendVerification: (email) => api.post('/auth/resend-verification', null, { params: { email } }),
 };
 

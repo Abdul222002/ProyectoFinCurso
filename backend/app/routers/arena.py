@@ -22,12 +22,10 @@ def _simulate_match(team1_ovr: float, team2_ovr: float) -> tuple:
     Simular un partido basado en OVR.
     Equipos con mayor OVR tienen más probabilidad de ganar.
     """
-    # Factor de ventaja basado en diferencia de OVR
     diff = team1_ovr - team2_ovr
-    team1_win_prob = 0.5 + (diff / 100)  # ej: +10 OVR = 60% prob
-    team1_win_prob = max(0.15, min(0.85, team1_win_prob))  # Clamped 15%-85%
+    team1_win_prob = 0.5 + (diff / 100)
+    team1_win_prob = max(0.15, min(0.85, team1_win_prob))
 
-    # Generar goles (Poisson-like simplificado)
     avg_goals = 2.5
     team1_goals = 0
     team2_goals = 0
@@ -38,40 +36,34 @@ def _simulate_match(team1_ovr: float, team2_ovr: float) -> tuple:
         if random.random() < ((1 - team1_win_prob) * 0.6):
             team2_goals += 1
 
-    # Cap de goles razonables
     team1_goals = min(team1_goals, 5)
     team2_goals = min(team2_goals, 5)
 
     return team1_goals, team2_goals
 
 
-def _calculate_rating_change(my_rating: int, opp_rating: int, won: bool, draw: bool) -> int:
+def _calculate_elo_change(my_elo: int, opp_elo: int, won: bool, draw: bool) -> int:
     """ELO dinámico con K escalable según diferencia de nivel"""
-    expected = 1 / (1 + 10 ** ((opp_rating - my_rating) / 400))
+    expected = 1 / (1 + 10 ** ((opp_elo - my_elo) / 400))
     if won:
         actual = 1
     elif draw:
         actual = 0.5
     else:
         actual = 0
-        
-    # K base más alta para más movimiento
+
     k = 40
-    
-    # Aumentar K si el jugador de menor ELO gana al de mayor ELO
-    if won and my_rating < opp_rating:
+    if won and my_elo < opp_elo:
         k += 15
-    # Reducir K si el jugador de alto ELO pierde o gana contra uno muy inferior
-    elif won and my_rating > (opp_rating + 100):
+    elif won and my_elo > (opp_elo + 100):
         k -= 10
-        
+
     return int(k * (actual - expected))
 
 
 def _reset_tickets_if_needed(user: User, db: Session):
     """Resetea los tickets diarios si es un nuevo día"""
     now = datetime.utcnow()
-    # Si last_tickets_reset no tiene valor o es de otro día natural
     if not user.last_tickets_reset or user.last_tickets_reset.date() < now.date():
         user.arena_tickets = 5
         user.last_tickets_reset = now
@@ -83,7 +75,7 @@ async def get_arena_status(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Devuelve el estado mensual (ELO, tickets) del jugador"""
+    """Devuelve el estado de la Arena (ELO global, tickets)"""
     _reset_tickets_if_needed(current_user, db)
     return ArenaStatusResponse(
         global_elo=current_user.global_elo,
@@ -102,9 +94,9 @@ async def simulate_pvp(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Simular un partido PvP contra un oponente de ELO similar"""
+    """Simular un partido PvP. ELO siempre del usuario (global_elo), no del equipo."""
     _reset_tickets_if_needed(current_user, db)
-    
+
     if current_user.arena_tickets <= 0:
         raise HTTPException(status_code=400, detail="No te quedan tickets de arena hoy")
 
@@ -112,41 +104,30 @@ async def simulate_pvp(
     if not my_team:
         raise HTTPException(status_code=400, detail="Necesitas crear un equipo primero")
 
-    # Buscar oponente aleatorio (excluir al usuario actual)
-    opponents = db.query(Team).filter(Team.user_id != current_user.id).all()
-
-    # Multiplicador del sistema global
-    global_k = 32
-
     # Consumir ticket
     current_user.arena_tickets -= 1
 
+    # Buscar oponente (excluir al usuario actual)
+    opponents = db.query(Team).filter(Team.user_id != current_user.id).all()
+
     if not opponents:
-        # Si no hay oponentes, crear uno fantasma adaptativo
+        # Oponente fantasma CPU adaptativo
         opp_team_name = "CPU FC"
-        # Escalar con el nivel del jugador
         opp_ovr = max(60.0, min(95.0, my_team.overall_rating + random.uniform(-5, 5)))
-        opp_rating = max(500, my_team.arena_rating + random.randint(-40, 40))
-        opp_global_elo = max(500, current_user.global_elo + random.randint(-40, 40))
+        opp_elo = max(500, current_user.global_elo + random.randint(-40, 40))
 
         team1_goals, team2_goals = _simulate_match(my_team.overall_rating, opp_ovr)
-
         won = team1_goals > team2_goals
         draw = team1_goals == team2_goals
-        
-        # ELO changes
-        rating_change = _calculate_rating_change(my_team.arena_rating, opp_rating, won, draw)
-        global_change = _calculate_rating_change(current_user.global_elo, opp_global_elo, won, draw)
 
-        # Actualizar stats
-        my_team.arena_rating += rating_change
-        current_user.global_elo += global_change
-        
+        # Solo actualizar global_elo del usuario
+        elo_change = _calculate_elo_change(current_user.global_elo, opp_elo, won, draw)
+        current_user.global_elo = max(100, current_user.global_elo + elo_change)
+
         coins_rewarded = 0
         if won:
-            my_team.arena_wins += 1
+            current_user.arena_wins += 1
             result = "victory"
-            # Recompensa
             coins_rewarded = 5000000
             league_member = db.query(LeagueMember).filter(
                 LeagueMember.league_id == my_team.league_id,
@@ -154,12 +135,11 @@ async def simulate_pvp(
             ).first()
             if league_member:
                 league_member.coins += coins_rewarded
-
         elif draw:
-            my_team.arena_draws += 1
+            current_user.arena_draws += 1
             result = "draw"
         else:
-            my_team.arena_losses += 1
+            current_user.arena_losses += 1
             result = "defeat"
 
         db.commit()
@@ -174,24 +154,23 @@ async def simulate_pvp(
             team2_score=team2_goals,
             winner_name=my_team.name if won else (opp_team_name if not draw else None),
             result=result,
-            rating_change=rating_change,
-            global_rating_change=global_change,
+            rating_change=elo_change,
+            global_rating_change=elo_change,
             coins_rewarded=coins_rewarded,
             simulated_at=datetime.utcnow()
         )
 
-    # Matchmaking: elegir oponente cercano en global_elo y overall_rating combinados (aprox)
-    # Por simplicidad ahora, combinamos diferencia de ELO global y diferencia de team OVR
+    # Matchmaking: oponente más cercano en global_elo y OVR
     def match_score(t: Team):
         elo_diff = abs(t.user.global_elo - current_user.global_elo)
-        ovr_diff = abs(t.overall_rating - my_team.overall_rating) * 10  # Peso al OVR
+        ovr_diff = abs(t.overall_rating - my_team.overall_rating) * 10
         return elo_diff + ovr_diff
 
     opponents.sort(key=match_score)
     opp_team = opponents[0] if len(opponents) <= 3 else random.choice(opponents[:5])
+    opp_user = opp_team.user
 
     team1_goals, team2_goals = _simulate_match(my_team.overall_rating, opp_team.overall_rating)
-
     won = team1_goals > team2_goals
     draw = team1_goals == team2_goals
     lost = team1_goals < team2_goals
@@ -202,37 +181,31 @@ async def simulate_pvp(
     elif lost:
         winner_id = opp_team.id
 
-    # Crear registro
-    battle = ArenaBattle(
-        team1_id=my_team.id,
-        team2_id=opp_team.id,
-        team1_score=team1_goals,
-        team2_score=team2_goals,
-        winner_id=winner_id
-    )
-    db.add(battle)
+    # Calcular cambios de ELO (solo global_elo del usuario)
+    my_elo_change = _calculate_elo_change(current_user.global_elo, opp_user.global_elo, won, draw)
+    opp_elo_change = _calculate_elo_change(opp_user.global_elo, current_user.global_elo, lost, draw)
 
-    # Rating changes
-    my_change = _calculate_rating_change(my_team.arena_rating, opp_team.arena_rating, won, draw)
-    opp_change = _calculate_rating_change(opp_team.arena_rating, my_team.arena_rating, lost, draw)
-    
-    my_global_change = _calculate_rating_change(current_user.global_elo, opp_team.user.global_elo, won, draw)
-    opp_global_change = _calculate_rating_change(opp_team.user.global_elo, current_user.global_elo, lost, draw)
+    # Actualizar ELOs globales (con piso en 100)
+    current_user.global_elo = max(100, current_user.global_elo + my_elo_change)
+    opp_user.global_elo = max(100, opp_user.global_elo + opp_elo_change)
 
-    battle.rating_change = my_change
-    battle.global_rating_change = my_global_change
+    # Registrar W/D/L a nivel de usuario
+    if won:
+        current_user.arena_wins += 1
+        opp_user.arena_losses += 1
+        result = "victory"
+    elif draw:
+        current_user.arena_draws += 1
+        opp_user.arena_draws += 1
+        result = "draw"
+    else:
+        current_user.arena_losses += 1
+        opp_user.arena_wins += 1
+        result = "defeat"
 
-    my_team.arena_rating += my_change
-    opp_team.arena_rating += opp_change
-    
-    current_user.global_elo += my_global_change
-    opp_team.user.global_elo += opp_global_change
-
+    # Recompensa de monedas solo en victoria
     coins_rewarded = 0
     if won:
-        my_team.arena_wins += 1
-        opp_team.arena_losses += 1
-        result = "victory"
         coins_rewarded = 5000000
         league_member = db.query(LeagueMember).filter(
             LeagueMember.league_id == my_team.league_id,
@@ -240,15 +213,22 @@ async def simulate_pvp(
         ).first()
         if league_member:
             league_member.coins += coins_rewarded
-    elif draw:
-        my_team.arena_draws += 1
-        opp_team.arena_draws += 1
-        result = "draw"
-    else:
-        my_team.arena_losses += 1
-        opp_team.arena_wins += 1
-        result = "defeat"
 
+    # Guardar batalla en historial
+    battle = ArenaBattle(
+        team1_id=my_team.id,
+        team2_id=opp_team.id,
+        team1_score=team1_goals,
+        team2_score=team2_goals,
+        winner_id=winner_id,
+        rating_change=my_elo_change,
+        global_rating_change=my_elo_change,
+        team1_rating_change=my_elo_change,
+        team2_rating_change=opp_elo_change,
+        team1_global_change=my_elo_change,
+        team2_global_change=opp_elo_change,
+    )
+    db.add(battle)
     db.commit()
     db.refresh(battle)
 
@@ -262,8 +242,8 @@ async def simulate_pvp(
         team2_score=team2_goals,
         winner_name=my_team.name if won else (opp_team.name if lost else None),
         result=result,
-        rating_change=my_change,
-        global_rating_change=my_global_change,
+        rating_change=my_elo_change,
+        global_rating_change=my_elo_change,
         coins_rewarded=coins_rewarded,
         simulated_at=battle.simulated_at
     )
@@ -275,23 +255,29 @@ async def battle_history(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Historial de batallas del usuario"""
-    my_team = db.query(Team).filter(Team.user_id == current_user.id).first()
-    if not my_team:
+    """Historial de batallas del usuario (cualquier equipo suyo)"""
+    # Obtener todos los teams del usuario
+    my_team_ids = [t.id for t in db.query(Team).filter(Team.user_id == current_user.id).all()]
+    if not my_team_ids:
         return []
 
     battles = db.query(ArenaBattle).filter(
-        (ArenaBattle.team1_id == my_team.id) | (ArenaBattle.team2_id == my_team.id)
+        (ArenaBattle.team1_id.in_(my_team_ids)) | (ArenaBattle.team2_id.in_(my_team_ids))
     ).order_by(desc(ArenaBattle.simulated_at)).limit(limit).all()
 
     result = []
     for b in battles:
-        is_team1 = b.team1_id == my_team.id
+        is_team1 = b.team1_id in my_team_ids
         opp = b.team2 if is_team1 else b.team1
         my_score = b.team1_score if is_team1 else b.team2_score
         opp_score = b.team2_score if is_team1 else b.team1_score
 
-        if b.winner_id == my_team.id:
+        if is_team1:
+            elo_delta = b.team1_global_change or b.rating_change or 0
+        else:
+            elo_delta = b.team2_global_change or -(b.rating_change or 0)
+
+        if b.winner_id in my_team_ids:
             match_result = "victory"
         elif b.winner_id is None:
             match_result = "draw"
@@ -304,8 +290,8 @@ async def battle_history(
             my_score=my_score,
             opponent_score=opp_score,
             result=match_result,
-            rating_change=b.rating_change if is_team1 else -(b.rating_change or 0),
-            global_rating_change=b.global_rating_change if is_team1 else -(b.global_rating_change or 0),
+            rating_change=elo_delta,
+            global_rating_change=elo_delta,
             simulated_at=b.simulated_at
         ))
 
@@ -318,42 +304,25 @@ async def get_leaderboard(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Ranking global por arena_rating (un solo equipo por usuario, el mejor)"""
-    from sqlalchemy import func
-    
-    # 1. Obtener el máximo arena_rating por usuario
-    subq_max = db.query(
-        Team.user_id,
-        func.max(Team.arena_rating).label('max_rating')
-    ).filter(
-        Team.arena_rating.isnot(None)
-    ).group_by(Team.user_id).subquery()
-
-    # 2. De los equipos con ese rating máximo, elegir solo uno (el de ID más bajo)
-    subq_id = db.query(
-        func.min(Team.id).label('target_id')
-    ).join(
-        subq_max,
-        (Team.user_id == subq_max.c.user_id) & (Team.arena_rating == subq_max.c.max_rating)
-    ).group_by(Team.user_id).subquery()
-
-    # 3. Obtener los datos completos de esos equipos únicos
-    teams = db.query(Team).filter(
-        Team.id.in_(subq_id)
-    ).order_by(Team.arena_rating.desc()
-    ).limit(limit).all()
+    """Ranking global por global_elo del usuario. Un usuario = una entrada."""
+    users = db.query(User).order_by(User.global_elo.desc()).limit(limit).all()
 
     result = []
-    for i, team in enumerate(teams, 1):
+    for i, u in enumerate(users, 1):
+        # Obtener el mejor equipo del usuario (mayor OVR) para mostrar nombre/escudo
+        best_team = db.query(Team).filter(Team.user_id == u.id).order_by(
+            Team.overall_rating.desc()
+        ).first()
+
         result.append(LeaderboardEntry(
             rank=i,
-            team_id=team.id,
-            team_name=team.name,
-            username=team.user.username,
-            arena_rating=team.arena_rating or 1000,
-            arena_wins=team.arena_wins or 0,
-            arena_losses=team.arena_losses or 0,
-            arena_draws=team.arena_draws or 0,
-            overall_rating=team.overall_rating or 0.0
+            user_id=u.id,
+            team_name=best_team.name if best_team else f"{u.username} FC",
+            username=u.username,
+            arena_rating=u.global_elo,           # <- siempre global_elo
+            arena_wins=u.arena_wins or 0,
+            arena_losses=u.arena_losses or 0,
+            arena_draws=u.arena_draws or 0,
+            overall_rating=best_team.overall_rating if best_team else 0.0
         ))
     return result

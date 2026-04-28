@@ -1,45 +1,76 @@
-import resend
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import os
 import secrets
 from datetime import datetime, timedelta
+import ssl
 
-resend.api_key = os.getenv("RESEND_API_KEY")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+SMTP_USER = os.getenv("SMTP_USER")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 
 def generate_verification_token() -> tuple[str, datetime]:
-    token = secrets.token_urlsafe(32)
-    expires = datetime.utcnow() + timedelta(hours=24)
-    return token, expires
+    """Generates a 6-digit OTP code and its expiration time (15 mins)"""
+    # Generate 6-digit string
+    code = f"{secrets.randbelow(1000000):06d}"
+    expires = datetime.utcnow() + timedelta(minutes=15)
+    return code, expires
 
-def send_verification_email(to_email: str, username: str, token: str):
-    verify_url = f"{FRONTEND_URL}/verify-email?token={token}"
+def send_verification_email(to_email: str, username: str, code: str):
+    """Sends the OTP code via SMTP with the White and Blue theme."""
+    if not SMTP_USER or not SMTP_PASSWORD:
+        print("WARNING: SMTP credentials not set. Email not sent.")
+        return
+
+    subject = "Verifica tu cuenta en Scottish Premier Legends"
     
+    # White and Blue theme, similar to standard corporate emails
     html = f"""
-    <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; background: #080d1a; color: #f0f4ff; padding: 40px; border-radius: 16px;">
-        <div style="text-align: center; margin-bottom: 32px;">
-            <h1 style="color: #c9a84c; font-size: 2rem; margin: 0;">⚽ Scottish Premier Legends</h1>
+    <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; color: #1e293b; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+        <div style="text-align: center; margin-bottom: 32px; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px;">
+            <h1 style="color: #1d4ed8; font-size: 24px; margin: 0; font-weight: 800; letter-spacing: 0.5px;">⚽ Scottish Premier Legends</h1>
         </div>
-        <h2 style="color: #f0f4ff;">Verifica tu cuenta, {username}</h2>
-        <p style="color: #8a9bc4; line-height: 1.6;">
-            Gracias por registrarte. Haz clic en el botón de abajo para verificar tu email y activar tu cuenta.
+        <h2 style="color: #0f172a; font-size: 20px; font-weight: 700; margin-bottom: 16px;">Hola, {username}.</h2>
+        <p style="color: #475569; line-height: 1.6; font-size: 16px; margin-bottom: 32px;">
+            Para completar tu registro y acceder a la plataforma, utiliza el siguiente código de verificación:
         </p>
-        <div style="text-align: center; margin: 32px 0;">
-            <a href="{verify_url}" 
-               style="background: linear-gradient(135deg, #c9a84c, #9a7a2e); color: #080d1a; 
-                      padding: 16px 32px; border-radius: 10px; font-weight: 800; 
-                      text-decoration: none; display: inline-block; font-size: 1rem;">
-                ✅ Verificar Email
-            </a>
+        
+        <div style="text-align: center; margin: 32px 0; background: #f8fafc; padding: 24px; border-radius: 8px; border: 1px dashed #cbd5e1;">
+            <div style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #1d4ed8;">
+                {code}
+            </div>
         </div>
-        <p style="color: #4a5a7a; font-size: 0.85rem; text-align: center;">
-            Este enlace caduca en 24 horas. Si no te has registrado, ignora este email.
+        
+        <p style="color: #64748b; font-size: 14px; text-align: center; margin-top: 32px;">
+            Este código expirará en 15 minutos.
         </p>
+        
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center;">
+            <p style="color: #94a3b8; font-size: 12px; margin: 0;">
+                © 2026 Scottish Premier Legends. Todos los derechos reservados.
+            </p>
+        </div>
     </div>
     """
+
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = subject
+    msg['From'] = f"SPL Game <{SMTP_USER}>"
+    msg['To'] = to_email
+
+    msg.attach(MIMEText(html, 'html'))
+
+    context = ssl.create_default_context()
     
-    resend.Emails.send({
-        "from": "SPL Game <noreply@resend.dev>",  
-        "to": [to_email],
-        "subject": "Verifica tu cuenta en Scottish Premier Legends",
-        "html": html
-    })
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            server.ehlo()
+            server.starttls(context=context)
+            server.ehlo()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.send_message(msg)
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+        raise e

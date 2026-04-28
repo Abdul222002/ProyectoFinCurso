@@ -179,9 +179,21 @@ def _create_new_auction(league_id: int, db: Session) -> MarketAuction:
     """Genera una nueva subasta con 12 jugadores aleatorios (NO LEGENDS)"""
     
     now = datetime.utcnow()
-    # Siempre: la nueva subasta dura exactamente AUCTION_DURATION_HOURS desde ahora.
-    # Esto evita que la subasta nazca ya "expirada" por desajuste de relojes.
-    ends_at = now + timedelta(hours=AUCTION_DURATION_HOURS)
+    
+    # Intentar mantener el ciclo diario original
+    last_auction = db.query(MarketAuction).filter(
+        MarketAuction.league_id == league_id
+    ).order_by(MarketAuction.ends_at.desc()).first()
+    
+    if last_auction and last_auction.ends_at > (now - timedelta(days=3)):
+        # Encadenar en bloques de 24h hasta que estemos en el futuro
+        next_ends_at = last_auction.ends_at
+        while next_ends_at <= now:
+            next_ends_at += timedelta(hours=AUCTION_DURATION_HOURS)
+        ends_at = next_ends_at
+    else:
+        # Si no hay previa o es muy antigua, resetear a 24h desde ahora
+        ends_at = now + timedelta(hours=AUCTION_DURATION_HOURS)
     
     auction = MarketAuction(
         league_id=league_id,

@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from app.core.database import get_db
 from app.core.config import settings
 from app.models.models import User
-from app.schemas.user import UserCreate, UserLogin, UserResponse, TokenResponse
+from app.schemas.user import UserCreate, UserLogin, UserResponse, TokenResponse, VerifyEmailRequest
 from app.services.email_service import generate_verification_token, send_verification_email
 
 router = APIRouter()
@@ -118,32 +118,26 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
             detail="Este nombre de usuario ya está en uso"
         )
 
-    # Crear usuario y token de verificacion
+    # Crear usuario y código OTP
     token, expires = generate_verification_token()
-    
-    # Bypass para desarrollo local
-    import os
-    bypass = os.getenv("BYPASS_EMAIL_VERIFICATION", "false").lower() == "true"
     
     new_user = User(
         username=user_data.username,
         email=user_data.email,
         password_hash=hash_password(user_data.password),
-        verification_token=None if bypass else token,
-        verification_token_expires=None if bypass else expires,
-        email_verified=True if bypass else False
+        verification_token=token,
+        verification_token_expires=expires,
+        email_verified=False
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    # Enviar email (solo si no hay bypass)
-    if not bypass:
-        try:
-            send_verification_email(new_user.email, new_user.username, token)
-        except Exception as e:
-            # No bloqueamos el registro si falla el envío, solo logueamos
-            print(f"ERROR: No se pudo enviar el email de verificación a {new_user.email}: {e}")
+    # Enviar email
+    try:
+        send_verification_email(new_user.email, new_user.username, token)
+    except Exception as e:
+        print(f"ERROR: No se pudo enviar el email de verificación a {new_user.email}: {e}")
 
     # Generar token — sub DEBE ser string
     access_token = create_access_token(data={"sub": str(new_user.id)})
@@ -153,7 +147,36 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
         user=UserResponse.model_validate(new_user)
     )
 
-
+@router.post("/verify-email", response_model=TokenResponse)
+async def verify_email_otp(data: VerifyEmailRequest, db: Session = Depends(get_db)):
+    """Verifica el código OTP enviado por email"""
+    user = db.query(User).filter(User.email == data.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+    if user.email_verified:
+        raise HTTPException(status_code=400, detail="El email ya está verificado")
+        
+    if user.verification_token != data.code:
+        raise HTTPException(status_code=400, detail="Código de verificación incorrecto")
+        
+    import datetime
+    if user.verification_token_expires and datetime.datetime.utcnow() > user.verification_token_expires:
+        raise HTTPException(status_code=400, detail="El código de verificación ha caducado")
+        
+    # Verificar usuario
+    user.email_verified = True
+    user.verification_token = None
+    user.verification_token_expires = None
+    db.commit()
+    
+    # Generar token de acceso para login automático tras verificar
+    access_token = create_access_token(data={"sub": str(user.id)})
+    
+    return TokenResponse(
+        access_token=access_token,
+        user=UserResponse.model_validate(user)
+    )
 @router.post("/login", response_model=TokenResponse)
 async def login(user_data: UserLogin, db: Session = Depends(get_db)):
     """

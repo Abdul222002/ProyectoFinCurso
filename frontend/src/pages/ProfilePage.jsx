@@ -234,7 +234,7 @@ export default function ProfilePage() {
               ) : (
                 invitations.map(inv => (
                   <div key={inv.id} className="profile-invitation-card lg-card">
-                    <div className="profile-invitation-header">
+                    <div className="profile-invitation-content">
                       <span className="profile-invitation-icon">📩</span>
                       <div className="profile-invitation-info">
                         <h3 className="profile-invitation-title">
@@ -244,22 +244,20 @@ export default function ProfilePage() {
                           De: {inv.invited_by_username || 'Admin'} · {formatDate(inv.created_at)}
                         </p>
                       </div>
-                    </div>
-                    <div className="profile-invitation-actions">
-                      <button
-                        className="btn-primary"
-                        onClick={() => handleAccept(inv.id)}
-                        style={{flex: 1}}
-                      >
-                        Aceptar
-                      </button>
-                      <button
-                        className="lg-btn-danger"
-                        onClick={() => handleReject(inv.id)}
-                        style={{flex: 1}}
-                      >
-                        Rechazar
-                      </button>
+                      <div className="profile-invitation-actions">
+                        <button
+                          className="btn-primary"
+                          onClick={() => handleAccept(inv.id)}
+                        >
+                          Aceptar
+                        </button>
+                        <button
+                          className="lg-btn-danger"
+                          onClick={() => handleReject(inv.id)}
+                        >
+                          Rechazar
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))

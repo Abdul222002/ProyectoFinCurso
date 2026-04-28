@@ -410,7 +410,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.7);
-  z-index: 100;
+  z-index: 10001;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -496,7 +496,25 @@
 
 @media (max-width: 600px) {
   .tm-header-logo {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
+  }
+  .tm-header-title {
+    gap: 6px;
+    font-size: 0.9rem;
+    max-width: 120px;
+  }
+  .tm-header-title span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tm-value-badge {
+    padding: 2px 6px;
+    font-size: 0.75rem;
+  }
+  .tm-ovr-badge {
+    padding: 2px 6px;
+    font-size: 0.75rem;
   }
 }
