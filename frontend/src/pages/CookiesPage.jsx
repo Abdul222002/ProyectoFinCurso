@@ -3,7 +3,7 @@ import AppLayout from '../components/AppLayout';
 
 export default function CookiesPage() {
   return (
-    <AppLayout title="Política de Cookies">
+    <AppLayout title="Política de Cookies" backTo="/login">
       <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto', color: 'var(--text-primary)' }}>
         
         <h1 style={{ color: 'var(--gold)', marginBottom: '20px' }}>Política de Cookies</h1>

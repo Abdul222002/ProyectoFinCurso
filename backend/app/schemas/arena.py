@@ -38,6 +38,7 @@ class LeaderboardEntry(BaseModel):
     """Entrada del ranking"""
     rank: int
     user_id: int
+    team_id: Optional[int]      # ID del equipo con mayor OVR del usuario — usado por el frontend como key y para detectar "Tú"
     team_name: str
     username: str
     arena_rating: int      # = user.global_elo (nombre mantenido para compatibilidad con frontend)

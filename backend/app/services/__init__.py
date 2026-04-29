@@ -14,7 +14,6 @@ from app.services.calculator import (
     calculator
 )
 
-from app.services.market_updater import MarketUpdater
 
 from app.services.economy import PriceInertiaSystem
 
@@ -25,6 +24,5 @@ __all__ = [
     "get_common_penalties",
     "FantasyPointsCalculator",
     "calculator",
-    "MarketUpdater",
     "PriceInertiaSystem"
 ]

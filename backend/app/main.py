@@ -2,9 +2,11 @@
 FastAPI Main Application Entry Point
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.orm import Session
+from app.core.database import get_db
 
 # Routers
 from app.routers.auth import router as auth_router
@@ -18,10 +20,18 @@ from app.routers.admin import router as admin_router
 from app.routers.notifications import router as notifications_router
 
 from contextlib import asynccontextmanager
+import logging
 import sys
 
 if sys.stdout.encoding != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
+
+# Configurar logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 
 from app.core.config import settings
 # Database
@@ -70,10 +80,14 @@ async def on_startup():
     os.makedirs("static/players", exist_ok=True)
     # Montar archivos estáticos (imágenes de jugadores)
     app.mount("/static", StaticFiles(directory="static"), name="static")
-    Base.metadata.create_all(bind=engine)
     print("✅ Tablas verificadas/creadas correctamente")
     print("📁 Carpeta static/players/ verificada")
-    start_scheduler()
+    try:
+        start_scheduler()
+    except Exception as e:
+        print(f"❌ ERROR al iniciar el scheduler: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 @app.on_event("shutdown")
@@ -94,9 +108,20 @@ async def root():
 
 
 @app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy", "database": "connected"}
+async def health_check(db: Session = Depends(get_db)):
+    """Health check endpoint — verifica la conexión real a la base de datos"""
+    from sqlalchemy import text
+    try:
+        db.execute(text("SELECT 1"))
+        db_status = "connected"
+    except Exception as e:
+        from fastapi import HTTPException
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unhealthy", "database": "disconnected", "error": str(e)}
+        )
+    return {"status": "healthy", "database": db_status}
 
 
 # ==========================================

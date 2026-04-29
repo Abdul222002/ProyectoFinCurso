@@ -13,9 +13,10 @@ import random
 from app.core.database import get_db
 from app.models.models import (
     User, League, LeagueMember, LeagueInvitation, InvitationStatus,
-    Team, Player, UserCard, Position,
+    Team, Player, UserCard, Position, CardRarity,
     SystemOffer, MarketListing, MarketAuction, AuctionSlot, AuctionBid,
-    ListingBid, PackOpening, GameweekLineup
+    ListingBid, PackOpening, GameweekLineup, GameweekLineupPlayer, PackOpeningCard,
+    ArenaBattle
 )
 from app.schemas.league import (
     LeagueCreate, LeagueUpdate, LeagueResponse, LeagueListResponse,
@@ -56,25 +57,25 @@ def _create_team_for_league(user: User, league: League, db: Session) -> Team:
     # Obtener jugadores aleatorios por posición, EXCLUYENDO LEYENDAS y YA POSEÍDOS
     gk_players = db.query(Player).filter(
         Player.position == Position.GK,
-        Player.base_rarity != 'legend',
+        Player.base_rarity != CardRarity.LEGEND,
         ~Player.id.in_(owned_player_ids)
     ).order_by(func.rand()).limit(2).all()
     
     def_players = db.query(Player).filter(
         Player.position == Position.DEF,
-        Player.base_rarity != 'legend',
+        Player.base_rarity != CardRarity.LEGEND,
         ~Player.id.in_(owned_player_ids + [p.id for p in gk_players])
     ).order_by(func.rand()).limit(4).all()
     
     mid_players = db.query(Player).filter(
         Player.position == Position.MID,
-        Player.base_rarity != 'legend',
+        Player.base_rarity != CardRarity.LEGEND,
         ~Player.id.in_(owned_player_ids + [p.id for p in gk_players + def_players])
     ).order_by(func.rand()).limit(4).all()
     
     fwd_players = db.query(Player).filter(
         Player.position == Position.FWD,
-        Player.base_rarity != 'legend',
+        Player.base_rarity != CardRarity.LEGEND,
         ~Player.id.in_(owned_player_ids + [p.id for p in gk_players + def_players + mid_players])
     ).order_by(func.rand()).limit(3).all()
 
@@ -82,7 +83,7 @@ def _create_team_for_league(user: User, league: League, db: Session) -> Team:
     assigned_ids = owned_player_ids + [p.id for p in gk_players + def_players + mid_players + fwd_players]
     extra_players = db.query(Player).filter(
         ~Player.id.in_(assigned_ids),
-        Player.base_rarity != 'legend'
+        Player.base_rarity != CardRarity.LEGEND
     ).order_by(func.rand()).limit(2).all()
 
     all_players = gk_players + def_players + mid_players + fwd_players + extra_players
@@ -110,7 +111,7 @@ def _create_team_for_league(user: User, league: League, db: Session) -> Team:
             player_name=player.name,
             position=player.position.value if hasattr(player.position, 'value') else str(player.position),
             overall_rating=player.overall_rating,
-            base_rarity=player.base_rarity or 'common',
+            base_rarity=player.base_rarity.value if hasattr(player.base_rarity, 'value') else str(player.base_rarity),
             image_url=player.image_url,
             is_in_lineup=is_lineup
         ))
@@ -200,10 +201,24 @@ async def accept_invitation(
     if not invitation:
         raise HTTPException(status_code=404, detail="Invitación no encontrada")
 
-    league = invitation.league
+    # [↓ SEGURIDAD] Bloqueo pesimista sobre la liga para evitar sobrepasar max_members
+    league = db.query(League).filter(League.id == invitation.league_id).with_for_update().first()
+    if not league:
+         raise HTTPException(status_code=404, detail="Liga no encontrada")
 
     if league.member_count >= league.max_members:
         raise HTTPException(status_code=400, detail="La liga está llena")
+
+    # [SEGURIDAD] Verificar que el usuario no sea ya miembro (puede haber entrado por código)
+    existing_member = db.query(LeagueMember).filter(
+        LeagueMember.league_id == league.id,
+        LeagueMember.user_id == current_user.id
+    ).first()
+    if existing_member:
+        # Ya es miembro: solo marcar la invitación como aceptada sin crear duplicado
+        invitation.status = InvitationStatus.ACCEPTED
+        db.commit()
+        raise HTTPException(status_code=400, detail="Ya eres miembro de esta liga")
 
     # Aceptar invitación
     invitation.status = InvitationStatus.ACCEPTED
@@ -252,14 +267,15 @@ async def reject_invitation(
     return {"message": "Invitación rechazada"}
 
 
-@router.post("/join/{invite_code}", response_model=LeagueListResponse)
+@router.post("/join/{invite_code}", response_model=LeagueJoinResponse)
 async def join_by_code(
     invite_code: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Unirse a una liga por código — crea equipo automáticamente"""
-    league = db.query(League).filter(League.invite_code == invite_code).first()
+    # [↓ SEGURIDAD] Bloqueo pesimista para validar huecos y reparto de jugadores
+    league = db.query(League).filter(League.invite_code == invite_code).with_for_update().first()
     if not league:
         raise HTTPException(status_code=404, detail="Código de invitación inválido")
 
@@ -517,19 +533,38 @@ def _remove_user_from_league(user_id: int, league_id: int, db: Session):
     
     if team:
         # Primero eliminar alineaciones que referencian a este equipo
-        db.query(GameweekLineup).filter(GameweekLineup.team_id == team.id).delete(synchronize_session=False)
+        lineup_ids = [l.id for l in db.query(GameweekLineup).filter(GameweekLineup.team_id == team.id).all()]
+        if lineup_ids:
+            # Eliminar jugadores de las alineaciones (hijos) antes que las alineaciones (padres)
+            db.query(GameweekLineupPlayer).filter(GameweekLineupPlayer.lineup_id.in_(lineup_ids)).delete(synchronize_session=False)
+            db.query(GameweekLineup).filter(GameweekLineup.id.in_(lineup_ids)).delete(synchronize_session=False)
+        
+        # Eliminar historial de batallas en Arena
+        db.query(ArenaBattle).filter(
+            (ArenaBattle.team1_id == team.id) | (ArenaBattle.team2_id == team.id)
+        ).delete(synchronize_session=False)
+        
         db.delete(team)
 
-    # 4. Eliminar TODAS las cartas del usuario que pertenecen a esta liga
+    # 4. Limpiar trazabilidad de sobres (PackOpeningCard) antes de borrar PackOpening o UserCard
+    pack_opening_ids = [p.id for p in db.query(PackOpening).filter(
+        PackOpening.user_id == user_id,
+        PackOpening.league_id == league_id
+    ).all()]
+    if pack_opening_ids:
+        db.query(PackOpeningCard).filter(PackOpeningCard.pack_opening_id.in_(pack_opening_ids)).delete(synchronize_session=False)
+        db.query(PackOpening).filter(PackOpening.id.in_(pack_opening_ids)).delete(synchronize_session=False)
+
+    # 5. Eliminar TODAS las cartas del usuario que pertenecen a esta liga
     # Ya sea que estuvieran en el equipo o en el inventario/mercado
     db.query(UserCard).filter(
         UserCard.user_id == user_id,
         UserCard.league_id == league_id
     ).delete()
 
-    # 5. Eliminar la membresía
+    # 6. Eliminar la membresía
     db.delete(membership)
-    db.commit()
+    # Se omite el commit interno para mantener atomicidad en las llamadas padre
 
 
 def _delete_league_completely(league: League, db: Session):
@@ -562,12 +597,23 @@ def _delete_league_completely(league: League, db: Session):
             db.query(AuctionSlot).filter(AuctionSlot.auction_id == auction.id).delete()
         db.delete(auction)
         
+    # Eliminar pujas directas del usuario en subastas si quedase alguna (trazabilidad)
+    db.query(AuctionBid).filter(AuctionBid.user_id.in_(
+        db.query(LeagueMember.user_id).filter(LeagueMember.league_id == league_id)
+    )).delete(synchronize_session=False)        
     # 4. Pack Openings
-    db.query(PackOpening).filter(PackOpening.league_id == league_id).delete()
+    po_ids = [p.id for p in db.query(PackOpening).filter(PackOpening.league_id == league_id).all()]
+    if po_ids:
+        db.query(PackOpeningCard).filter(PackOpeningCard.pack_opening_id.in_(po_ids)).delete(synchronize_session=False)
+        db.query(PackOpening).filter(PackOpening.id.in_(po_ids)).delete(synchronize_session=False)
     
     # 5. GameweekLineups
     team_ids = [t.id for t in db.query(Team).filter(Team.league_id == league_id).all()]
     if team_ids:
+        # Eliminar jugadores de las alineaciones (hijos) antes que las alineaciones (padres)
+        db.query(GameweekLineupPlayer).filter(GameweekLineupPlayer.lineup_id.in_(
+            db.query(GameweekLineup.id).filter(GameweekLineup.team_id.in_(team_ids))
+        )).delete(synchronize_session=False)
         db.query(GameweekLineup).filter(GameweekLineup.team_id.in_(team_ids)).delete(synchronize_session=False)
         
     # 6. UserCards (eliminar las cartas procedentes de la liga para limpiar BD)
@@ -614,6 +660,7 @@ async def leave_league(
 
     # Si llegamos aquí, eliminamos al usuario normalmente
     _remove_user_from_league(current_user.id, league_id, db)
+    db.commit()
     
     return {"message": "Has salido de la liga exitosamente"}
 
@@ -648,5 +695,6 @@ async def kick_member(
         raise HTTPException(status_code=400, detail="No puedes expulsarte a ti mismo, usa la opción Salir")
 
     _remove_user_from_league(target_user_id, league_id, db)
+    db.commit()
     
     return {"message": "Jugador expulsado de la liga"}

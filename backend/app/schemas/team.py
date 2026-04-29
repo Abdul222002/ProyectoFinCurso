@@ -18,6 +18,13 @@ class TeamCreate(BaseModel):
     kit_color_primary: str = Field(default="#FF0000", max_length=7)
     kit_color_secondary: str = Field(default="#FFFFFF", max_length=7)
 
+    @model_validator(mode="after")
+    def check_formation(self):
+        from app.services.lineup_validator import VALID_FORMATIONS
+        if self.formation not in VALID_FORMATIONS:
+            raise ValueError(f"Formación '{self.formation}' no válida. Opciones: {', '.join(VALID_FORMATIONS.keys())}")
+        return self
+
 
 class TeamUpdate(BaseModel):
     """Actualizar equipo"""
@@ -26,6 +33,13 @@ class TeamUpdate(BaseModel):
     shield_url: Optional[str] = Field(None, max_length=500)
     kit_color_primary: Optional[str] = Field(None, max_length=7)
     kit_color_secondary: Optional[str] = Field(None, max_length=7)
+
+    @model_validator(mode="after")
+    def check_formation(self):
+        from app.services.lineup_validator import VALID_FORMATIONS
+        if self.formation and self.formation not in VALID_FORMATIONS:
+            raise ValueError(f"Formación '{self.formation}' no válida. Opciones: {', '.join(VALID_FORMATIONS.keys())}")
+        return self
 
 
 class CardInLineup(BaseModel):

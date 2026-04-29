@@ -13,10 +13,8 @@ import os
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from datetime import datetime
-from dotenv import load_dotenv
-
-load_dotenv()
-
+from sqlalchemy import func
+from app.core.config import settings
 logger = logging.getLogger("fantasy.scheduler")
 
 scheduler = AsyncIOScheduler()
@@ -36,7 +34,7 @@ def _fetch_gameweek_stats_from_api(gameweek, db):
     from app.models.models import Match, Player, PlayerMatchStats
     from app.models.models import Position as DBPosition
 
-    API_TOKEN = os.getenv('SPORTMONKS_API_KEY', '')
+    API_TOKEN = settings.SPORTMONKS_API_KEY
     if not API_TOKEN:
         logger.warning("⚠️ SPORTMONKS_API_KEY no configurada — no se pueden descargar stats automáticos.")
         return False
@@ -266,6 +264,16 @@ def gameweek_lifecycle_tick():
         if ahora >= active_gw.end_date and not active_gw.is_finished:
             from app.models.models import Match, PlayerMatchStats, Player, LeagueMember
             from app.services.calculator import calculator
+            from sqlalchemy.exc import OperationalError
+
+            try:
+                # Bloqueo pesimista inmediato. Si otro proceso lo tiene, lanza excepción y salimos.
+                locked_gw = db.query(Gameweek).filter_by(id=active_gw.id).with_for_update(nowait=True).first()
+                if not locked_gw or locked_gw.is_finished:
+                    return
+            except OperationalError:
+                logger.info(f"⏳ Jornada {active_gw.number} ya está siendo procesada por otro worker.")
+                return
 
             # 2a. Descargar stats de Sportmonks si no los hay
             logger.info(f"📡 Jornada {active_gw.number}: descargando stats de la API...")
@@ -324,8 +332,13 @@ def gameweek_lifecycle_tick():
                         team_points += pts
                     gw_lineup.points_earned = team_points
 
-                # Acumular al total histórico
-                team.total_fantasy_points = (team.total_fantasy_points or 0) + team_points
+                # Recalcular total histórico (Idempotencia absoluta: suma de todas las jornadas finalizadas + la actual)
+                past_points = db.query(func.sum(GameweekLineup.points_earned)).join(Gameweek).filter(
+                    GameweekLineup.team_id == team.id,
+                    Gameweek.is_finished == True
+                ).scalar() or 0
+                
+                team.total_fantasy_points = past_points + team_points
 
                 # Actualizar clasificación de la liga
                 lm = db.query(LeagueMember).filter_by(
@@ -333,7 +346,7 @@ def gameweek_lifecycle_tick():
                     league_id=team.league_id
                 ).first()
                 if lm:
-                    lm.league_points = (lm.league_points or 0) + team_points
+                    lm.league_points = team.total_fantasy_points
 
             # Marcar jornada como finalizada
             active_gw.is_finished = True
@@ -480,15 +493,15 @@ def start_scheduler():
         replace_existing=True
     )
     scheduler.start()
-    logger.info("✅ Scheduler iniciado: jornadas (1min) + ofertas (1h) + reconciliación (1h)")
+    print("✅ Scheduler iniciado: jornadas (1min) + ofertas (1h) + reconciliación (1h)", flush=True)
 
     # Ejecución inmediata al arrancar (catch-up)
     try:
-        logger.info("🚀 Ejecutando tareas de mantenimiento inicial (catch-up)...")
+        print("🚀 Ejecutando tareas de mantenimiento inicial (catch-up)...", flush=True)
         gameweek_lifecycle_tick()
         generate_system_offers_tick()
         economy_reconciliation_tick()
-        logger.info("✅ Tareas iniciales completadas.")
+        print("✅ Tareas iniciales completadas.", flush=True)
     except Exception as e:
         logger.error(f"❌ Error en tareas iniciales del scheduler: {e}")
 

@@ -61,13 +61,14 @@ def _calculate_elo_change(my_elo: int, opp_elo: int, won: bool, draw: bool) -> i
     return int(k * (actual - expected))
 
 
-def _reset_tickets_if_needed(user: User, db: Session):
-    """Resetea los tickets diarios si es un nuevo día"""
+def _reset_tickets_if_needed(user, db):
+    """Resetea los tickets diarios si es un nuevo día. NO hace commit — el caller lo maneja."""
+    from datetime import datetime
     now = datetime.utcnow()
     if not user.last_tickets_reset or user.last_tickets_reset.date() < now.date():
         user.arena_tickets = 5
         user.last_tickets_reset = now
-        db.commit()
+    # No db.commit() aquí: el commit lo hace el endpoint que tiene el bloqueo pesimista
 
 
 @router.get("/status", response_model=ArenaStatusResponse)
@@ -77,6 +78,7 @@ async def get_arena_status(
 ):
     """Devuelve el estado de la Arena (ELO global, tickets)"""
     _reset_tickets_if_needed(current_user, db)
+    db.commit()  # Persistir el reset de tickets si ocurrió
     return ArenaStatusResponse(
         global_elo=current_user.global_elo,
         arena_tickets=current_user.arena_tickets,
@@ -95,6 +97,9 @@ async def simulate_pvp(
     db: Session = Depends(get_db)
 ):
     """Simular un partido PvP. ELO siempre del usuario (global_elo), no del equipo."""
+    # [↓ SEGURIDAD] Bloqueo pesimista para evitar explotación concurrente de tickets
+    current_user = db.query(User).filter(User.id == current_user.id).with_for_update().first()
+
     _reset_tickets_if_needed(current_user, db)
 
     if current_user.arena_tickets <= 0:
@@ -104,7 +109,7 @@ async def simulate_pvp(
     if not my_team:
         raise HTTPException(status_code=400, detail="Necesitas crear un equipo primero")
 
-    # Consumir ticket
+    # Consumir ticket (atómico gracias al bloqueo)
     current_user.arena_tickets -= 1
 
     # Buscar oponente (excluir al usuario actual)
@@ -128,16 +133,23 @@ async def simulate_pvp(
         if won:
             current_user.arena_wins += 1
             result = "victory"
-            coins_rewarded = 5000000
+            coins_rewarded = 500000
             league_member = db.query(LeagueMember).filter(
                 LeagueMember.league_id == my_team.league_id,
                 LeagueMember.user_id == current_user.id
-            ).first()
+            ).with_for_update().first()
             if league_member:
                 league_member.coins += coins_rewarded
         elif draw:
             current_user.arena_draws += 1
             result = "draw"
+            coins_rewarded = 100000
+            league_member = db.query(LeagueMember).filter(
+                LeagueMember.league_id == my_team.league_id,
+                LeagueMember.user_id == current_user.id
+            ).with_for_update().first()
+            if league_member:
+                league_member.coins += coins_rewarded
         else:
             current_user.arena_losses += 1
             result = "defeat"
@@ -203,14 +215,22 @@ async def simulate_pvp(
         opp_user.arena_wins += 1
         result = "defeat"
 
-    # Recompensa de monedas solo en victoria
+    # Recompensa de monedas: victoria = 500,000 | empate = 100,000 | derrota = 0
     coins_rewarded = 0
     if won:
-        coins_rewarded = 5000000
+        coins_rewarded = 500000
         league_member = db.query(LeagueMember).filter(
             LeagueMember.league_id == my_team.league_id,
             LeagueMember.user_id == current_user.id
-        ).first()
+        ).with_for_update().first()
+        if league_member:
+            league_member.coins += coins_rewarded
+    elif draw:
+        coins_rewarded = 100000
+        league_member = db.query(LeagueMember).filter(
+            LeagueMember.league_id == my_team.league_id,
+            LeagueMember.user_id == current_user.id
+        ).with_for_update().first()
         if league_member:
             league_member.coins += coins_rewarded
 
@@ -317,6 +337,7 @@ async def get_leaderboard(
         result.append(LeaderboardEntry(
             rank=i,
             user_id=u.id,
+            team_id=best_team.id if best_team else None,
             team_name=best_team.name if best_team else f"{u.username} FC",
             username=u.username,
             arena_rating=u.global_elo,           # <- siempre global_elo

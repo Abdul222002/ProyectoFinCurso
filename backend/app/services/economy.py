@@ -44,8 +44,8 @@ class PriceInertiaSystem:
         player = self.db.query(Player).filter(Player.id == player_id).first()
         
         if not player or player.is_legend:
-            # Las leyendas tienen precio fijo
-            return player.base_market_value if player else self.MIN_PRICE
+            # Las leyendas tienen precio fijo — no fluctuar
+            return player.current_price if player else self.MIN_PRICE
         
         # 1. Precio base según OVR
         base_price = self._calculate_base_price_by_ovr(player.overall_rating)
@@ -193,12 +193,12 @@ class PriceInertiaSystem:
         
         if not player or player.is_legend:
             return {
-                "old_price": player.base_market_value if player else 0,
-                "new_price": player.base_market_value if player else 0,
-                "target_price": player.base_market_value if player else 0
+                "old_price": player.current_price if player else 0,
+                "new_price": player.current_price if player else 0,
+                "target_price": player.current_price if player else 0
             }
         
-        old_price = player.base_market_value
+        old_price = player.current_price
         target_price = self.calculate_target_price(player_id)
         
         # Calcular diferencia
@@ -213,7 +213,7 @@ class PriceInertiaSystem:
         new_price = round(new_price, 2)
         
         # Actualizar en BD
-        player.base_market_value = new_price
+        player.current_price = new_price
         self.db.commit()
         
         # También actualizar cartas de usuarios
@@ -244,11 +244,11 @@ class PriceInertiaSystem:
         if not player:
             return {"old_target": 0, "new_target": 0}
         
-        old_target = player.base_market_value
+        old_target = player.current_price
         new_target = self.calculate_target_price(player_id)
         
-        # Guardar el target (en este caso, lo guardamos directamente en base_market_value)
-        # En una implementación más compleja, podrías tener un campo separado "target_price"
+        # Guardar el target en target_price (campo dedicado)
+        player.target_price = new_target
         
         return {
             "old_target": old_target,
@@ -272,7 +272,9 @@ class PriceInertiaSystem:
         )
         
         for card in user_cards:
-            card.current_market_value = new_price
+            # current_market_value es una @property calculada (base + blindaje),
+            # no se puede asignar. El precio actual se obtiene siempre de player.current_price.
+            pass  # Nada que actualizar en UserCard: el precio viene del Player relacionado
         
         self.db.commit()
     
@@ -295,7 +297,7 @@ class PriceInertiaSystem:
         # Aquí podrías consultar un historial de precios si lo guardas
         # Por ahora, calculamos basándonos en el objetivo vs actual
         
-        current_price = player.base_market_value
+        current_price = player.current_price
         target_price = self.calculate_target_price(player_id)
         
         difference_percentage = ((target_price - current_price) / current_price * 100) if current_price > 0 else 0

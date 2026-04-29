@@ -2,8 +2,8 @@
 Configuración de la aplicación - Lee variables de entorno desde .env
 """
 
-from pydantic_settings import BaseSettings
-from typing import Optional
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
 
 
 class Settings(BaseSettings):
@@ -20,12 +20,14 @@ class Settings(BaseSettings):
     MYSQL_DATABASE: str = "ultimate_fantasy_legends"
     
     # JWT para autenticación
-    SECRET_KEY: str = "tu-clave-super-secreta-cambiala-en-produccion"
+    # Sin valor por defecto: fuerza configuración explícita vía .env o variable de entorno
+    SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 días
     
     # Sportmonks API
-    SPORTMONKS_API_KEY: str = "825013413a8946948555871374248208"
+    # Sin valor por defecto: fuerza configuración explícita vía .env o variable de entorno  
+    SPORTMONKS_API_KEY: str
     SPORTMONKS_BASE_URL: str = "https://api.sportmonks.com/v3"
     
     # Frontend URL (para CORS)
@@ -34,6 +36,24 @@ class Settings(BaseSettings):
     # Entorno
     ENVIRONMENT: str = "production"
     DEBUG: bool = False
+
+    @field_validator("SECRET_KEY")
+    @classmethod
+    def secret_key_must_be_strong(cls, v: str) -> str:
+        if not v or len(v) < 32:
+            raise ValueError(
+                "SECRET_KEY debe tener al menos 32 caracteres. "
+                "Genérala con: python -c \"import secrets; print(secrets.token_hex(32))\""
+            )
+        bad_keys = (
+            "tu-clave-super-secreta-cambiala-en-produccion",
+            "changeme",
+            "secret",
+            "supersecret",
+        )
+        if v in bad_keys:
+            raise ValueError("SECRET_KEY es la clave de ejemplo. Cámbiala en tu .env")
+        return v
     
     @property
     def database_url(self) -> str:
@@ -47,9 +67,7 @@ class Settings(BaseSettings):
             "?charset=utf8mb4"
         )
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
 
 # Instancia global de configuración

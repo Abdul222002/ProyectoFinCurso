@@ -165,46 +165,46 @@ async def set_lineup(
     if not team:
         raise HTTPException(status_code=404, detail="No tienes equipo en esta liga")
 
-    if len(data.lineup_card_ids) > 11:
-        raise HTTPException(status_code=400, detail="Máximo 11 titulares")
+    card_ids_set = set(data.lineup_card_ids)
+    print(f"DEBUG: set_lineup recibiendo IDs: {data.lineup_card_ids} (únicos: {len(card_ids_set)})")
+
+    # Máximo 11 titulares (se permite cualquier número entre 0 y 11 para construir la alineación)
+    if len(card_ids_set) > 11:
+        print(f"DEBUG: Error len > 11 ({len(card_ids_set)})")
+        raise HTTPException(
+            status_code=400,
+            detail=f"La alineación no puede tener más de 11 titulares (recibidos: {len(card_ids_set)})"
+        )
 
     # Verificar que las cartas pertenezcan al equipo
-    team_card_ids = [c.id for c in team.players]
-    for card_id in data.lineup_card_ids:
+    team_card_ids = {c.id for c in team.players}
+    for card_id in card_ids_set:
         if card_id not in team_card_ids:
             raise HTTPException(status_code=400, detail=f"La carta {card_id} no pertenece a tu equipo")
 
-    # ─── VALIDACIÓN DE POSICIONES ────────────────────────────────────────────
-    # Contar posiciones en el lineup propuesto y rechazar combinaciones inválidas
-    if data.lineup_card_ids:
-        proposed_cards = [c for c in team.players if c.id in data.lineup_card_ids]
-        position_counts: dict[str, int] = {}
-        for card in proposed_cards:
-            pos = card.player.position.value if card.player else None
-            if pos:
-                position_counts[pos] = position_counts.get(pos, 0) + 1
-
-        # Nunca más de 1 portero
-        if position_counts.get("GK", 0) > 1:
-            raise HTTPException(
-                status_code=400,
-                detail="Solo puede haber 1 portero en la alineación"
-            )
+    # ─── VALIDACIÓN DE POSICIONES (solo cuando la alineación está completa) ──
+    if len(card_ids_set) == 11:
+        from app.services.lineup_validator import validar_alineacion
+        proposed_players = [c.player for c in team.players if c.id in card_ids_set and c.player]
+        try:
+            validar_alineacion(team.active_formation, proposed_players)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
     # ────────────────────────────────────────────────────────────────────────
 
     # Resetear todos a suplentes
     for card in team.players:
-        card.is_in_lineup = card.id in data.lineup_card_ids
+        card.is_in_lineup = card.id in card_ids_set
 
     # Recalcular OVR
     lineup_cards = [c for c in team.players if c.is_in_lineup]
+    print(f"DEBUG: Final lineup count in DB: {len(lineup_cards)}")
     if lineup_cards:
         team.overall_rating = sum(c.current_overall for c in lineup_cards) / len(lineup_cards)
     else:
         team.overall_rating = 0.0
 
-    db.commit()
-    
+    # Se omite el commit intermedio para que toda la operación sea atómica
     # ---------------------------------------------------------
     # AUTOMÁTICO: Guardar Snapshot para la próxima jornada
     # ---------------------------------------------------------
@@ -232,8 +232,10 @@ async def set_lineup(
                 gw_lineup.players = [GameweekLineupPlayer(card_id=pid) for pid in data.lineup_card_ids]
                 db.add(gw_lineup)
             
-            db.commit()
+            # El commit se hace abajo para asegurar que se guardan tanto los cambios 
+            # en UserCard como en GameweekLineup (si aplica).
 
+    db.commit()
     db.refresh(team)
     return _team_to_response(team)
 

@@ -19,6 +19,19 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
 
+    // Validación de username
+    if (username.trim().length < 3) {
+      setError('El nombre de usuario debe tener al menos 3 caracteres.');
+      return;
+    }
+
+    // Validación de formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Por favor, introduce un correo electrónico válido.');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Las contraseñas no coinciden. Comprueba que hayas escrito lo mismo en ambos campos.');
       return;

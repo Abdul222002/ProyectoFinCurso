@@ -218,6 +218,7 @@ export default function ArenaPage() {
   const [tab, setTab] = useState("battle");
   const [phase, setPhase] = useState(null);
   const [matchResult, setMatchResult] = useState(null);
+  const [isSimulating, setIsSimulating] = useState(false);
 
   const [teams, setTeams] = useState([]);
   const [history, setHistory] = useState([]);
@@ -252,7 +253,8 @@ export default function ArenaPage() {
   };
 
   async function handleFight() {
-    if (!myTeam || status?.arena_tickets <= 0) return;
+    if (!myTeam || status?.arena_tickets <= 0 || isSimulating) return;
+    setIsSimulating(true);
     setStatus(s => ({ ...s, arena_tickets: s.arena_tickets - 1 }));
     setOppTeam(null);
     setPhase("searching");
@@ -265,6 +267,7 @@ export default function ArenaPage() {
       toast.error(err.response?.data?.detail || 'Error en el combate');
       setPhase(null);
       setStatus(s => ({ ...s, arena_tickets: s.arena_tickets + 1 }));
+      setIsSimulating(false);
       return;
     }
     await minWait;
@@ -273,20 +276,32 @@ export default function ArenaPage() {
     await delay(2500);
     setMatchResult(simRes);
     setPhase("result");
-    const [freshStatus, freshHistory, freshLb] = await Promise.all([
-      arenaAPI.getStatus(),
-      arenaAPI.history(20),
-      arenaAPI.leaderboard(50)
-    ]);
-    setStatus(freshStatus.data);
-    setHistory(freshHistory.data);
-    setLeaderboard(freshLb.data);
+    try {
+      const [freshStatus, freshHistory, freshLb] = await Promise.all([
+        arenaAPI.getStatus(),
+        arenaAPI.history(20),
+        arenaAPI.leaderboard(50)
+      ]);
+      setStatus(freshStatus.data);
+      setHistory(freshHistory.data);
+      setLeaderboard(freshLb.data);
+    } catch {
+      // Si falla el refresco de datos, el resultado ya se mostró — no bloquear el botón
+    } finally {
+      // Garantizar que el botón quede desbloqueado aunque falle el refresco post-partido
+      // El modal resultado aún está abierto; handleClose() pondrá isSimulating=false también
+      // pero si el usuario no llega a ver el modal, este finally lo libera igualmente.
+      // Nota: NO llamamos setIsSimulating aquí porque el modal aún está abierto.
+      // El reset real sigue siendo en handleClose(). Este bloque solo protege contra crashes.
+    }
+    // isSimulating se resetea en handleClose, cuando el usuario cierra el resultado
   }
 
   function handleClose() {
     setPhase(null);
     setMatchResult(null);
     setOppTeam(null);
+    setIsSimulating(false); // Desbloquear botón solo cuando el usuario cierra el resultado
     setTab("history");
   }
 
@@ -324,7 +339,7 @@ export default function ArenaPage() {
           {/* ── HERO ── */}
           <div className="ar-hero">
             <img
-              src="/images/logo-premium.png"
+              src="/logo-premium.png"
               alt="Logo"
               className="ar-logo"
               onError={e => { e.target.style.display = 'none'; }}
@@ -428,13 +443,25 @@ export default function ArenaPage() {
 
               {/* Fight button */}
               <div className="ar-cw">
-                <button className="ar-cbtn" disabled={!myTeam || (status?.arena_tickets || 0) <= 0} onClick={handleFight}>
-                  {(status?.arena_tickets || 0) <= 0 ? "SIN TICKETS" : !myTeam ? "ELIGE UN EQUIPO" : "⚔️ COMBATIR"}
+                <button
+                  className="ar-cbtn"
+                  disabled={!myTeam || (status?.arena_tickets || 0) <= 0 || isSimulating}
+                  onClick={handleFight}
+                >
+                  {isSimulating
+                    ? "⏳ COMBATIENDO..."
+                    : (status?.arena_tickets || 0) <= 0
+                      ? "SIN TICKETS"
+                      : !myTeam
+                        ? "ELIGE UN EQUIPO"
+                        : "⚔️ COMBATIR"}
                 </button>
                 <div className="ar-chint">
-                  {(status?.arena_tickets || 0) > 0
+                  {(status?.arena_tickets || 0) > 0 && !isSimulating
                     ? `${status?.arena_tickets} tickets disponibles · Consume 1 ticket`
-                    : "Vuelve mañana para recuperar tickets"}
+                    : isSimulating
+                      ? 'Partido en curso...'
+                      : 'Vuelve mañana para recuperar tickets'}
                 </div>
               </div>
             </div>

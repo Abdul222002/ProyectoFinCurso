@@ -2,11 +2,13 @@
 
 # Diccionario maestro de formaciones permitidas
 VALID_FORMATIONS = {
-    "4-4-2": {"GK": 1, "DEF": 4, "MID": 4, "FWD": 2},
-    "4-3-3": {"GK": 1, "DEF": 4, "MID": 3, "FWD": 3},
-    "3-5-2": {"GK": 1, "DEF": 3, "MID": 5, "FWD": 2},
-    "5-3-2": {"GK": 1, "DEF": 5, "MID": 3, "FWD": 2},
-    "3-4-3": {"GK": 1, "DEF": 3, "MID": 4, "FWD": 3},
+    "4-4-2":   {"GK": 1, "DEF": 4, "MID": 4, "FWD": 2},
+    "4-3-3":   {"GK": 1, "DEF": 4, "MID": 3, "FWD": 3},
+    "3-5-2":   {"GK": 1, "DEF": 3, "MID": 5, "FWD": 2},
+    "5-3-2":   {"GK": 1, "DEF": 5, "MID": 3, "FWD": 2},
+    "3-4-3":   {"GK": 1, "DEF": 3, "MID": 4, "FWD": 3},
+    "4-2-3-1": {"GK": 1, "DEF": 4, "MID": 5, "FWD": 1},  # 2 MCD + 3 MC/MCO → 5 MID total
+    "5-4-1":   {"GK": 1, "DEF": 5, "MID": 4, "FWD": 1},
 }
 
 def validar_alineacion(formation_code, jugadores_titulares):
@@ -24,7 +26,7 @@ def validar_alineacion(formation_code, jugadores_titulares):
     conteo_usuario = {"GK": 0, "DEF": 0, "MID": 0, "FWD": 0}
     
     for jugador in jugadores_titulares:
-        pos = jugador.position  # Esto viene de tu Enum (GK, DEF, MID, FWD)
+        pos = jugador.position.value if hasattr(jugador.position, 'value') else jugador.position
         conteo_usuario[pos] += 1
         
     # 3. COMPARAR (Aquí es donde evitas que ponga un Defensa de Portero)

@@ -282,9 +282,11 @@ export default function LeagueDetailPage() {
     const amount = parseInt(bidAmounts[slotId]);
     if (!amount) return;
 
-    const minBid = currentBid > 0 ? currentBid + 1 : basePrice;
-    if (amount < minBid) {
-      showMessage(`❌ La puja debe ser al menos ${formatPrice(minBid)}`);
+    // En subasta ciega, el usuario puede subir o bajar su puja libremente
+    // mientras sea mayor o igual al precio base.
+    const minAllowed = basePrice;
+    if (amount < minAllowed) {
+      showMessage(`❌ La puja mínima es ${formatPrice(minAllowed)}`);
       return;
     }
 
@@ -424,12 +426,9 @@ export default function LeagueDetailPage() {
   };
 
   const minListingBid = (listing) => {
-    const ask = listing.asking_price;
-    const high = listing.highest_bid || 0;
-    const mine = listing.my_bid_amount || 0;
-    const floorAgainstOthers = high > 0 ? Math.max(ask, high + 1) : ask;
-    if (mine) return Math.max(floorAgainstOthers, mine + 1);
-    return floorAgainstOthers;
+    // El precio mínimo siempre es el que pide el vendedor.
+    // El usuario puede ajustar su puja hacia arriba o hacia abajo.
+    return listing.asking_price;
   };
 
   const handlePlaceListingBid = async (listingId) => {

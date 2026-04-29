@@ -6,6 +6,10 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Liga activa — se persiste en localStorage para sobrevivir recargas
+  const [activeLeagueId, setActiveLeagueIdState] = useState(
+    () => localStorage.getItem('activeLeagueId') ? Number(localStorage.getItem('activeLeagueId')) : null
+  );
 
   // Al montar, intentar cargar usuario con el token guardado
   useEffect(() => {
@@ -51,7 +55,20 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('activeLeagueId');
     setUser(null);
+    setActiveLeagueIdState(null);
+  };
+
+  // Establece la liga activa y la guarda en localStorage
+  const setActiveLeague = (leagueId) => {
+    if (leagueId) {
+      localStorage.setItem('activeLeagueId', String(leagueId));
+      setActiveLeagueIdState(Number(leagueId));
+    } else {
+      localStorage.removeItem('activeLeagueId');
+      setActiveLeagueIdState(null);
+    }
   };
 
   // Función para refrescar datos del usuario (después de comprar, etc)
@@ -65,7 +82,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser, activeLeagueId, setActiveLeague }}>
       {children}
     </AuthContext.Provider>
   );

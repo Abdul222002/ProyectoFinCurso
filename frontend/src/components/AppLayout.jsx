@@ -1,16 +1,28 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './AppLayout.css';
 
 const AppLayout = ({ title, backTo, rightContent, children }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const { user, activeLeagueId } = useAuth();
+
+  // La liga "activa" para el botón de Equipo:
+  // 1. Preferir el league_id que ya está en la URL actual (el usuario ya está en esa liga)
+  // 2. Fallback al último league activo guardado en el contexto
+  const urlLeagueId = searchParams.get('league_id') ? Number(searchParams.get('league_id')) : null;
+  const effectiveLeagueId = urlLeagueId || activeLeagueId;
 
   const handleBack = () => {
     if (backTo) {
       navigate(backTo);
-    } else {
+    } else if (window.history.length > 1) {
       navigate(-1);
+    } else {
+      // Fallback seguro: si no hay historial, redirigir según si está logueado o no
+      navigate(user ? '/dashboard' : '/register');
     }
   };
 
@@ -27,6 +39,7 @@ const AppLayout = ({ title, backTo, rightContent, children }) => {
     },
     { 
       path: '/team', 
+      href: effectiveLeagueId ? `/team?league_id=${effectiveLeagueId}` : '/team',
       icon: (
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -81,8 +94,8 @@ const AppLayout = ({ title, backTo, rightContent, children }) => {
         <header className="app-header">
           <div className="header-left">
             {backTo !== null ? (
-              <button className="back-btn" onClick={handleBack}>
-                ← Volver
+              <button className="back-btn" onClick={handleBack} style={{ cursor: 'pointer', zIndex: 100 }}>
+                &larr; Volver
               </button>
             ) : (
               <div className="app-brand-logo" onClick={() => navigate('/dashboard')} style={{ cursor: 'pointer' }}>
@@ -104,26 +117,28 @@ const AppLayout = ({ title, backTo, rightContent, children }) => {
         {children}
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="app-bottom-nav">
-        {navItems.map((item) => {
-          // Identificar si la ruta actual coincide o empieza con el path
-          // Excepción: '/leagues/:id' cuenta como '/leagues'
-          const isActive = location.pathname.startsWith(item.path);
+      {/* Bottom Navigation — Solo mostrar si hay usuario logueado */}
+      {user && (
+        <nav className="app-bottom-nav">
+          {navItems.map((item) => {
+            // Identificar si la ruta actual coincide o empieza con el path
+            // Excepción: '/leagues/:id' cuenta como '/leagues'
+            const isActive = location.pathname.startsWith(item.path);
 
-          return (
-            <button
-              key={item.path}
-              className={`nav-item ${isActive ? 'active' : ''}`}
-              onClick={() => navigate(item.path)}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              <span className="nav-label">{item.label}</span>
-              {isActive && <span className="active-dot"></span>}
-            </button>
-          );
-        })}
-      </nav>
+            return (
+              <button
+                key={item.path}
+                className={`nav-item ${isActive ? 'active' : ''}`}
+                onClick={() => navigate(item.href || item.path)}
+              >
+                <span className="nav-icon">{item.icon}</span>
+                <span className="nav-label">{item.label}</span>
+                {isActive && <span className="active-dot"></span>}
+              </button>
+            );
+          })}
+        </nav>
+      )}
     </div>
   );
 };

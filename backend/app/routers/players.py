@@ -7,10 +7,11 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.core.database import get_db
-from app.models.models import User, Player, UserCard, PlayerMatchStats, Match, Gameweek
+from app.models.models import User, Player, UserCard, PlayerMatchStats, Match, Gameweek, CardRarity
 from pydantic import BaseModel
 from app.schemas.market import UserCardResponse
 from app.routers.auth import get_current_user
+from fastapi import HTTPException
 
 router = APIRouter()
 
@@ -58,7 +59,15 @@ async def list_players(
     if max_ovr:
         query = query.filter(Player.overall_rating <= max_ovr)
     if rarity:
-        query = query.filter(Player.base_rarity == rarity)
+        # Convertir el string recibido al enum correcto (case-insensitive)
+        try:
+            rarity_enum = CardRarity[rarity.upper()]
+        except KeyError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Rareza inválida: '{rarity}'. Valores válidos: bronze, silver, gold, legend"
+            )
+        query = query.filter(Player.base_rarity == rarity_enum)
 
     # Ordenar
     sort_column = getattr(Player, sort_by, Player.overall_rating)

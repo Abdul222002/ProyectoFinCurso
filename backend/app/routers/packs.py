@@ -34,10 +34,11 @@ async def open_icon_pack(
     - Se obtiene 1 carta legendaria ponderada por OVR (más media = más difícil)
     """
     # Verificar que el usuario pertenece a la liga
+    # [↓ SEGURIDAD] Bloqueo pesimista para evitar gastar las mismas monedas dos veces
     membership = db.query(LeagueMember).filter(
         LeagueMember.league_id == league_id,
         LeagueMember.user_id == current_user.id
-    ).first()
+    ).with_for_update().first()
 
     if not membership:
         raise HTTPException(

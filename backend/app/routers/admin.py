@@ -121,7 +121,18 @@ async def admin_delete_user(
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
     username = user.username
-    db.query(LeagueMember).filter(LeagueMember.user_id == user_id).delete()
+    
+    # [↓ SEGURIDAD INTEGRIDAD] 
+    # Para borrar un usuario, debemos sacarlo de cada liga en la que está.
+    # Esto limpiará sus equipos, cartas, pujas, etc.
+    from app.routers.leagues import _remove_user_from_league
+    memberships = db.query(LeagueMember).filter(LeagueMember.user_id == user_id).all()
+    for m in memberships:
+        _remove_user_from_league(user_id, m.league_id, db)
+    
+    # Limpiar cualquier puja en subastas globales que no se haya limpiado
+    db.query(AuctionBid).filter(AuctionBid.user_id == user_id).delete()
+    
     db.delete(user)
     db.commit()
 
