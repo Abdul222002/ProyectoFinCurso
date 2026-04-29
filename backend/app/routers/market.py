@@ -534,7 +534,7 @@ async def sell_card_league(
         MarketListing.is_active == True
     ).with_for_update().first()
     if active_listing:
-        _refund_all_bids_on_listing(db, active_listing)
+        _cleanup_listing_related_offers(db, active_listing)
         active_listing.is_active = False
         active_listing.sold_at = datetime.utcnow()
     
@@ -1122,7 +1122,7 @@ async def pay_release_clause(
     # Remove actively listed card if any
     active_listing = db.query(MarketListing).filter(MarketListing.card_id == card.id, MarketListing.is_active == True).first()
     if active_listing:
-        _refund_all_bids_on_listing(db, active_listing)
+        _cleanup_listing_related_offers(db, active_listing)
         active_listing.is_active = False
         active_listing.sold_at = datetime.utcnow()
         active_listing.buyer_id = current_user.id
