@@ -66,6 +66,33 @@ export default function LeagueDetailPage() {
     setTimeout(() => setMessage(''), 4000);
   };
 
+  const getNotificationMeta = (notification) => {
+    if (notification.type === 'auction_won') {
+      return { icon: '🏆', eyebrow: 'Subasta resuelta', itemClass: 'won' };
+    }
+
+    return { icon: '📭', eyebrow: 'Subasta resuelta', itemClass: 'lost' };
+  };
+
+  const formatNotificationTime = (createdAt) => {
+    const date = new Date(createdAt);
+    const diffMs = Date.now() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / 60000);
+
+    if (diffMinutes < 1) return 'Ahora mismo';
+    if (diffMinutes < 60) return `Hace ${diffMinutes} min`;
+
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `Hace ${diffHours} h`;
+
+    return date.toLocaleString('es-ES', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   const myMembership = league?.members?.find(m => m.user_id === user?.id);
   const myCoins = myMembership?.coins || 0;
   const myLockedCoins = myMembership?.locked_coins || 0;
@@ -189,23 +216,43 @@ export default function LeagueDetailPage() {
     } catch { /* silent */ }
   };
 
-  const handleDeleteNotification = async (id) => {
+  const deleteNotification = async (id) => {
     try {
       await notificationsAPI.delete(id);
       setNotifications(prev => prev.filter(n => n.id !== id));
-      // Refresh unread count just in case
       const countRes = await notificationsAPI.getUnreadCount();
       setUnreadCount(countRes.data?.unread_count || 0);
-    } catch { /* silent */ }
+      toast.success('Notificación eliminada');
+    } catch {
+      toast.error('No se pudo eliminar la notificación');
+    }
   };
 
-  const handleDeleteAllNotifications = async () => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar todas las notificaciones?')) return;
+  const clearAllNotifications = async () => {
     try {
       await notificationsAPI.deleteAll();
       setNotifications([]);
       setUnreadCount(0);
-    } catch { /* silent */ }
+      toast.success('Notificaciones eliminadas');
+    } catch {
+      toast.error('No se pudieron eliminar las notificaciones');
+    }
+  };
+
+  const handleDeleteNotification = (notification) => {
+    toast.warning('¿Eliminar esta notificación?', {
+      description: notification.title,
+      cancel: { label: 'Cancelar' },
+      action: { label: 'Eliminar', onClick: () => deleteNotification(notification.id) }
+    });
+  };
+
+  const handleDeleteAllNotifications = () => {
+    toast.warning('¿Eliminar todas las notificaciones?', {
+      description: 'Se borrarán los avisos de subastas ganadas y perdidas de esta liga.',
+      cancel: { label: 'Cancelar' },
+      action: { label: 'Borrar todo', onClick: clearAllNotifications }
+    });
   };
 
 
@@ -418,8 +465,8 @@ export default function LeagueDetailPage() {
     try {
       const res = await auctionAPI.acceptOffer(leagueId, offerId);
       showMessage(`✅ ${res.data.message}`);
-      loadOffers(); 
-      loadListings();
+      // Añadido loadLeague para refrescar las monedas
+      await Promise.all([loadOffers(), loadListings(), loadLeague()]);
     } catch (err) { 
       showMessage(`❌ ${err.response?.data?.detail || 'Error'}`); 
     }
@@ -463,7 +510,8 @@ export default function LeagueDetailPage() {
     try {
       const res = await auctionAPI.acceptListingBid(leagueId, listingId, bidId);
       showMessage(`✅ ${res.data.message}`);
-      await Promise.all([loadListings(), loadLeague()]);
+      // Añadido loadOffers para limpiar ofertas "fantasma" del sistema
+      await Promise.all([loadListings(), loadLeague(), loadOffers()]);
     } catch (err) {
       showMessage(`❌ ${err.response?.data?.detail || 'Error'}`);
     }
@@ -474,7 +522,8 @@ export default function LeagueDetailPage() {
     try {
       await auctionAPI.cancelListing(leagueId, listingId);
       showMessage('✅ Listado cancelado');
-      loadListings();
+      // Añadido loadOffers por seguridad (limpia la oferta si la hubiera)
+      await Promise.all([loadListings(), loadOffers()]);
     } catch (err) { 
       showMessage(`❌ ${err.response?.data?.detail || 'Error'}`); 
     }
@@ -520,8 +569,15 @@ export default function LeagueDetailPage() {
         {showNotifications && (
           <div className="ld-notif-panel">
             <div className="ld-notif-header">
-              <span>Notificaciones</span>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <div className="ld-notif-header-copy">
+                <span className="ld-notif-header-title">Notificaciones</span>
+                <span className="ld-notif-header-subtitle">
+                  {notifications.length === 0
+                    ? 'Tu bandeja está al día'
+                    : `${Math.min(notifications.length, 10)} aviso${notifications.length === 1 ? '' : 's'} recientes`}
+                </span>
+              </div>
+              <div className="ld-notif-actions">
                 {notifications.length > 0 && (
                   <button className="ld-notif-clear-all" onClick={handleDeleteAllNotifications}>Borrar todo</button>
                 )}
@@ -529,24 +585,33 @@ export default function LeagueDetailPage() {
               </div>
             </div>
             {notifications.length === 0 ? (
-              <div className="ld-notif-empty">Sin notificaciones</div>
+              <div className="ld-notif-empty">
+                <div className="ld-notif-empty-icon">🔔</div>
+                <div className="ld-notif-empty-title">Sin notificaciones</div>
+                <div className="ld-notif-empty-copy">Cuando se resuelva una subasta, verás aquí el resultado.</div>
+              </div>
             ) : (
-              notifications.slice(0, 10).map(n => (
-                <div key={n.id} className={`ld-notif-item ${n.type === 'auction_won' ? 'won' : 'lost'} ${n.is_read ? 'read' : ''}`}>
+              notifications.slice(0, 10).map(n => {
+                const meta = getNotificationMeta(n);
+
+                return (
+                <div key={n.id} className={`ld-notif-item ${meta.itemClass} ${n.is_read ? 'read' : ''}`}>
+                  <div className="ld-notif-icon" aria-hidden="true">{meta.icon}</div>
                   <div className="ld-notif-item-content">
+                    <div className="ld-notif-eyebrow">{meta.eyebrow}</div>
                     <div className="ld-notif-title">{n.title}</div>
                     <div className="ld-notif-msg">{n.message}</div>
-                    <div className="ld-notif-time">{new Date(n.created_at).toLocaleString()}</div>
+                    <div className="ld-notif-time">{formatNotificationTime(n.created_at)}</div>
                   </div>
                   <button 
                     className="ld-notif-delete-btn" 
-                    onClick={(e) => { e.stopPropagation(); handleDeleteNotification(n.id); }}
+                    onClick={(e) => { e.stopPropagation(); handleDeleteNotification(n); }}
                     title="Eliminar"
                   >
                     🗑️
                   </button>
                 </div>
-              ))
+              )})
             )}
           </div>
         )}

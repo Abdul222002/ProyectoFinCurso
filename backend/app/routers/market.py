@@ -78,6 +78,34 @@ def reconcile_locked_coins(db: Session, league_id: int = None):
     return fixed
 
 
+def reconcile_member_locked_coins(db: Session, member: LeagueMember):
+    """
+    Recalcula los locked_coins de UN miembro específico basándose en sus pujas reales.
+    Usa esto después de cualquier operación de puja para garantizar consistencia.
+    """
+    from app.models.models import AuctionBid, AuctionSlot, MarketAuction, ListingBid, MarketListing
+
+    auction_locked = db.query(func.coalesce(func.sum(AuctionBid.amount), 0)).join(
+        AuctionSlot, AuctionSlot.id == AuctionBid.slot_id
+    ).join(
+        MarketAuction, MarketAuction.id == AuctionSlot.auction_id
+    ).filter(
+        AuctionBid.user_id == member.user_id,
+        MarketAuction.league_id == member.league_id,
+        MarketAuction.is_active == True
+    ).scalar() or 0
+
+    listing_locked = db.query(func.coalesce(func.sum(ListingBid.amount), 0)).join(
+        MarketListing, MarketListing.id == ListingBid.listing_id
+    ).filter(
+        ListingBid.user_id == member.user_id,
+        MarketListing.league_id == member.league_id,
+        MarketListing.is_active == True
+    ).scalar() or 0
+
+    member.locked_coins = auction_locked + listing_locked
+
+
 def _cleanup_listing_related_offers(db: Session, listing: MarketListing):
     """
     Limpieza total al cerrar un listado (venta o cancelación):
@@ -93,12 +121,13 @@ def _cleanup_listing_related_offers(db: Session, listing: MarketListing):
             LeagueMember.user_id == bid.user_id
         ).first()
         if mem:
-            mem.locked_coins -= bid.amount
+            # Evitar negativos por si acaso
+            mem.locked_coins = max(0, mem.locked_coins - bid.amount)
         db.delete(bid)
         
-    # 2. Expirar ofertas del sistema para este listado o esta carta
+    # 2. FIX: Expirar ofertas del sistema buscando por listing_id, no por card_id
     db.query(SystemOffer).filter(
-        SystemOffer.card_id == listing.card_id,
+        SystemOffer.listing_id == listing.id,
         SystemOffer.is_accepted == False,
         SystemOffer.is_expired == False
     ).update({"is_expired": True}, synchronize_session=False)
@@ -409,6 +438,9 @@ async def place_bid(
         message = "Puja realizada con éxito"
 
     db.commit()
+    # [AUTOCURACIÓN] Recalcular siempre el total retenido para evitar desajustes
+    reconcile_member_locked_coins(db, member)
+    db.commit()
     db.refresh(member)
 
     return BidResponse(
@@ -459,25 +491,35 @@ async def withdraw_bid(
     member.locked_coins = max(0, member.locked_coins - user_bid.amount)
     db.delete(user_bid)
     db.commit()
+    # [AUTOCURACIÓN] Recalcular siempre el total retenido
+    reconcile_member_locked_coins(db, member)
+    db.commit()
 
     return {"message": "Puja retirada. Monedas liberadas.", "remaining_coins": member.coins - member.locked_coins}
 def _delete_card_and_dependencies(db: Session, card: UserCard, exclude_offer_id: int = None):
     """
     Borra físicamente una carta y limpia todas sus dependencias obligatorias
-    para evitar IntegrityErrors (card_id NOT NULL).
+    respetando la jerarquía de claves foráneas para evitar IntegrityErrors.
+    Orden de borrado: Hijos (Offers) -> Padres intermedios (Listings) -> Padre raíz (Card)
     """
     from app.models.models import GameweekLineupPlayer, PackOpeningCard, MarketListing, SystemOffer
+    
+    # Dependencias directas de la carta sin hijos
     db.query(GameweekLineupPlayer).filter(GameweekLineupPlayer.card_id == card.id).delete(synchronize_session=False)
     db.query(PackOpeningCard).filter(PackOpeningCard.card_id == card.id).delete(synchronize_session=False)
-    db.query(MarketListing).filter(MarketListing.card_id == card.id).delete(synchronize_session=False)
     
-    # Borrar todas las ofertas excepto la que se está aceptando (si aplica)
+    # 1º BORRAR HIJOS: Ofertas del sistema (Dependen de MarketListing y de UserCard)
     offer_query = db.query(SystemOffer).filter(SystemOffer.card_id == card.id)
     if exclude_offer_id:
         offer_query = offer_query.filter(SystemOffer.id != exclude_offer_id)
     offer_query.delete(synchronize_session=False)
     
+    # 2º BORRAR PADRES INTERMEDIOS: Listados del mercado (Dependen de UserCard)
+    db.query(MarketListing).filter(MarketListing.card_id == card.id).delete(synchronize_session=False)
+    
+    # 3º BORRAR PADRE RAÍZ: La carta
     db.delete(card)
+
 
 
 @router.post("/{league_id}/sell/{card_id}", response_model=SellResponse)
@@ -790,6 +832,9 @@ async def place_listing_bid(
         slot_id = nb.id
 
     db.commit()
+    # [AUTOCURACIÓN] Recalcular siempre el total retenido
+    reconcile_member_locked_coins(db, member)
+    db.commit()
 
     return BidResponse(
         message="Puja registrada",
@@ -831,6 +876,9 @@ async def withdraw_listing_bid(
 
     member.locked_coins -= bid.amount
     db.delete(bid)
+    db.commit()
+    # [AUTOCURACIÓN] Recalcular siempre el total retenido
+    reconcile_member_locked_coins(db, member)
     db.commit()
 
     return {
@@ -888,25 +936,42 @@ async def accept_listing_bid(
     ).with_for_update().first()
 
     # Obtener referencias locales después del bloqueo
+    # [↓ FIX CRÍTICO] Bloqueo pesimista estricto para comprador y vendedor
+    # Ordenamos los IDs para evitar Deadlocks en MySQL/PostgreSQL
+    ids = sorted([winning.user_id, listing.seller_id])
+    
+    for user_id in ids:
+        db.query(LeagueMember).filter(
+            LeagueMember.league_id == league_id,
+            LeagueMember.user_id == user_id
+        ).with_for_update().first()
+
+    # Recargar referencias frescas tras el bloqueo
     winner_member = db.query(LeagueMember).filter(
         LeagueMember.league_id == league_id,
         LeagueMember.user_id == winning.user_id
     ).first()
     
-    if not winner_member:
-        raise HTTPException(status_code=400, detail="El postor ya no es miembro de la liga")
-
     seller_member = db.query(LeagueMember).filter(
         LeagueMember.league_id == league_id,
         LeagueMember.user_id == listing.seller_id
     ).first()
 
+    if not winner_member:
+        raise HTTPException(status_code=400, detail="El postor ya no es miembro de la liga")
+
     # Limpieza total: devolver pujas de otros y expirar ofertas del sistema
     _cleanup_listing_related_offers(db, listing)
 
-    # Cobrar al ganador (misma lógica que subasta: locked + coins)
-    winner_member.locked_coins -= winning.amount
+    # FIX: Validar que el comprador no se quede en negativo por un descuadre previo
+    if winner_member.coins < winning.amount:
+        raise HTTPException(status_code=400, detail="El comprador no tiene fondos suficientes en este momento")
+
+    # Cobrar al ganador con seguridad matemática
+    winner_member.locked_coins = max(0, winner_member.locked_coins - winning.amount)
     winner_member.coins -= winning.amount
+    
+    # Pagar al vendedor
     if seller_member:
         seller_member.coins += winning.amount
 
@@ -983,7 +1048,7 @@ async def accept_offer(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Aceptar una oferta del sistema — vende la carta al precio ofrecido."""
+    """Aceptar una oferta del sistema — vende la carta al precio ofrecido y la elimina."""
     offer = db.query(SystemOffer).filter(
         SystemOffer.id == offer_id,
         SystemOffer.user_id == current_user.id,
@@ -991,8 +1056,10 @@ async def accept_offer(
         SystemOffer.is_accepted == False,
         SystemOffer.is_expired == False
     ).with_for_update().first()
+    
     if not offer:
         raise HTTPException(status_code=404, detail="Oferta no encontrada o expirada")
+        
     if offer.expires_at < datetime.utcnow():
         offer.is_expired = True
         db.commit()
@@ -1002,40 +1069,38 @@ async def accept_offer(
         LeagueMember.league_id == league_id,
         LeagueMember.user_id == current_user.id
     ).with_for_update().first()
+    
     if not member:
         raise HTTPException(status_code=404, detail="No eres miembro de esta liga")
 
-    if offer.listing and offer.listing.is_active:
-        _cleanup_listing_related_offers(db, offer.listing)
-
-    # Give coins to seller
-    member.coins += offer.offer_price
-
-    # Get card info before modifying
     card = offer.card
     if not card:
         raise HTTPException(status_code=404, detail="La carta ya no existe o ya fue vendida")
 
+    # 1. Guardamos en memoria lo que necesitamos para la respuesta antes de borrar
     player_name = card.player.name if card.player else "Jugador desconocido"
+    offer_price = offer.offer_price
+    
+    # 2. Pagamos al usuario
+    member.coins += offer_price
 
-    # Eliminar la carta y dependencias (excluyendo esta oferta para evitar conflictos)
-    _delete_card_and_dependencies(db, card, exclude_offer_id=offer.id)
-
-    # Mark offer as accepted
-    offer.is_accepted = True
-    # Close listing only if it still exists and is active
+    # 3. Limpieza de listados si existen
     if offer.listing and offer.listing.is_active:
-        offer.listing.is_active = False
-        offer.listing.sold_at = datetime.utcnow()
+        _cleanup_listing_related_offers(db, offer.listing)
+
+    # 4. Aniquilamos todo: Carta, Listado y Ofertas (incluyendo esta misma)
+    # Al no pasar exclude_offer_id, se borra la propia oferta evitando el IntegrityError
+    _delete_card_and_dependencies(db, card)
 
     db.commit()
 
     return {
-        "message": f"Has vendido a {player_name} al sistema por {offer.offer_price:,}",
+        "message": f"Has vendido a {player_name} al sistema por {offer_price:,} monedas",
         "player_name": player_name,
-        "price_received": offer.offer_price,
+        "price_received": offer_price,
         "remaining_coins": member.coins
     }
+
 
 
 # ==========================================

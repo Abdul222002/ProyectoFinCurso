@@ -394,6 +394,8 @@ async def admin_get_user_league_coins(
             "league_id": m.league_id,
             "league_name": league.name if league else "???",
             "coins": m.coins or 0,
+            "locked_coins": m.locked_coins or 0,
+            "free_coins": (m.coins or 0) - (m.locked_coins or 0),
             "league_points": m.league_points or 0,
         })
 
@@ -423,17 +425,28 @@ async def admin_update_user_league_coins(
     # Update per-league coins
     league_id = data.get("league_id")
     new_coins = data.get("coins")
+    new_locked = data.get("locked_coins")
+    reconcile = data.get("reconcile", False)
 
-    if league_id is not None and new_coins is not None:
+    if league_id is not None:
         membership = db.query(LeagueMember).filter(
             LeagueMember.user_id == user_id,
             LeagueMember.league_id == league_id
         ).first()
         if not membership:
             raise HTTPException(status_code=404, detail="El usuario no pertenece a esa liga")
-        membership.coins = int(new_coins)
+        
+        if new_coins is not None:
+            membership.coins = int(new_coins)
+        
+        if new_locked is not None:
+            membership.locked_coins = int(new_locked)
+
+        if reconcile:
+            from app.routers.market import reconcile_member_locked_coins
+            reconcile_member_locked_coins(db, membership)
 
     db.commit()
 
-    return {"message": f"Monedas de @{user.username} actualizadas correctamente."}
+    return {"message": f"Economía de @{user.username} sincronizada correctamente."}
 

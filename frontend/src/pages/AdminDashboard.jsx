@@ -23,6 +23,10 @@ function QuickCoinEdit({ initialCoins, onSave }) {
     const [val, setVal] = useState(initialCoins.toString());
     const parsed = parseCoinInput(val);
     
+    useEffect(() => {
+        setVal(initialCoins.toString());
+    }, [initialCoins]);
+    
     const handleAdd = (amount) => {
         const newVal = parsed + amount;
         if (newVal < 0) return;
@@ -223,11 +227,15 @@ export default function AdminDashboard() {
         setCoinLoading(false);
     };
 
-    const handleSaveCoins = async (leagueId, newCoins) => {
+    const handleSaveCoins = async (leagueId, newCoins, reconcile = false) => {
         if (!coinUser) return;
         try {
-            await adminAPI.updateUserLeagueCoins(coinUser.id, { league_id: leagueId, coins: newCoins });
-            setMessage(`✅ Monedas actualizadas para @${coinUser.username}`);
+            await adminAPI.updateUserLeagueCoins(coinUser.id, { 
+                league_id: leagueId, 
+                coins: newCoins,
+                reconcile: reconcile
+            });
+            setMessage(`✅ Economía actualizada para @${coinUser.username}`);
             // Refresh
             const r = await adminAPI.getUserLeagueCoins(coinUser.id);
             setCoinData(r.data);
@@ -588,7 +596,21 @@ export default function AdminDashboard() {
                                             <div key={lg.league_id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.04)' }}>
                                                 <div style={{ flex: 1 }}>
                                                     <div style={{ fontWeight: 600, color: '#fff' }}>{lg.league_name}</div>
-                                                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Puntos: {lg.league_points}</div>
+                                                    <div style={{ fontSize: 12, display: 'flex', gap: 8, marginTop: 4 }}>
+                                                        <span style={{ color: '#fbbf24' }}>Total: {fmt(lg.coins)}</span>
+                                                        <span style={{ color: '#ef4444' }}>Retenidas: {fmt(lg.locked_coins)}</span>
+                                                        <span style={{ color: '#22c55e', fontWeight: 800 }}>Libres: {fmt(lg.free_coins)}</span>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => handleSaveCoins(lg.league_id, lg.coins, true)}
+                                                        style={{ 
+                                                            marginTop: 8, fontSize: 10, background: 'rgba(59,130,246,0.2)', 
+                                                            color: '#60a5fa', border: '1px solid rgba(96,165,250,0.3)', 
+                                                            padding: '2px 8px', borderRadius: 4, cursor: 'pointer' 
+                                                        }}
+                                                    >
+                                                        🔄 Recalcular Retenidas
+                                                    </button>
                                                 </div>
                                                 <QuickCoinEdit 
                                                     initialCoins={lg.coins} 
