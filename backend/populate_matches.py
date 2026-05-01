@@ -89,11 +89,33 @@ TEAM_NAME_MAP = {
 
 
 def normalize_team_name(api_name):
-    """Convierte un nombre de equipo de la API al nombre que usamos en la BD"""
+    """
+    Convierte un nombre de equipo de la API al nombre que usamos en la BD.
+    Usa una búsqueda por longitud descendente para evitar que 'Dundee' coincida con 'Dundee United'.
+    """
+    if not api_name:
+        return ""
+    
+    api_name_lower = api_name.lower()
+    
+    # Creamos una lista de (variante, nombre_bd) y la ordenamos por longitud de variante (descendente)
+    all_variants = []
     for db_name, api_variants in TEAM_NAME_MAP.items():
         for variant in api_variants:
-            if variant.lower() in api_name.lower():
-                return db_name
+            all_variants.append((variant.lower(), db_name))
+    
+    # Ordenar por longitud de la variante de forma descendente
+    all_variants.sort(key=lambda x: len(x[0]), reverse=True)
+    
+    for variant_lower, db_name in all_variants:
+        # Coincidencia exacta o palabra completa
+        if variant_lower == api_name_lower:
+            return db_name
+        
+        # Coincidencia de subcadena pero asegurando que sea una palabra completa o al menos la más larga
+        if variant_lower in api_name_lower:
+            return db_name
+            
     return api_name
 
 

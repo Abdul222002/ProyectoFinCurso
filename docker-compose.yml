@@ -45,6 +45,7 @@ services:
       - BYPASS_EMAIL_VERIFICATION=${BYPASS_EMAIL_VERIFICATION:-false}
       - SECRET_KEY=${SECRET_KEY}
     volumes:
+      - ./backend:/backend
       - ./backend/static/players:/backend/static/players
 
   frontend:

@@ -3,6 +3,7 @@ Router de Jugadores — Listar, Detalle, Mis Cartas
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -219,10 +220,33 @@ async def get_player_history(
     
     player_team = player.current_team or "Equipo Desconocido"
     
+    # 1. Build a robust map of Gameweek ID -> Number to avoid relationship loading issues
+    gw_id_to_num = {gw.id: gw.number for gw in all_gameweeks}
+    
+    # 2. Get all matches for this player's specific team.
+    # We NO LONGER use a shared search term to avoid mixing Dundee and Dundee United.
+    team_filter = [Match.home_team == player_team, Match.away_team == player_team]
+    
+    # Only if the player is from Dundee United, we also look for "Dundee" as a potential fallback
+    # to handle the data gap, but we will prioritize exact matches in the loop.
+    if player_team == "Dundee United":
+        team_filter.extend([Match.home_team == "Dundee", Match.away_team == "Dundee"])
+        
+    team_matches = db.query(Match).filter(or_(*team_filter)).all()
+    
+    # 3. Mapping by gameweek NUMBER
+    matches_by_gw_num = {}
+    for m in team_matches:
+        num = gw_id_to_num.get(m.gameweek_id, 0)
+        if num > 0:
+            if num not in matches_by_gw_num:
+                matches_by_gw_num[num] = []
+            matches_by_gw_num[num].append(m)
+    
     history = []
     for gw in all_gameweeks:
+        # Priority 1: Real stats (Always use the match linked to the stats)
         if gw.number in stats_by_gw:
-            # Player has real data for this gameweek
             for stat in stats_by_gw[gw.number]:
                 match = stat.match
                 history.append(PlayerMatchHistoryResponse(
@@ -244,8 +268,40 @@ async def get_player_history(
                     red_cards=stat.red_cards,
                     saves=stat.saves
                 ))
+        # Priority 2: Fallback to team matches (Only if player has no stats)
+        elif gw.number in matches_by_gw_num:
+            # Pick the best match: Exact team name match takes precedence
+            potential_matches = matches_by_gw_num[gw.number]
+            exact_matches = [m for m in potential_matches if m.home_team == player_team or m.away_team == player_team]
+            
+            # Use exact match if found, otherwise (only for Dundee United) use the Dundee fallback
+            matches_to_show = exact_matches if exact_matches else potential_matches
+            
+            # If we still have multiple (shouldn't happen with exact names), take the first one
+            if matches_to_show:
+                match = matches_to_show[0]
+                is_home = match.home_team == player_team
+                history.append(PlayerMatchHistoryResponse(
+                    match_id=match.id,
+                    gameweek_number=gw.number,
+                    home_team=match.home_team,
+                    away_team=match.away_team,
+                    home_score=match.home_score,
+                    away_score=match.away_score,
+                    status=match.status.value,
+                    minutes_played=0,
+                    rating=None,
+                    goals=0,
+                    assists=0,
+                    fantasy_points=0.0,
+                    clean_sheet=False,
+                    goals_conceded=match.away_score if is_home else match.home_score,
+                    yellow_cards=0,
+                    red_cards=0,
+                    saves=0
+                ))
+        # Priority 3: Last resort (ghost row)
         else:
-            # Player has NO data for this gameweek — fill with zeros
             if gw.is_finished:
                 history.append(PlayerMatchHistoryResponse(
                     match_id=0,
@@ -266,7 +322,6 @@ async def get_player_history(
                     red_cards=0,
                     saves=0
                 ))
-    
     # Sort by gameweek number descending (most recent first)
     history.sort(key=lambda h: h.gameweek_number, reverse=True)
     
