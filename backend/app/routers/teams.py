@@ -465,7 +465,9 @@ async def release_player(
         else:
             raise HTTPException(status_code=404, detail="Carta no encontrada en inventario de esta liga")
             
-    if not card.is_tradeable:
+    # Permitir liberar si es tradeable O si es un Icono (Leyenda)
+    # Esto permite "descarte" por 50% pero mantiene el bloqueo en el mercado de usuarios
+    if not card.is_tradeable and not (card.player and card.player.is_legend):
         raise HTTPException(status_code=400, detail="Esta carta no se puede liberar (intransferible)")
     if card.is_in_lineup:
         raise HTTPException(status_code=400, detail="Retira la carta de la alineación antes de liberarla")

@@ -58,6 +58,8 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+    volumes:
+      - ./backend/static:/usr/share/nginx/html/static:ro
 
 volumes:
   mysql_data:

@@ -385,7 +385,7 @@ class GameweekLineupPlayer(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     lineup_id = Column(Integer, ForeignKey("gameweek_lineups.id"), nullable=False)
-    card_id = Column(Integer, ForeignKey("user_cards.id"), nullable=False)
+    card_id = Column(Integer, ForeignKey("user_cards.id"), nullable=True)
     
     position = Column(String(10), nullable=True)  # Posición específica en esa alineación
     is_captain = Column(Integer, default=0)       # 1 si es capitán
@@ -950,7 +950,7 @@ class PackOpeningCard(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     pack_opening_id = Column(Integer, ForeignKey("pack_openings.id"), nullable=False)
-    card_id = Column(Integer, ForeignKey("user_cards.id"), nullable=False, unique=True) # Una carta solo sale de un sobre
+    card_id = Column(Integer, ForeignKey("user_cards.id"), nullable=True, unique=True) # Una carta solo sale de un sobre
 
     pack_opening = relationship("PackOpening", back_populates="cards")
     card = relationship("UserCard", back_populates="obtained_from_pack")

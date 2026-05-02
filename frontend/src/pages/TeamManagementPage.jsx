@@ -561,11 +561,13 @@ export default function TeamManagementPage() {
                           <button className="tm-btn tm-btn-cancel" onClick={() => handleCancelListing(card.id)}>
                             Retirar
                           </button>
-                        ) : card.is_tradeable ? (
+                        ) : (card.is_tradeable || card.is_legend) ? (
                           <>
-                            <button className="tm-btn tm-btn-sell" onClick={() => { setSellCard(card); setSellPrice(Math.round(card.current_market_value || 0).toString()); }}>
-                              Vender
-                            </button>
+                            {card.is_tradeable && (
+                              <button className="tm-btn tm-btn-sell" onClick={() => { setSellCard(card); setSellPrice(Math.round(card.current_market_value || 0).toString()); }}>
+                                Vender
+                              </button>
+                            )}
                             <button className="tm-btn tm-btn-release" onClick={() => setReleaseCard(card)}>
                               Despedir
                             </button>

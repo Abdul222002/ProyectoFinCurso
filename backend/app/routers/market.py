@@ -1136,6 +1136,10 @@ async def pay_release_clause(
     if card.user_id == current_user.id:
         raise HTTPException(status_code=400, detail="No puedes pagar la cláusula de tu propio jugador")
 
+    # [NUEVO] Las leyendas siempre son clausulables aunque no sean transferibles al mercado
+    if not card.is_tradeable and not card.player.is_legend:
+        raise HTTPException(status_code=400, detail="Este jugador no es transferible")
+
     # [↓ SEGURIDAD] Bloqueos pesimistas para evitar doble clausulazo
     # Para evitar deadlocks, bloqueamos siempre en el mismo orden (por ID de usuario)
     ids = sorted([current_user.id, card.user_id])
