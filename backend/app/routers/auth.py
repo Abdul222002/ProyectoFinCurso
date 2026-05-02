@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from app.core.database import get_db
 from app.core.config import settings
 from app.models.models import User
-from app.schemas.user import UserCreate, UserLogin, UserResponse, TokenResponse, VerifyEmailRequest
+from app.schemas.user import UserCreate, UserLogin, UserResponse, TokenResponse, VerifyEmailRequest, UserProfileUpdate
 from app.services.email_service import generate_verification_token, send_verification_email
 
 router = APIRouter()
@@ -258,8 +258,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
     """
     return UserResponse.model_validate(current_user)
 
-class UserProfileUpdate(BaseModel):
-    username: str = Field(min_length=3, max_length=50)
+
 
 @router.put("/profile", response_model=UserResponse)
 async def update_profile(
@@ -283,6 +282,8 @@ async def update_profile(
         )
         
     current_user.username = profile_data.username
+    if profile_data.avatar_url is not None:
+        current_user.avatar_url = profile_data.avatar_url
     db.commit()
     db.refresh(current_user)
     

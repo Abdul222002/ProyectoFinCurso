@@ -39,7 +39,7 @@ export default function PendingVerificationPage() {
         <div className="auth-left__content">
           <div className="auth-left__badge">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish Premiership</div>
           <div className="auth-left__logo-wrap">
-            <img src="/logo-premium.png" alt="UFL Logo" />
+            <img src="/ufl-logo.png" alt="UFL Logo" />
           </div>
           <h1 className="auth-left__title">Ultimate Fantasy<br /><span>Legends</span></h1>
           <p className="auth-left__desc">

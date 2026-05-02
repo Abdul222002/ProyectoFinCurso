@@ -99,7 +99,7 @@ const AppLayout = ({ title, backTo, rightContent, children }) => {
               </button>
             ) : (
               <div className="app-brand-logo" onClick={() => navigate('/dashboard')} style={{ cursor: 'pointer' }}>
-                <img src="/logo-premium.png" alt="UFL" style={{ height: '32px', width: 'auto' }} />
+                <img src="/ufl-logo.png" alt="UFL" style={{ height: '32px', width: 'auto' }} />
               </div>
             )}
           </div>

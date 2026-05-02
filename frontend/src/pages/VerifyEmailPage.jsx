@@ -75,7 +75,7 @@ export default function VerifyEmailPage() {
         <div className="auth-left__content">
           <div className="auth-left__badge">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish Premiership</div>
           <div className="auth-left__logo-wrap">
-            <img src="/logo-premium.png" alt="UFL Logo" />
+            <img src="/ufl-logo.png" alt="UFL Logo" />
           </div>
           <h1 className="auth-left__title">Seguridad<br /><span>Total</span></h1>
           <p className="auth-left__desc">
@@ -93,7 +93,7 @@ export default function VerifyEmailPage() {
           {/* Mobile brand */}
           <div className="auth-mobile-brand">
             <span className="auth-mobile-brand__icon">
-              <img src="/logo-premium.png" alt="UFL" />
+              <img src="/ufl-logo.png" alt="UFL" />
             </span>
             <div className="auth-mobile-brand__title">Ultimate Fantasy Legends</div>
           </div>

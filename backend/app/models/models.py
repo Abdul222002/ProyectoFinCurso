@@ -80,6 +80,7 @@ class User(Base):
     total_points = Column(Integer, default=0)  # Puntos Fantasy totales
     level = Column(Integer, default=1)
     experience = Column(Integer, default=0)
+    avatar_url = Column(String(255), nullable=True)
     
     # Relaciones
     teams = relationship("Team", back_populates="user", cascade="all, delete-orphan")

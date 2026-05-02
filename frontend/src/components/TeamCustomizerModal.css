@@ -211,7 +211,7 @@
     grid-template-columns: repeat(7, 1fr);
     gap: 10px;
     content-visibility: auto;
-    contain-intrinsic-size: 420px 260px;
+    contain-intrinsic-size: 1px 400px;
 }
 
 .tcm-shield-btn {
@@ -219,6 +219,8 @@
     aspect-ratio: 1;
     background: rgba(255, 255, 255, 0.04);
     border: 2px solid rgba(255, 255, 255, 0.06);
+    contain: content;
+    will-change: transform;
     border-radius: 10px;
     cursor: pointer;
     display: flex;

@@ -35,6 +35,13 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.profile-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .profile-avatar-letter {
@@ -75,6 +82,20 @@
   width: 100%;
   max-width: 200px;
   outline: none;
+}
+
+.profile-edit-row {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-edit-label {
+  font-size: 0.75rem;
+  color: var(--gold);
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .profile-save-btn {

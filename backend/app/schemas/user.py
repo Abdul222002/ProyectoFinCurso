@@ -4,6 +4,7 @@ Pydantic Schemas para Usuarios
 
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
+from datetime import datetime
 from enum import Enum
 
 
@@ -34,6 +35,7 @@ class UserLogin(BaseModel):
     password: str
 
 
+
 class UserResponse(UserBase):
     """Schema de respuesta de usuario"""
     id: int
@@ -41,6 +43,8 @@ class UserResponse(UserBase):
     total_points: int
     level: int
     experience: int
+    avatar_url: Optional[str] = None
+    created_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True
@@ -57,3 +61,6 @@ class VerifyEmailRequest(BaseModel):
     email: EmailStr
     code: str
 
+class UserProfileUpdate(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+    avatar_url: Optional[str] = None

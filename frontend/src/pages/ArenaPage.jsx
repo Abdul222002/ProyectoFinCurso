@@ -339,7 +339,7 @@ export default function ArenaPage() {
           {/* ── HERO ── */}
           <div className="ar-hero">
             <img
-              src="/logo-premium.png"
+              src="/ufl-logo.png"
               alt="Logo"
               className="ar-logo"
               onError={e => { e.target.style.display = 'none'; }}

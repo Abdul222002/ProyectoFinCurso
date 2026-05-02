@@ -66,8 +66,11 @@ export default function Dashboard() {
         {/* ── HERO BANNER ── */}
         <section className="dash-hero-banner">
           <div className="dash-hero-avatar">
-            {user?.username?.charAt(0)?.toUpperCase() || 'M'}
-            <span className="dash-hero-level">{user?.level || 1}</span>
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt="" className="dash-hero-avatar-img" />
+            ) : (
+              user?.username?.charAt(0)?.toUpperCase() || 'M'
+            )}
           </div>
 
           <div className="dash-hero-info">
@@ -75,12 +78,6 @@ export default function Dashboard() {
               {selectedTeam?.league_name || 'Fantasy Manager'}
             </span>
             <h2>Bienvenido, {user?.username || 'Manager'}</h2>
-            <div className="dash-xp-bar">
-              <div
-                className="dash-xp-fill"
-                style={{ width: `${Math.min((user?.experience || 0) % 100, 100)}%` }}
-              />
-            </div>
             <p>Gestiona tu plantilla, ficha estrellas y compite.</p>
           </div>
 
@@ -89,7 +86,7 @@ export default function Dashboard() {
             <img
               src="/spfl-logo.png"
               alt="SPFL"
-              onError={e => { e.target.src = '/logo-premium.png'; }}
+              onError={e => { e.target.src = '/ufl-logo.png'; }}
             />
           </div>
         </section>

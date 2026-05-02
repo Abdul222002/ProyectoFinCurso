@@ -17,6 +17,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [newUsername, setNewUsername] = useState('');
+  const [newAvatarUrl, setNewAvatarUrl] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -70,7 +71,10 @@ export default function ProfilePage() {
   };
 
   const handleSaveProfile = async () => {
-    if (!newUsername.trim() || newUsername === user?.username) {
+    const isUsernameChanged = newUsername.trim() !== user?.username;
+    const isAvatarChanged = newAvatarUrl.trim() !== (user?.avatar_url || '');
+
+    if (!isUsernameChanged && !isAvatarChanged) {
       setEditMode(false);
       return;
     }
@@ -78,7 +82,10 @@ export default function ProfilePage() {
     setSaving(true);
     try {
       const { authAPI } = await import('../services/endpoints');
-      await authAPI.updateProfile({ username: newUsername });
+      await authAPI.updateProfile({ 
+        username: newUsername.trim(),
+        avatar_url: newAvatarUrl.trim() || null
+      });
       toast.success('Perfil actualizado correctamente');
       setTimeout(() => window.location.reload(), 1000);
     } catch (err) {
@@ -108,9 +115,13 @@ export default function ProfilePage() {
         {/* User Card */}
         <section className="profile-user-card">
           <div className="profile-avatar">
-            <span className="profile-avatar-letter">
-              {user?.username?.charAt(0)?.toUpperCase() || '?'}
-            </span>
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt="" className="profile-avatar-img" />
+            ) : (
+              <span className="profile-avatar-letter">
+                {user?.username?.charAt(0)?.toUpperCase() || '?'}
+              </span>
+            )}
           </div>
           <div className="profile-user-info">
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -149,21 +160,34 @@ export default function ProfilePage() {
                   className="profile-edit-toggle"
                   onClick={() => {
                     setNewUsername(user?.username || '');
+                    setNewAvatarUrl(user?.avatar_url || '');
                     setEditMode(true);
                   }}
-                  title="Editar Nombre"
+                  title="Editar Perfil"
                 >
                   ✏️
                 </button>
               )}
             </div>
+
+            {editMode && (
+              <div className="profile-edit-row">
+                <label className="profile-edit-label">URL del Avatar</label>
+                <input 
+                  type="text" 
+                  value={newAvatarUrl} 
+                  onChange={e => setNewAvatarUrl(e.target.value)}
+                  className="profile-edit-input"
+                  placeholder="https://ejemplo.com/foto.jpg"
+                  disabled={saving}
+                />
+              </div>
+            )}
+
             <p className="profile-email">{user?.email || ''}</p>
             <div className="profile-meta">
               <span className="profile-meta-badge">
                 🏆 {leagues.length} {leagues.length === 1 ? 'liga' : 'ligas'}
-              </span>
-              <span className="profile-meta-badge">
-                ⭐ Nivel {user?.level || 1}
               </span>
               <span className="profile-meta-badge">
                 📅 Desde {formatDate(user?.created_at)}
