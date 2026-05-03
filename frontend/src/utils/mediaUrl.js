@@ -13,7 +13,11 @@ export function resolveBackendMediaUrl(url) {
   if (t.startsWith('http://') || t.startsWith('https://')) return t;
   // Ruta relativa con / → funciona en dev (proxy vite) y prod (proxy nginx)
   // En Railway, si VITE_API_URL es absoluto, lo usamos para las imágenes también
-  const baseUrl = import.meta.env.VITE_API_URL || '';
+  let baseUrl = import.meta.env.VITE_API_URL || '';
+  // Limpiar el /api final si existe para que las imágenes se carguen de la raíz
+  if (baseUrl.endsWith('/api')) baseUrl = baseUrl.slice(0, -4);
+  if (baseUrl.endsWith('/api/')) baseUrl = baseUrl.slice(0, -5);
+  
   const isAbsoluteBase = baseUrl.startsWith('http');
 
   if (t.startsWith('/')) {
