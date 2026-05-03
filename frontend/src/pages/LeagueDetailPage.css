@@ -633,6 +633,19 @@
   backdrop-filter: blur(16px);
 }
 
+@media (max-width: 600px) {
+  .ld-notif-panel {
+    position: fixed !important;
+    top: 70px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 92vw !important;
+    max-width: 400px !important;
+    right: auto !important;
+    max-height: 80vh !important;
+  }
+}
+
 .ld-notif-header {
   display: flex;
   justify-content: space-between;

@@ -5,8 +5,8 @@ services:
     container_name: football-fantasy-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-fantasyleague2026}
-      MYSQL_DATABASE: ultimate_fantasy_legends
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
     volumes:
       - mysql_data:/var/lib/mysql
       - ./ultimate_fantasy_legends.sql:/docker-entrypoint-initdb.d/init.sql
@@ -31,18 +31,18 @@ services:
       db:
         condition: service_healthy
     environment:
-      - MYSQL_HOST=db
-      - MYSQL_PORT=3306
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-fantasyleague2026}
-      - MYSQL_DATABASE=ultimate_fantasy_legends
-      - SMTP_HOST=smtp.gmail.com
-      - SMTP_PORT=587
-      - SMTP_USER=scottishfanstasyleague@gmail.com
-      - SMTP_PASSWORD=vrmh pxqj sckm ypui
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - MYSQL_HOST=${MYSQL_HOST}
+      - MYSQL_PORT=${MYSQL_PORT}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - FRONTEND_URL=${FRONTEND_URL}
       - SPORTMONKS_API_KEY=${SPORTMONKS_API_KEY}
-      - BYPASS_EMAIL_VERIFICATION=${BYPASS_EMAIL_VERIFICATION:-false}
+      - BYPASS_EMAIL_VERIFICATION=${BYPASS_EMAIL_VERIFICATION}
       - SECRET_KEY=${SECRET_KEY}
     volumes:
       - ./backend:/backend

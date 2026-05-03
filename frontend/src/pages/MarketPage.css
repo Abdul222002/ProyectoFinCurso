@@ -288,6 +288,31 @@
   color: var(--gold);
 }
 
+.mkt-h-player-img {
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+
+.mkt-h-count {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #fbbf24; /* Amber-400 */
+  background: rgba(251, 191, 36, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+.mkt-no-trends {
+  padding: 20px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
 /* ---- Leagues ---- */
 .mkt-section {
   padding: 0 1.25rem 1.5rem;

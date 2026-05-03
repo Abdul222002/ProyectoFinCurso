@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { leaguesAPI } from '../services/endpoints';
+import { leaguesAPI, auctionAPI } from '../services/endpoints';
+import { resolvePlayerImageUrl } from '../utils/mediaUrl';
 import AppLayout from '../components/AppLayout';
 import './MarketPage.css';
 
@@ -8,7 +9,8 @@ export default function MarketPage() {
   const navigate = useNavigate();
   const [leagues, setLeagues] = useState([]);
   const [loading, setLoading] = useState(true);
-  const leaguesSectionRef = useState(null);
+  const [trends, setTrends] = useState([]);
+  const [trendsLoading, setTrendsLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
@@ -21,8 +23,36 @@ export default function MarketPage() {
         setLoading(false);
       }
     };
+
+    const loadTrends = async () => {
+      try {
+        const res = await auctionAPI.getGlobalTrends();
+        setTrends(res.data || []);
+      } catch {
+        setTrends([]);
+      } finally {
+        setTrendsLoading(false);
+      }
+    };
+
     load();
+    loadTrends();
   }, []);
+
+  const formatPrice = (price) => {
+    if (price >= 1000000) return (price / 1000000).toFixed(1) + 'M';
+    if (price >= 1000) return (price / 1000).toFixed(0) + 'K';
+    return price?.toLocaleString() || '0';
+  };
+
+  const getRarityClass = (rarity) => {
+    switch (rarity?.toLowerCase()) {
+      case 'gold': return 'gold';
+      case 'legend': return 'diamond';
+      case 'silver': return 'silver';
+      default: return 'bronze';
+    }
+  };
 
   return (
     <AppLayout title="🛍️ Mercado" backTo="/dashboard">
@@ -78,36 +108,32 @@ export default function MarketPage() {
             <span className="mkt-badge-hot">🔥 Hot</span>
           </div>
           <div className="mkt-highlight-scroll">
-            {/* Mock Card 1 */}
-            <div className="mkt-h-card">
-              <div className="mkt-h-img gold">
-                <span className="mkt-h-ovr">82</span>
-              </div>
-              <div className="mkt-h-info">
-                <span className="mkt-h-name">K. Furuhashi</span>
-                <span className="mkt-h-price">15.5k 🪙</span>
-              </div>
-            </div>
-            {/* Mock Card 2 */}
-            <div className="mkt-h-card premium">
-              <div className="mkt-h-img diamond">
-                <span className="mkt-h-ovr">92</span>
-              </div>
-              <div className="mkt-h-info">
-                <span className="mkt-h-name">H. Larsson</span>
-                <span className="mkt-h-price">65.0k 🪙</span>
-              </div>
-            </div>
-            {/* Mock Card 3 */}
-            <div className="mkt-h-card">
-              <div className="mkt-h-img silver">
-                <span className="mkt-h-ovr">76</span>
-              </div>
-              <div className="mkt-h-info">
-                <span className="mkt-h-name">L. Shankland</span>
-                <span className="mkt-h-price">6.0k 🪙</span>
-              </div>
-            </div>
+            {trendsLoading ? (
+              <div className="mkt-loading-small">Cargando tendencias...</div>
+            ) : trends.length === 0 ? (
+              <div className="mkt-no-trends">No hay tendencias hoy</div>
+            ) : (
+              trends.map(player => (
+                <div key={player.id} className={`mkt-h-card ${player.base_rarity === 'legend' ? 'premium' : ''}`}>
+                  <div className={`mkt-h-img ${getRarityClass(player.base_rarity)}`}>
+                    <img 
+                      src={resolvePlayerImageUrl(player.image_url, player.name)} 
+                      alt={player.name}
+                      className="mkt-h-player-img"
+                      onError={(e) => { e.target.onerror=null; e.target.src=`https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}&background=152e20&color=25f478&bold=true`; }}
+                    />
+                    <span className="mkt-h-ovr">{player.overall_rating}</span>
+                  </div>
+                  <div className="mkt-h-info">
+                    <span className="mkt-h-name">{player.name}</span>
+                    <span className="mkt-h-price">{formatPrice(player.current_price)} 🪙</span>
+                    {player.acquisitions_count > 0 && (
+                      <span className="mkt-h-count">🔥 {player.acquisitions_count} fichajes</span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

@@ -85,6 +85,20 @@ async def get_my_team(
         ).first()
         if not team:
             raise HTTPException(status_code=404, detail="No tienes equipo en esta liga")
+
+        # AUTOCURACIÓN: Asignar cartas huérfanas del usuario en esta liga
+        orphaned_cards = db.query(UserCard).filter(
+            UserCard.user_id == current_user.id,
+            UserCard.league_id == league_id,
+            UserCard.team_id == None
+        ).all()
+
+        if orphaned_cards:
+            for card in orphaned_cards:
+                card.team_id = team.id
+            db.commit()
+            db.refresh(team)
+
         return _team_to_response(team)
     else:
         # Devolver todos los equipos del usuario
@@ -285,7 +299,10 @@ async def get_active_gameweek(db: Session = Depends(get_db)):
     if not gw:
         gw = db.query(Gameweek).filter(Gameweek.is_finished == False).order_by(Gameweek.number).first()
         if not gw:
-            raise HTTPException(status_code=404, detail="No hay jornadas configuradas")
+            # [FALLBACK] Si la liga ha terminado, devolver la última jornada histórica
+            gw = db.query(Gameweek).order_by(Gameweek.number.desc()).first()
+            if not gw:
+                raise HTTPException(status_code=404, detail="No hay jornadas configuradas")
     return gw
 
 

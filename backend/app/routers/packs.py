@@ -79,6 +79,16 @@ async def open_icon_pack(
             detail="No hay jugadores legendarios disponibles en esta liga."
         )
 
+    # SEGURIDAD: Crear equipo si no existe
+    if not team:
+        team = Team(
+            user_id=current_user.id,
+            league_id=league_id,
+            name=f"Equipo {current_user.id}"
+        )
+        db.add(team)
+        db.flush()
+
     # Lógica de probabilidad ponderada (Weighted randomness)
     # A mayor OVR, menor es el peso (probabilidad).
     # Hacemos una curva exponencial para que +95 sea súper raro.
@@ -124,10 +134,10 @@ async def open_icon_pack(
     card = UserCard(
         user_id=current_user.id,
         player_id=selected_player.id,
-        league_id=league_id,  # Importante: carta de esta liga
-        team_id=team.id if team else None,  # Adding to the team if exists
+        league_id=league_id,
+        team_id=team.id,
         current_overall=selected_player.overall_rating,
-        is_tradeable=False  # Las cartas de sobre no son vendibles
+        is_tradeable=False
     )
     db.add(card)
     db.flush()  # Para obtener el ID

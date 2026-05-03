@@ -198,19 +198,19 @@ export default function LeagueDetailPage() {
   const loadNotifications = useCallback(async () => {
     try {
       const [notifRes, countRes] = await Promise.all([
-        notificationsAPI.getAll(),
-        notificationsAPI.getUnreadCount(),
+        notificationsAPI.getAll(leagueId),
+        notificationsAPI.getUnreadCount(leagueId),
       ]);
       setNotifications(notifRes.data || []);
       setUnreadCount(countRes.data?.unread_count || 0);
     } catch { /* silent */ }
-  }, []);
+  }, [leagueId]);
 
   useEffect(() => { loadNotifications(); }, [loadNotifications]);
 
   const handleMarkAllRead = async () => {
     try {
-      await notificationsAPI.markAllRead();
+      await notificationsAPI.markAllRead(leagueId);
       setUnreadCount(0);
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     } catch { /* silent */ }
@@ -220,7 +220,7 @@ export default function LeagueDetailPage() {
     try {
       await notificationsAPI.delete(id);
       setNotifications(prev => prev.filter(n => n.id !== id));
-      const countRes = await notificationsAPI.getUnreadCount();
+      const countRes = await notificationsAPI.getUnreadCount(leagueId);
       setUnreadCount(countRes.data?.unread_count || 0);
       toast.success('Notificación eliminada');
     } catch {
@@ -230,7 +230,7 @@ export default function LeagueDetailPage() {
 
   const clearAllNotifications = async () => {
     try {
-      await notificationsAPI.deleteAll();
+      await notificationsAPI.deleteAll(leagueId);
       setNotifications([]);
       setUnreadCount(0);
       toast.success('Notificaciones eliminadas');

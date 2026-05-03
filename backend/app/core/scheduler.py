@@ -340,13 +340,17 @@ def gameweek_lifecycle_tick():
                 
                 team.total_fantasy_points = past_points + team_points
 
-                # Actualizar clasificación de la liga
+                # Actualizar clasificación de la liga y recompensar con monedas (1 punto = 1,000,000 monedas)
                 lm = db.query(LeagueMember).filter_by(
                     user_id=team.user_id,
                     league_id=team.league_id
                 ).first()
                 if lm:
                     lm.league_points = team.total_fantasy_points
+                    # Recompensa económica de la jornada
+                    coins_to_add = int(team_points * 100000)
+                    lm.coins += coins_to_add
+                    logger.info(f"   💰 Recompensa para {team.name}: {coins_to_add:,} monedas por {team_points} puntos.")
 
             # Marcar jornada como finalizada
             active_gw.is_finished = True
@@ -447,6 +451,42 @@ def generate_system_offers_tick():
         db.close()
 
 
+def resolve_expired_auctions_tick():
+    """
+    Runs every 5 minutes. Resolves any expired market auctions
+    that haven't been resolved yet (lazy resolution fallback).
+    """
+    from app.core.database import SessionLocal
+    from app.models.models import MarketAuction
+
+    db = SessionLocal()
+    try:
+        now = datetime.utcnow()
+        expired_auctions = db.query(MarketAuction).filter(
+            MarketAuction.is_active == True,
+            MarketAuction.ends_at < now,
+            MarketAuction.is_resolved == False
+        ).all()
+
+        resolved_count = 0
+        for auction in expired_auctions:
+            try:
+                from app.routers.market import _resolve_auction
+                _resolve_auction(auction, db)
+                resolved_count += 1
+            except Exception as e:
+                logger.error(f"Error resolving auction {auction.id}: {e}")
+                db.rollback()
+
+        if resolved_count > 0:
+            logger.info(f"🏁 {resolved_count} subastas expiradas resueltas automáticamente")
+
+    except Exception as e:
+        logger.error(f"Error en resolución de subastas: {e}")
+    finally:
+        db.close()
+
+
 def economy_reconciliation_tick():
     """
     Ejecuta la reconciliación de locked_coins para todas las ligas
@@ -492,8 +532,14 @@ def start_scheduler():
         id="economy_reconciliation",
         replace_existing=True
     )
+    scheduler.add_job(
+        resolve_expired_auctions_tick,
+        trigger=IntervalTrigger(minutes=5),
+        id="resolve_expired_auctions",
+        replace_existing=True
+    )
     scheduler.start()
-    print("✅ Scheduler iniciado: jornadas (1min) + ofertas (1h) + reconciliación (1h)", flush=True)
+    print("✅ Scheduler iniciado: jornadas (1min) + ofertas (1h) + reconciliación (1h) + subastas (5min)", flush=True)
 
     # Ejecución inmediata al arrancar (catch-up)
     try:
@@ -501,6 +547,7 @@ def start_scheduler():
         gameweek_lifecycle_tick()
         generate_system_offers_tick()
         economy_reconciliation_tick()
+        resolve_expired_auctions_tick()
         print("✅ Tareas iniciales completadas.", flush=True)
     except Exception as e:
         logger.error(f"❌ Error en tareas iniciales del scheduler: {e}")

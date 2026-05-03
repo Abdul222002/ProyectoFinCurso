@@ -128,6 +128,7 @@ export const auctionAPI = {
   protectPlayer: (leagueId, cardId, amount) => api.post(`/market/${leagueId}/protect/${cardId}`, { amount }, {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
   }),
+  getGlobalTrends: () => api.get('/market/global-trends'),
 };
 
 // ==========================================
@@ -167,11 +168,11 @@ export const adminAPI = {
 // ==========================================
 
 export const notificationsAPI = {
-  getAll: (unreadOnly = false) => api.get('/notifications/', { params: { unread_only: unreadOnly } }),
-  getUnreadCount: () => api.get('/notifications/unread-count'),
+  getAll: (leagueId = null, unreadOnly = false) => api.get('/notifications/', { params: { league_id: leagueId, unread_only: unreadOnly } }),
+  getUnreadCount: (leagueId = null) => api.get('/notifications/unread-count', { params: { league_id: leagueId } }),
   markRead: (id) => api.post(`/notifications/${id}/read`),
-  markAllRead: () => api.post('/notifications/read-all'),
+  markAllRead: (leagueId = null) => api.post('/notifications/read-all', leagueId ? { params: { league_id: leagueId } } : {}),
   delete: (id) => api.delete(`/notifications/${id}`),
-  deleteAll: () => api.delete('/notifications/clear-all'),
+  deleteAll: (leagueId = null) => api.delete('/notifications/clear-all', leagueId ? { params: { league_id: leagueId } } : {}),
 };
 

@@ -31,13 +31,16 @@ class NotificationResponse(BaseModel):
 
 @router.get("/", response_model=List[NotificationResponse])
 async def get_notifications(
+    league_id: Optional[int] = Query(None, description="Filter by league"),
     unread_only: bool = Query(False),
     limit: int = Query(20, le=50),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Obtener las notificaciones del usuario actual."""
+    """Obtener las notificaciones del usuario actual, filtradas por liga si se especifica."""
     query = db.query(Notification).filter(Notification.user_id == current_user.id)
+    if league_id is not None:
+        query = query.filter(Notification.league_id == league_id)
     if unread_only:
         query = query.filter(Notification.is_read == False)
     notifications = query.order_by(Notification.created_at.desc()).limit(limit).all()
@@ -46,14 +49,18 @@ async def get_notifications(
 
 @router.get("/unread-count")
 async def get_unread_count(
+    league_id: Optional[int] = Query(None, description="Filter by league"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Obtener el número de notificaciones no leídas."""
-    count = db.query(Notification).filter(
+    """Obtener el número de notificaciones no leídas, filtradas por liga si se especifica."""
+    query = db.query(Notification).filter(
         Notification.user_id == current_user.id,
         Notification.is_read == False
-    ).count()
+    )
+    if league_id is not None:
+        query = query.filter(Notification.league_id == league_id)
+    count = query.count()
     return {"unread_count": count}
 
 

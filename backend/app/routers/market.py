@@ -25,11 +25,73 @@ from app.schemas.market import (
     ListCardRequest, ListingResponse, SystemOfferResponse
 )
 from app.routers.auth import get_current_user
+from pydantic import BaseModel
+
+class TrendingPlayer(BaseModel):
+    id: int
+    name: str
+    overall_rating: int
+    current_price: float
+    image_url: Optional[str]
+    base_rarity: str
+    acquisitions_count: int
 
 router = APIRouter()
 
 AUCTION_DURATION_HOURS = 24
 SLOTS_PER_AUCTION = 12
+
+@router.get("/global-trends", response_model=List[TrendingPlayer])
+async def get_global_trends(db: Session = Depends(get_db)):
+    """
+    Calcula los jugadores más fichados (en todas las ligas) en los últimos 7 días.
+    """
+    last_week = datetime.utcnow() - timedelta(days=7)
+    
+    # Consulta: Contar adquisiciones por player_id en la última semana
+    # Excluimos leyendas del conteo para que no monopolicen siempre la tendencia
+    trending_query = db.query(
+        UserCard.player_id, 
+        func.count(UserCard.id).label('count')
+    ).join(Player).filter(
+        UserCard.acquired_at >= last_week,
+        Player.is_legend == False
+    ).group_by(
+        UserCard.player_id
+    ).order_by(
+        func.count(UserCard.id).desc()
+    ).limit(5).all()
+    
+    results = []
+    for player_id, count in trending_query:
+        player = db.query(Player).filter(Player.id == player_id).first()
+        if player:
+            results.append(TrendingPlayer(
+                id=player.id,
+                name=player.name,
+                overall_rating=player.overall_rating,
+                current_price=player.current_price,
+                image_url=player.image_url,
+                base_rarity=player.base_rarity.value if hasattr(player.base_rarity, 'value') else str(player.base_rarity),
+                acquisitions_count=count
+            ))
+            
+    # Si no hay datos (liga vacía o nueva), devolvemos los 5 mejores jugadores por OVR como fallback
+    if not results:
+        top_players = db.query(Player).filter(Player.is_legend == False).order_by(Player.overall_rating.desc()).limit(5).all()
+        for p in top_players:
+            results.append(TrendingPlayer(
+                id=p.id,
+                name=p.name,
+                overall_rating=p.overall_rating,
+                current_price=p.current_price,
+                image_url=p.image_url,
+                base_rarity=p.base_rarity.value if hasattr(p.base_rarity, 'value') else str(p.base_rarity),
+                acquisitions_count=0
+            ))
+            
+    return results
+
 
 def reconcile_locked_coins(db: Session, league_id: int = None):
     """
@@ -181,11 +243,22 @@ def _resolve_auction(auction: MarketAuction, db: Session):
             Team.league_id == locked_auction.league_id
         ).first()
 
+        # SEGURIDAD: Nunca crear cartas sin equipo — crear equipo fallback si no existe
+        if not winner_team:
+            print(f"[market] WARNING: No se encontró equipo para user {winning_bid.user_id} en liga {locked_auction.league_id}. Creando equipo fallback.")
+            winner_team = Team(
+                user_id=winning_bid.user_id,
+                league_id=locked_auction.league_id,
+                name=f"Equipo {winning_bid.user_id}"
+            )
+            db.add(winner_team)
+            db.flush()
+
         card = UserCard(
             user_id=winning_bid.user_id,
             player_id=slot.player_id,
             league_id=locked_auction.league_id,
-            team_id=winner_team.id if winner_team else None,
+            team_id=winner_team.id,
             current_overall=player.overall_rating,
             is_tradeable=True,
             is_in_lineup=False
@@ -985,8 +1058,17 @@ async def accept_listing_bid(
         Team.league_id == league_id
     ).first()
 
+    if not buyer_team:
+        buyer_team = Team(
+            user_id=buyer_id,
+            league_id=league_id,
+            name=f"Equipo {buyer_id}"
+        )
+        db.add(buyer_team)
+        db.flush()
+
     card.user_id = buyer_id
-    card.team_id = buyer_team.id if buyer_team else None
+    card.team_id = buyer_team.id
     card.is_in_lineup = False
 
     db.delete(winning)
@@ -1199,9 +1281,18 @@ async def pay_release_clause(
     # Find buyer team
     buyer_team = db.query(Team).filter(Team.league_id == league_id, Team.user_id == current_user.id).first()
 
+    if not buyer_team:
+        buyer_team = Team(
+            user_id=current_user.id,
+            league_id=league_id,
+            name=f"Equipo {current_user.id}"
+        )
+        db.add(buyer_team)
+        db.flush()
+
     # Transfer Card
     card.user_id = current_user.id
-    card.team_id = buyer_team.id if buyer_team else None
+    card.team_id = buyer_team.id
     card.is_in_lineup = False
     card.protected_value = 0 # Reset blindaje
 
