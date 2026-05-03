@@ -33,8 +33,8 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copiar los archivos estáticos generados en la etapa de construcción anterior
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Exponer el puerto 80
+# Exponer el puerto dinámico
 EXPOSE 80
 
-# Comando para iniciar Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Usar envsubst para inyectar el puerto real de Railway en la configuración de Nginx antes de arrancar
+CMD ["/bin/sh", "-c", "envsubst '${PORT}' < /etc/nginx/conf.d/default.conf > /etc/nginx/conf.d/default.conf.tmp && mv /etc/nginx/conf.d/default.conf.tmp /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
