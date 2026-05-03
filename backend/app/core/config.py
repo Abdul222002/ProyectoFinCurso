@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     # Frontend URL (para CORS)
     FRONTEND_URL: str = "http://localhost:5173"
     
+    # SMTP Configuración (Emails)
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    
     # Entorno
     ENVIRONMENT: str = "production"
     DEBUG: bool = False

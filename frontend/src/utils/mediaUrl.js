@@ -12,8 +12,15 @@ export function resolveBackendMediaUrl(url) {
   // URL absoluta → devolver tal cual
   if (t.startsWith('http://') || t.startsWith('https://')) return t;
   // Ruta relativa con / → funciona en dev (proxy vite) y prod (proxy nginx)
-  if (t.startsWith('/')) return t;
-  return `/${t}`;
+  // En Railway, si VITE_API_URL es absoluto, lo usamos para las imágenes también
+  const baseUrl = import.meta.env.VITE_API_URL || '';
+  const isAbsoluteBase = baseUrl.startsWith('http');
+
+  if (t.startsWith('/')) {
+    return isAbsoluteBase ? `${baseUrl}${t}` : t;
+  }
+  
+  return isAbsoluteBase ? `${baseUrl}/${t}` : `/${t}`;
 }
 
 export function resolvePlayerImageUrl(url, playerName = '') {
