@@ -133,7 +133,7 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
 
-    # Enviar email
+    # Enviar email (con timeout para no bloquear la respuesta)
     try:
         send_verification_email(new_user.email, new_user.username, token)
     except Exception as e:

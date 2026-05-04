@@ -43,8 +43,13 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await register(username, email, password);
-      navigate(`/verify-email?email=${encodeURIComponent(email)}`);
+      const userData = await register(username, email, password);
+      // Si el usuario ya está verificado (ej: email falló y se verificó automáticamente), ir al dashboard
+      if (userData.email_verified) {
+        navigate('/dashboard');
+      } else {
+        navigate(`/verify-email?email=${encodeURIComponent(email)}`);
+      }
     } catch (err) {
       setError(err.response?.data?.detail || 'Error al crear la cuenta. Inténtalo de nuevo.');
     } finally {

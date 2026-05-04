@@ -43,6 +43,7 @@ class UserResponse(UserBase):
     total_points: int
     level: int
     experience: int
+    email_verified: bool
     avatar_url: Optional[str] = None
     created_at: Optional[datetime] = None
     
