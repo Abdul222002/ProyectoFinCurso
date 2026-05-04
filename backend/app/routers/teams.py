@@ -255,30 +255,27 @@ async def set_lineup(
 
 
 
-@router.get("/my/gameweek-lineup", response_model=GameweekLineupResponse)
+@router.get("/my/gameweek-lineup")
 async def get_gameweek_lineup(
     gameweek_id: int = Query(..., description="ID de la jornada"),
     league_id: int = Query(..., description="ID de la liga"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Obtener el equipo congelado/guardado para una jornada específica"""
+    """Obtener el equipo congelado/guardado para una jornada específica (devuelve null si no existe)"""
     team = db.query(Team).filter(
         Team.user_id == current_user.id,
         Team.league_id == league_id
     ).first()
     
     if not team:
-        raise HTTPException(status_code=404, detail="No tienes equipo en esta liga")
+        return None
         
     gw_lineup = db.query(GameweekLineup).filter(
         GameweekLineup.team_id == team.id,
         GameweekLineup.gameweek_id == gameweek_id
     ).first()
     
-    if not gw_lineup:
-        raise HTTPException(status_code=404, detail="No hay alineación guardada para esta jornada")
-        
     return gw_lineup
 
 
@@ -341,19 +338,19 @@ def _get_team_gameweek_points(team_id: int, db: Session) -> dict:
     )
 
 
-@router.get("/my/gameweek-points", response_model=GameweekPointsResponse)
+@router.get("/my/gameweek-points")
 async def get_my_gameweek_points(
     league_id: int = Query(..., description="ID de la liga"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Obtener los puntos por jornada de mi equipo"""
+    """Obtener los puntos por jornada de mi equipo (devuelve null si no existe)"""
     team = db.query(Team).filter(
         Team.user_id == current_user.id,
         Team.league_id == league_id
     ).first()
     if not team:
-        raise HTTPException(status_code=404, detail="No tienes equipo en esta liga")
+        return None
     
     return _get_team_gameweek_points(team.id, db)
 
@@ -378,7 +375,7 @@ async def get_user_gameweek_points(
         Team.league_id == league_id
     ).first()
     if not team:
-        raise HTTPException(status_code=404, detail="El usuario no tiene equipo en esta liga")
+        return None
     
     return _get_team_gameweek_points(team.id, db)
 

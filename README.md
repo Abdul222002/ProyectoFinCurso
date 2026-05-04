@@ -1215,7 +1215,7 @@ FRONTEND_URL=http://localhost:3000
 # SMTP para verificación de email
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USER=scottishfanstasyleague@gmail.com
+SMTP_USER=tu_email@gmail.com
 SMTP_PASSWORD=tu_app_password_de_gmail
 
 # Saltar verificación de email en desarrollo (true/false)
@@ -1322,7 +1322,7 @@ El frontend estará en `http://localhost:5173` (Vite redirige las peticiones `/a
 | `FRONTEND_URL` | URL del frontend (para CORS) | No | `http://localhost:3000` |
 | `SMTP_HOST` | Servidor SMTP para envío de emails | No | `smtp.gmail.com` |
 | `SMTP_PORT` | Puerto SMTP | No | `587` |
-| `SMTP_USER` | Cuenta de email para envíos | No | `scottishfanstasyleague@gmail.com` |
+| `SMTP_USER` | Cuenta de email para envíos | No | `tu_email@gmail.com` |
 | `SMTP_PASSWORD` | App password del email | No | `tu_app_password_de_gmail` |
 | `BYPASS_EMAIL_VERIFICATION` | Saltar verificación OTP en desarrollo | No | `false` |
 | `ENVIRONMENT` | Entorno (development/production) | No | `development` |

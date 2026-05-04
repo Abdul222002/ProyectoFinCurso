@@ -817,15 +817,23 @@
     font-size: 2rem;
   }
   .ov-vs-wrap {
-    gap: 20px;
+    flex-direction: column;
+    gap: 24px;
+    align-items: center;
   }
   .ov-vs-side {
-    width: 45%;
+    width: 100%;
+    max-width: 280px;
   }
+  .ov-vs-side.left { order: 1; }
+  .ov-vs-mid { order: 2; }
+  .ov-vs-side.right { order: 3; }
+  
   .ov-vs-shield {
-    width: 64px;
-    height: 64px;
+    width: 72px;
+    height: 72px;
   }
+
   .ov-vs-name {
     font-size: 1.1rem;
     white-space: nowrap;
