@@ -202,7 +202,38 @@
   font-size: 0.8rem;
   margin-left: 10px;
   width: auto;
+  white-space: nowrap;
 }
+
+@media (max-width: 600px) {
+  .ld-member-row {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px;
+    gap: 8px;
+  }
+  .ld-member-info {
+    width: 100%;
+  }
+  .ld-kick-btn {
+    margin-left: 0;
+    margin-top: 8px;
+    width: 100%;
+    justify-content: center;
+    display: flex;
+  }
+  .ld-rank {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 1rem;
+    min-width: auto;
+  }
+  .ld-member-row {
+    position: relative;
+  }
+}
+
 
 /* ========================================== */
 /* MARKET / AUCTIONS                          */

@@ -802,3 +802,46 @@
   from { opacity: 0.4; }
   to { opacity: 1; }
 }
+
+/* ── Mobile Fixes ── */
+@media (max-width: 600px) {
+  .ar-prev {
+    grid-template-columns: 1fr;
+    padding: 20px 16px;
+    gap: 16px;
+  }
+  .pr-vs-col {
+    padding: 0;
+  }
+  .pr-vs {
+    font-size: 2rem;
+  }
+  .ov-vs-wrap {
+    gap: 20px;
+  }
+  .ov-vs-side {
+    width: 45%;
+  }
+  .ov-vs-shield {
+    width: 64px;
+    height: 64px;
+  }
+  .ov-vs-name {
+    font-size: 1.1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .ov-vs-label {
+    font-size: 2.5rem;
+    letter-spacing: 4px;
+  }
+  .ov-bolt {
+    font-size: 1.8rem;
+  }
+}
+@keyframes blinkAnim {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
+}

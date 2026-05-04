@@ -116,7 +116,7 @@
   margin-bottom: 8px;
   background: var(--bg-surface);
   transition: border-color 0.2s;
-  max-height: 90px;
+  min-height: 80px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -131,13 +131,35 @@
   justify-content: space-between;
   align-items: center;
   width: 100%;
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .lg-card-main {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .lg-card-actions {
+    width: 100%;
+    margin-top: 12px;
+    justify-content: space-between;
+  }
+  .lg-card-actions .btn-primary,
+  .lg-card-actions .btn-secondary,
+  .lg-card-actions .lg-btn-danger {
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 0.75rem;
+  }
 }
 
 .lg-card-info {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  flex: 1;
 }
+
 
 .lg-card-name {
   font-size: 1rem;
