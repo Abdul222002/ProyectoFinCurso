@@ -133,11 +133,19 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
 
-    # Enviar email (con timeout para no bloquear la respuesta)
-    try:
-        send_verification_email(new_user.email, new_user.username, token)
-    except Exception as e:
-        print(f"ERROR: No se pudo enviar el email de verificación a {new_user.email}: {e}")
+    # Bypass de verificación en desarrollo/testing
+    if settings.BYPASS_EMAIL_VERIFICATION:
+        new_user.email_verified = True
+        new_user.verification_token = None
+        new_user.verification_token_expires = None
+        db.commit()
+        print(f"⚠️ BYPASS: Usuario {new_user.email} verificado automáticamente")
+    else:
+        # Enviar email
+        try:
+            send_verification_email(new_user.email, new_user.username, token)
+        except Exception as e:
+            print(f"ERROR: No se pudo enviar el email de verificación a {new_user.email}: {e}")
 
     # Generar token — sub DEBE ser string
     access_token = create_access_token(data={"sub": str(new_user.id)})

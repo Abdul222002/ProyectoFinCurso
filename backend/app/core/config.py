@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     SMTP_USER: str | None = None
     SMTP_PASSWORD: str | None = None
     
+    # Bypass verificación de email (desarrollo/testing)
+    BYPASS_EMAIL_VERIFICATION: bool = False
+    
     # Entorno
     ENVIRONMENT: str = "production"
     DEBUG: bool = False
