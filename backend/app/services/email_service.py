@@ -2,17 +2,11 @@ import os
 import secrets
 from datetime import datetime, timedelta
 import logging
-import threading
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-SMTP_HOST = settings.SMTP_HOST
-SMTP_PORT = settings.SMTP_PORT
-SMTP_USER = settings.SMTP_USER
-SMTP_PASSWORD = settings.SMTP_PASSWORD
-RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 
 def generate_verification_token() -> tuple[str, datetime]:
     """Genera un código OTP de 6 dígitos y su expiración (15 min)"""
@@ -52,8 +46,11 @@ def _build_html(username: str, code: str) -> str:
 
 
 def _send_via_resend(to_email: str, username: str, code: str):
-    """Envía email via Resend API (HTTPS, no se bloquea en Railway)"""
+    """Envía email via Resend API"""
     import requests
+
+    resend_key = os.environ.get("RESEND_API_KEY", "").strip()
+    logger.info(f"📧 [Resend] API key presente: {bool(resend_key)}, inicio: {resend_key[:6]}...")
 
     subject = "Verifica tu cuenta en Scottish Premier Legends"
     html = _build_html(username, code)
@@ -63,7 +60,7 @@ def _send_via_resend(to_email: str, username: str, code: str):
     resp = requests.post(
         "https://api.resend.com/emails",
         headers={
-            "Authorization": f"Bearer {RESEND_API_KEY}",
+            "Authorization": f"Bearer {resend_key}",
             "Content-Type": "application/json",
         },
         json={
@@ -76,69 +73,30 @@ def _send_via_resend(to_email: str, username: str, code: str):
     )
 
     if resp.status_code == 200:
-        logger.info(f"✅ [Resend] Email enviado a {to_email}: {resp.json().get('id')}")
+        data = resp.json()
+        logger.info(f"✅ [Resend] Email enviado a {to_email}, ID: {data.get('id')}")
     else:
         logger.error(f"❌ [Resend] Error {resp.status_code}: {resp.text}")
         raise Exception(f"Resend error {resp.status_code}: {resp.text}")
 
 
-def _send_via_smtp(to_email: str, username: str, code: str):
-    """Envía email via SMTP (fallback si no hay Resend)"""
-    import smtplib
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
-    import ssl
-
-    if not SMTP_USER or not SMTP_PASSWORD:
-        logger.warning("⚠️ SMTP credentials not set.")
-        return
-
-    subject = "Verifica tu cuenta en Scottish Premier Legends"
-    html = _build_html(username, code)
-
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = subject
-    msg['From'] = f"SPL Game <{SMTP_USER}>"
-    msg['To'] = to_email
-    msg.attach(MIMEText(html, 'html'))
-
-    context = ssl.create_default_context()
-
-    logger.info(f"📧 [SMTP] Enviando a {to_email} via {SMTP_HOST}:{SMTP_PORT}")
-
-    try:
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
-            server.ehlo()
-            server.starttls(context=context)
-            server.ehlo()
-            server.login(SMTP_USER, SMTP_PASSWORD)
-            server.send_message(msg)
-            logger.info(f"✅ [SMTP] Email enviado a {to_email}")
-    except smtplib.SMTPAuthenticationError as e:
-        logger.error(f"❌ [SMTP] Auth Error: {e}")
-        raise
-    except smtplib.SMTPConnectError as e:
-        logger.error(f"❌ [SMTP] Connect Error: {e}")
-        raise
-    except Exception as e:
-        logger.error(f"❌ [SMTP] Error: {e}")
-        raise
-
-
 def send_verification_email(to_email: str, username: str, code: str):
-    """Envía el email de verificación.
+    """Envía el email de verificación usando Resend API en thread separado."""
+    import threading
     
-    Prioridad: Resend API > SMTP (background thread)
-    """
-    if RESEND_API_KEY:
-        # Resend usa HTTPS, Railway no lo bloquea
-        _send_via_resend(to_email, username, code)
-    else:
-        # SMTP en thread para no bloquear la respuesta del registro
-        logger.info("⚠️ No hay RESEND_API_KEY, usando SMTP como fallback")
-        t = threading.Thread(
-            target=_send_via_smtp,
-            args=(to_email, username, code),
-            daemon=True,
-        )
-        t.start()
+    resend_key = os.environ.get("RESEND_API_KEY", "").strip()
+    logger.info(f"📧 Email a {to_email} — RESEND_API_KEY configurada: {bool(resend_key)}")
+    
+    if not resend_key:
+        logger.error("⚠️ RESEND_API_KEY no está configurada. Email NO enviado.")
+        return
+    
+    def _send_in_background():
+        try:
+            _send_via_resend(to_email, username, code)
+        except Exception as e:
+            logger.error(f"❌ Error enviando email a {to_email}: {e}")
+    
+    t = threading.Thread(target=_send_in_background, daemon=True)
+    t.start()
+    logger.info(f"📧 Thread de envío iniciado para {to_email}")
