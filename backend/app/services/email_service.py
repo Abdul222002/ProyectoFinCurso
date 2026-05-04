@@ -1,12 +1,8 @@
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 import os
 import secrets
 from datetime import datetime, timedelta
-import ssl
-import threading
 import logging
+import threading
 
 from app.core.config import settings
 
@@ -16,25 +12,17 @@ SMTP_HOST = settings.SMTP_HOST
 SMTP_PORT = settings.SMTP_PORT
 SMTP_USER = settings.SMTP_USER
 SMTP_PASSWORD = settings.SMTP_PASSWORD
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 
 def generate_verification_token() -> tuple[str, datetime]:
-    """Generates a 6-digit OTP code and its expiration time (15 mins)"""
+    """Genera un código OTP de 6 dígitos y su expiración (15 min)"""
     code = f"{secrets.randbelow(1000000):06d}"
     expires = datetime.utcnow() + timedelta(minutes=15)
     return code, expires
 
-def _send_smtp_email_sync(to_email: str, username: str, code: str):
-    """Envía email via SMTP con timeout. Función síncrona con timeout."""
-    logger.info(f"📧 Iniciando envío SMTP a {to_email}")
-    logger.info(f"📧 Host: {SMTP_HOST}, Port: {SMTP_PORT}, User: {SMTP_USER}")
 
-    if not SMTP_USER or not SMTP_PASSWORD:
-        logger.warning("⚠️ SMTP credentials not set. Email not sent.")
-        return
-
-    subject = "Verifica tu cuenta en Scottish Premier Legends"
-    
-    html = f"""
+def _build_html(username: str, code: str) -> str:
+    return f"""
     <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; color: #1e293b; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
         <div style="text-align: center; margin-bottom: 32px; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px;">
             <h1 style="color: #1d4ed8; font-size: 24px; margin: 0; font-weight: 800; letter-spacing: 0.5px;">⚽ Scottish Premier Legends</h1>
@@ -62,46 +50,95 @@ def _send_smtp_email_sync(to_email: str, username: str, code: str):
     </div>
     """
 
+
+def _send_via_resend(to_email: str, username: str, code: str):
+    """Envía email via Resend API (HTTPS, no se bloquea en Railway)"""
+    import requests
+
+    subject = "Verifica tu cuenta en Scottish Premier Legends"
+    html = _build_html(username, code)
+
+    logger.info(f"📧 [Resend] Enviando a {to_email}")
+
+    resp = requests.post(
+        "https://api.resend.com/emails",
+        headers={
+            "Authorization": f"Bearer {RESEND_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "from": "SPL Game <onboarding@resend.dev>",
+            "to": [to_email],
+            "subject": subject,
+            "html": html,
+        },
+        timeout=10,
+    )
+
+    if resp.status_code == 200:
+        logger.info(f"✅ [Resend] Email enviado a {to_email}: {resp.json().get('id')}")
+    else:
+        logger.error(f"❌ [Resend] Error {resp.status_code}: {resp.text}")
+        raise Exception(f"Resend error {resp.status_code}: {resp.text}")
+
+
+def _send_via_smtp(to_email: str, username: str, code: str):
+    """Envía email via SMTP (fallback si no hay Resend)"""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    import ssl
+
+    if not SMTP_USER or not SMTP_PASSWORD:
+        logger.warning("⚠️ SMTP credentials not set.")
+        return
+
+    subject = "Verifica tu cuenta en Scottish Premier Legends"
+    html = _build_html(username, code)
+
     msg = MIMEMultipart('alternative')
     msg['Subject'] = subject
     msg['From'] = f"SPL Game <{SMTP_USER}>"
     msg['To'] = to_email
-
     msg.attach(MIMEText(html, 'html'))
 
     context = ssl.create_default_context()
-    
+
+    logger.info(f"📧 [SMTP] Enviando a {to_email} via {SMTP_HOST}:{SMTP_PORT}")
+
     try:
-        logger.info(f"📧 Conectando a {SMTP_HOST}:{SMTP_PORT}...")
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
-            server.set_debuglevel(1)
-            logger.info("📧 Enviando EHLO...")
             server.ehlo()
-            logger.info("📧 Iniciando STARTTLS...")
             server.starttls(context=context)
             server.ehlo()
-            logger.info("📧 Haciendo login...")
             server.login(SMTP_USER, SMTP_PASSWORD)
-            logger.info("📧 Enviando mensaje...")
             server.send_message(msg)
-            logger.info(f"✅ Email de verificación enviado a {to_email}")
+            logger.info(f"✅ [SMTP] Email enviado a {to_email}")
     except smtplib.SMTPAuthenticationError as e:
-        logger.error(f"❌ SMTP Authentication Error: {e}. Revisa SMTP_USER y SMTP_PASSWORD en Railway")
+        logger.error(f"❌ [SMTP] Auth Error: {e}")
         raise
     except smtplib.SMTPConnectError as e:
-        logger.error(f"❌ SMTP Connect Error: {e}. Railway podría estar bloqueando el puerto {SMTP_PORT}")
-        raise
-    except smtplib.SMTPException as e:
-        logger.error(f"❌ SMTP Error: {e}")
+        logger.error(f"❌ [SMTP] Connect Error: {e}")
         raise
     except Exception as e:
-        logger.error(f"❌ Error desconocido enviando email: {e}")
+        logger.error(f"❌ [SMTP] Error: {e}")
         raise
 
-def send_verification_email(to_email: str, username: str, code: str):
-    """Envía email via SMTP en thread separado para no bloquear la respuesta."""
-    logger.info(f"📧 Preparando envío de verificación a {to_email}")
-    t = threading.Thread(target=_send_smtp_email_sync, args=(to_email, username, code), daemon=True)
-    t.start()
-    logger.info(f"📧 Thread de envío iniciado para {to_email}")
 
+def send_verification_email(to_email: str, username: str, code: str):
+    """Envía el email de verificación.
+    
+    Prioridad: Resend API > SMTP (background thread)
+    """
+    if RESEND_API_KEY:
+        # Resend usa HTTPS, Railway no lo bloquea
+        _send_via_resend(to_email, username, code)
+    else:
+        # SMTP en thread para no bloquear la respuesta del registro
+        logger.info("⚠️ No hay RESEND_API_KEY, usando SMTP como fallback")
+        t = threading.Thread(
+            target=_send_via_smtp,
+            args=(to_email, username, code),
+            daemon=True,
+        )
+        t.start()
