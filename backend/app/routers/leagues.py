@@ -572,52 +572,58 @@ def _delete_league_completely(league: League, db: Session):
     league_id = league.id
     
     # 1. SystemOffers
-    db.query(SystemOffer).filter(SystemOffer.league_id == league_id).delete()
+    db.query(SystemOffer).filter(SystemOffer.league_id == league_id).delete(synchronize_session=False)
 
     # 2. Pujas de mercado entre usuarios (antes de borrar listados)
-    for bid in db.query(ListingBid).join(MarketListing).filter(
+    listing_ids = [l.id for l in db.query(MarketListing.id).filter(
         MarketListing.league_id == league_id
-    ).all():
-        m = db.query(LeagueMember).filter(
-            LeagueMember.league_id == league_id,
-            LeagueMember.user_id == bid.user_id
-        ).first()
-        if m:
-            m.locked_coins -= bid.amount
-        db.delete(bid)
+    ).all()]
+    if listing_ids:
+        # Desbloquear monedas de las pujas antes de borrarlas
+        for bid in db.query(ListingBid).filter(ListingBid.listing_id.in_(listing_ids)).all():
+            m = db.query(LeagueMember).filter(
+                LeagueMember.league_id == league_id,
+                LeagueMember.user_id == bid.user_id
+            ).first()
+            if m:
+                m.locked_coins -= bid.amount
+        db.flush()
+        # Borrar todas las pujas de los listados de esta liga (bulk)
+        db.query(ListingBid).filter(ListingBid.listing_id.in_(listing_ids)).delete(synchronize_session=False)
 
-    db.query(MarketListing).filter(MarketListing.league_id == league_id).delete()
+    db.query(MarketListing).filter(MarketListing.league_id == league_id).delete(synchronize_session=False)
     
-    # 3. Auctions
-    auctions = db.query(MarketAuction).filter(MarketAuction.league_id == league_id).all()
-    for auction in auctions:
-        slot_ids = [s.id for s in db.query(AuctionSlot).filter(AuctionSlot.auction_id == auction.id).all()]
+    # 3. Auctions (bids → slots → auctions)
+    auction_ids = [a.id for a in db.query(MarketAuction.id).filter(
+        MarketAuction.league_id == league_id
+    ).all()]
+    if auction_ids:
+        slot_ids = [s.id for s in db.query(AuctionSlot.id).filter(
+            AuctionSlot.auction_id.in_(auction_ids)
+        ).all()]
         if slot_ids:
             db.query(AuctionBid).filter(AuctionBid.slot_id.in_(slot_ids)).delete(synchronize_session=False)
-            db.query(AuctionSlot).filter(AuctionSlot.auction_id == auction.id).delete()
-        db.delete(auction)
+        db.query(AuctionSlot).filter(AuctionSlot.auction_id.in_(auction_ids)).delete(synchronize_session=False)
+        db.query(MarketAuction).filter(MarketAuction.id.in_(auction_ids)).delete(synchronize_session=False)
         
-    # Eliminar pujas directas del usuario en subastas si quedase alguna (trazabilidad)
-    db.query(AuctionBid).filter(AuctionBid.user_id.in_(
-        db.query(LeagueMember.user_id).filter(LeagueMember.league_id == league_id)
-    )).delete(synchronize_session=False)        
-    # 4. Pack Openings
-    po_ids = [p.id for p in db.query(PackOpening).filter(PackOpening.league_id == league_id).all()]
+    # 4. Pack Openings (cards → openings)
+    po_ids = [p.id for p in db.query(PackOpening.id).filter(PackOpening.league_id == league_id).all()]
     if po_ids:
         db.query(PackOpeningCard).filter(PackOpeningCard.pack_opening_id.in_(po_ids)).delete(synchronize_session=False)
         db.query(PackOpening).filter(PackOpening.id.in_(po_ids)).delete(synchronize_session=False)
     
-    # 5. GameweekLineups
-    team_ids = [t.id for t in db.query(Team).filter(Team.league_id == league_id).all()]
+    # 5. GameweekLineups (players → lineups)
+    team_ids = [t.id for t in db.query(Team.id).filter(Team.league_id == league_id).all()]
     if team_ids:
-        # Eliminar jugadores de las alineaciones (hijos) antes que las alineaciones (padres)
-        db.query(GameweekLineupPlayer).filter(GameweekLineupPlayer.lineup_id.in_(
-            db.query(GameweekLineup.id).filter(GameweekLineup.team_id.in_(team_ids))
-        )).delete(synchronize_session=False)
-        db.query(GameweekLineup).filter(GameweekLineup.team_id.in_(team_ids)).delete(synchronize_session=False)
+        lineup_ids = [l.id for l in db.query(GameweekLineup.id).filter(
+            GameweekLineup.team_id.in_(team_ids)
+        ).all()]
+        if lineup_ids:
+            db.query(GameweekLineupPlayer).filter(GameweekLineupPlayer.lineup_id.in_(lineup_ids)).delete(synchronize_session=False)
+            db.query(GameweekLineup).filter(GameweekLineup.id.in_(lineup_ids)).delete(synchronize_session=False)
         
-    # 6. UserCards (eliminar las cartas procedentes de la liga para limpiar BD)
-    db.query(UserCard).filter(UserCard.league_id == league_id).delete()
+    # 6. UserCards
+    db.query(UserCard).filter(UserCard.league_id == league_id).delete(synchronize_session=False)
     
     # 7. Arena Battles (referencian teams via FK — limpiar antes de borrar teams)
     if team_ids:
@@ -626,13 +632,15 @@ def _delete_league_completely(league: League, db: Session):
         ).delete(synchronize_session=False)
     
     # 8. Teams
-    db.query(Team).filter(Team.league_id == league_id).delete()
+    db.query(Team).filter(Team.league_id == league_id).delete(synchronize_session=False)
     
     # 9. Notifications (referencian league via FK)
-    db.query(Notification).filter(Notification.league_id == league_id).delete()
+    db.query(Notification).filter(Notification.league_id == league_id).delete(synchronize_session=False)
     
     # 10. League (cascade borra members e invitations)
-    db.delete(league)
+    db.query(LeagueMember).filter(LeagueMember.league_id == league_id).delete(synchronize_session=False)
+    db.query(LeagueInvitation).filter(LeagueInvitation.league_id == league_id).delete(synchronize_session=False)
+    db.query(League).filter(League.id == league_id).delete(synchronize_session=False)
     db.commit()
 
 
