@@ -187,7 +187,14 @@ async def admin_delete_league(
     name = league.name
 
     from app.routers.leagues import _delete_league_completely
-    _delete_league_completely(league, db)
+    try:
+        _delete_league_completely(league, db)
+    except Exception as e:
+        db.rollback()
+        import traceback
+        error_detail = traceback.format_exc()
+        print(f"❌ ERROR al eliminar liga {league_id}: {error_detail}")
+        raise HTTPException(status_code=500, detail=f"Error al eliminar liga: {type(e).__name__}: {str(e)}")
 
     return {"message": f"Liga '{name}' y todos sus datos eliminados correctamente."}
 
