@@ -16,7 +16,7 @@ from app.models.models import (
     Team, Player, UserCard, Position, CardRarity,
     SystemOffer, MarketListing, MarketAuction, AuctionSlot, AuctionBid,
     ListingBid, PackOpening, GameweekLineup, GameweekLineupPlayer, PackOpeningCard,
-    ArenaBattle
+    ArenaBattle, Notification
 )
 from app.schemas.league import (
     LeagueCreate, LeagueUpdate, LeagueResponse, LeagueListResponse,
@@ -619,10 +619,19 @@ def _delete_league_completely(league: League, db: Session):
     # 6. UserCards (eliminar las cartas procedentes de la liga para limpiar BD)
     db.query(UserCard).filter(UserCard.league_id == league_id).delete()
     
-    # 7. Teams
+    # 7. Arena Battles (referencian teams via FK — limpiar antes de borrar teams)
+    if team_ids:
+        db.query(ArenaBattle).filter(
+            (ArenaBattle.team1_id.in_(team_ids)) | (ArenaBattle.team2_id.in_(team_ids))
+        ).delete(synchronize_session=False)
+    
+    # 8. Teams
     db.query(Team).filter(Team.league_id == league_id).delete()
     
-    # 8. League (cascade borra members e invitations)
+    # 9. Notifications (referencian league via FK)
+    db.query(Notification).filter(Notification.league_id == league_id).delete()
+    
+    # 10. League (cascade borra members e invitations)
     db.delete(league)
     db.commit()
 
