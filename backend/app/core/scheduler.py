@@ -509,6 +509,73 @@ def economy_reconciliation_tick():
 
 
 # ──────────────────────────────────────────────────────────────────
+# SUBASTAS AUTOMÁTICAS
+# ──────────────────────────────────────────────────────────────────
+
+def create_missing_auctions_tick():
+    """
+    Runs every 5 minutes. For every league that has at least one member
+    but does NOT have an active auction, creates one automatically.
+    Also resolves any expired-but-unresolved auctions first so the
+    creation logic finds a clean state.
+    """
+    from app.core.database import SessionLocal
+    from app.models.models import MarketAuction, League, LeagueMember
+
+    db = SessionLocal()
+    try:
+        now = datetime.utcnow()
+
+        # 1. Resolve expired auctions first (same logic as resolve_expired_auctions_tick)
+        expired_auctions = db.query(MarketAuction).filter(
+            MarketAuction.is_active == True,
+            MarketAuction.ends_at < now,
+            MarketAuction.is_resolved == False
+        ).all()
+
+        for auction in expired_auctions:
+            try:
+                from app.routers.market import _resolve_auction
+                _resolve_auction(auction, db)
+                logger.info(f"🏁 Subasta {auction.id} (liga {auction.league_id}) resuelta automáticamente")
+            except Exception as e:
+                logger.error(f"Error resolviendo subasta {auction.id}: {e}")
+                db.rollback()
+
+        # 2. Get all league IDs that have at least one member
+        league_ids = [
+            lid for (lid,) in
+            db.query(LeagueMember.league_id).distinct().all()
+        ]
+
+        created_count = 0
+        for league_id in league_ids:
+            # Check if there's already an active auction
+            active = db.query(MarketAuction).filter(
+                MarketAuction.league_id == league_id,
+                MarketAuction.is_active == True
+            ).first()
+
+            if not active:
+                try:
+                    from app.routers.market import _create_new_auction
+                    _create_new_auction(league_id, db)
+                    created_count += 1
+                except Exception as e:
+                    logger.error(f"Error creando subasta para liga {league_id}: {e}")
+                    db.rollback()
+
+        if created_count > 0:
+            logger.info(f"🆕 {created_count} subastas creadas automáticamente para ligas sin subasta activa")
+
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error en create_missing_auctions_tick: {e}")
+    finally:
+        db.close()
+
+
+# ──────────────────────────────────────────────────────────────────
 # START / STOP
 # ──────────────────────────────────────────────────────────────────
 
@@ -538,8 +605,14 @@ def start_scheduler():
         id="resolve_expired_auctions",
         replace_existing=True
     )
+    scheduler.add_job(
+        create_missing_auctions_tick,
+        trigger=IntervalTrigger(minutes=5),
+        id="create_missing_auctions",
+        replace_existing=True
+    )
     scheduler.start()
-    print("✅ Scheduler iniciado: jornadas (1min) + ofertas (1h) + reconciliación (1h) + subastas (5min)", flush=True)
+    print("✅ Scheduler iniciado: jornadas (1min) + ofertas (1h) + reconciliación (1h) + subastas (5min) + auto-crear subastas (5min)", flush=True)
 
     # Ejecución inmediata al arrancar (catch-up)
     try:
@@ -548,6 +621,7 @@ def start_scheduler():
         generate_system_offers_tick()
         economy_reconciliation_tick()
         resolve_expired_auctions_tick()
+        create_missing_auctions_tick()
         print("✅ Tareas iniciales completadas.", flush=True)
     except Exception as e:
         logger.error(f"❌ Error en tareas iniciales del scheduler: {e}")
